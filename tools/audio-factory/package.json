@@ -1,0 +1,30 @@
+{
+    "name": "softale-audio-factory",
+    "version": "1.0.0",
+    "description": "AI-powered audio story generation pipeline",
+    "type": "module",
+    "main": "src/index.ts",
+    "scripts": {
+        "generate": "npx tsx src/index.ts",
+        "script": "npx tsx src/index.ts script",
+        "voice": "npx tsx src/index.ts voice",
+        "music": "npx tsx src/index.ts music",
+        "mix": "npx tsx src/index.ts mix",
+        "upload": "npx tsx src/index.ts upload",
+        "full": "npx tsx src/index.ts full",
+        "custom": "npx tsx src/index.ts custom"
+    },
+    "dependencies": {
+        "@anthropic-ai/sdk": "^0.50.0",
+        "@supabase/supabase-js": "^2.89.0",
+        "axios": "^1.13.2",
+        "dotenv": "^16.0.0",
+        "node-fetch": "^3.0.0",
+        "openai": "^4.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "tsx": "^4.0.0",
+        "typescript": "^5.0.0"
+    }
+}

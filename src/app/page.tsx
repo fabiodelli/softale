@@ -1,65 +1,241 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { getStories, getCollections, type Story, type Collection } from '@/lib/supabase';
+import { useSearchParams } from 'next/navigation';
+import StoryCard from '@/components/StoryCard';
+import CollectionCard from '@/components/CollectionCard';
+import MoodSelector, { Mood } from '@/components/MoodSelector';
+import { usePlayer } from '@/lib/PlayerContext';
+import { useAmbience } from '@/context/AmbienceContext';
+import { Layers } from 'lucide-react';
+import { getLayoutForMood } from '@/config/home-layout';
+import ContentSection from '@/components/ContentSection';
+import FeaturedCard from '@/components/FeaturedCard';
+
+// Mood to Categories Mapping (synced with Factory RECIPE_MATRIX)
+// Factory categories: sleep, meditation, fantasy, kids, motivation, work_break, nature, soundscape, music_instrumental, binaural
+const moodToCategories: Record<string, string[]> = {
+  'sleep': ['sleep', 'meditation', 'nature', 'soundscape', 'binaural', 'music_instrumental'],
+  'meditation': ['meditation', 'binaural', 'work_break', 'nature', 'soundscape', 'music_instrumental'],
+  'fantasy': ['fantasy', 'kids', 'sleep', 'nature', 'music_instrumental'],
+  'nature': ['nature', 'soundscape', 'meditation', 'music_instrumental'],
+  'energized': ['motivation', 'work_break', 'kids', 'nature', 'music_instrumental']
+};
+
+export default function HomePage() {
+  const { play } = usePlayer();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
+
+  const [allStories, setAllStories] = useState<Story[]>([]);
+  const [allCollections, setAllCollections] = useState<Collection[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Mood State
+  const [activeMood, setActiveMood] = useState<Mood>(null);
+  const [greeting, setGreeting] = useState('');
+
+  // Time-based Greeting Logic
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) setGreeting('Good Morning');
+    else if (hour >= 12 && hour < 18) setGreeting('Good Afternoon');
+    else setGreeting('Good Evening');
+  }, []);
+
+  // Sync Mood with URL Query Param (e.g. from Footer links)
+  useEffect(() => {
+    const moodParam = searchParams.get('mood');
+    if (moodParam && moodToCategories[moodParam]) {
+      // Direct state update + storage update
+      const mood = moodParam as Mood;
+      setActiveMood(mood);
+      sessionStorage.setItem('reverie_active_mood', mood!);
+    }
+  }, [searchParams]);
+
+  // Restore Mood from SessionStorage
+  useEffect(() => {
+    const savedMood = sessionStorage.getItem('reverie_active_mood');
+    if (savedMood) {
+      setActiveMood(savedMood as Mood);
+    }
+  }, []);
+
+
+  // Ambience Integration
+  const { setTrack, setVolume } = useAmbience();
+
+  const moodToAmbience: Record<string, string> = {
+    'sleep': 'night',        // Relaxed -> Night Nature (Crickets)
+    'meditation': 'river',   // Focused -> River
+    'fantasy': 'wind',       // Dreamy -> Wind
+    'nature': 'forest',      // Peaceful -> Forest
+    'energized': 'ocean'     // Energized -> Ocean
+  };
+
+  // Mood Handler with Persistence and Ambience Trigger
+  const handleMoodSelect = (mood: Mood) => {
+    setActiveMood(mood);
+
+    if (mood) {
+      sessionStorage.setItem('reverie_active_mood', mood);
+
+      // Trigger Ambience
+      const trackId = moodToAmbience[mood];
+      if (trackId) {
+        setTrack(trackId);
+        // Optional: Set slightly different volumes per mood?
+        // setVolume(0.5); 
+      }
+    } else {
+      sessionStorage.removeItem('reverie_active_mood');
+      // Optional: Stop ambience when mood cleared?
+      // For now, let's keep the vibe going or let user stop it manually via mixer
+    }
+  };
+
+  // Data Fetching - Stories and Collections
+  useEffect(() => {
+    async function fetchData() {
+      const [stories, collections] = await Promise.all([
+        getStories(),
+        getCollections()
+      ]);
+      setAllStories(stories);
+      setAllCollections(collections);
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  // Filter stories based on Active Mood or Search
+  const displayedStories = allStories.filter(story => {
+    if (!activeMood && !searchQuery) return true;
+
+    if (searchQuery) {
+      return story.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        story.description.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+
+    if (activeMood) {
+      const targetCategories = moodToCategories[activeMood] || [];
+      return targetCategories.includes(story.category);
+    }
+
+    return true;
+  });
+
+  // Filter collections based on Active Mood
+  const displayedCollections = allCollections.filter(collection => {
+    if (searchQuery) return false; // Hide collections during search
+    if (!activeMood) return true; // Show all when no mood selected
+
+    const targetCategories = moodToCategories[activeMood] || [];
+    return targetCategories.includes(collection.category || '');
+  });
+
+
+  // Layout Engine
+  const layout = getLayoutForMood(activeMood, allStories);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="min-h-screen bg-slate-50 pb-20">
+
+      {/* Mood Selector (Hero Section) */}
+      <MoodSelector
+        activeMood={activeMood}
+        onSelect={handleMoodSelect}
+        greeting={greeting}
+      />
+
+      {/* Main Content Feed */}
+      <div className="max-w-[100vw] overflow-x-clip px-6 md:px-12 py-6">
+
+        {/* --- SEARCH MODE --- */}
+        {searchQuery ? (
+          <>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-slate-800">Results for "{searchQuery}"</h2>
+            </div>
+            {displayedStories.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
+                {displayedStories.map((story) => (
+                  <StoryCard key={story.id} story={story} aspectRatio="square" />
+                ))}
+              </div>
+            ) : (
+              <div className="py-20 text-center text-slate-500">No results found.</div>
+            )}
+          </>
+        ) : (
+          /* --- CONTEXTUAL MODE (Mood Layout) --- */
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            {/* 1. Featured Hero Card */}
+            {layout.featured && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <FeaturedCard story={layout.featured} />
+              </motion.div>
+            )}
+
+            {/* 2. Collections Row (Legacy logic preserved) */}
+            {displayedCollections.length > 0 && (
+              <div className="mb-12">
+                <div className="flex items-center gap-2 mb-4">
+                  <Layers className="w-4 h-4 text-indigo-600" />
+                  <h3 className="text-lg font-bold text-slate-900">Collections</h3>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-6 md:-mx-12 px-6 md:px-12">
+                  {displayedCollections.slice(0, 6).map((collection, i) => (
+                    <motion.div
+                      key={collection.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 * i }}
+                      className="flex-shrink-0 w-40 md:w-48"
+                    >
+                      <CollectionCard collection={collection} />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 3. Content Sections */}
+            {layout.sections.map((section, idx) => (
+              <ContentSection
+                key={section.id}
+                {...section}
+                delay={0.1 * idx}
+              />
+            ))}
+
+            {/* Empty State Fallback */}
+            {!layout.featured && layout.sections.length === 0 && (
+              <div className="py-20 text-center">
+                <div className="text-4xl mb-4">🍂</div>
+                <h3 className="text-lg font-medium text-slate-900">Coming Soon</h3>
+                <p className="text-slate-500 mt-2 max-w-xs mx-auto">
+                  We are crafting content for this mood.
+                </p>
+              </div>
+            )}
+
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
