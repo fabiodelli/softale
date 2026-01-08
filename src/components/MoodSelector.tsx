@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Moon, Brain, Sparkles, Leaf, Waves, Headphones } from 'lucide-react';
 import { useAmbience } from '@/context/AmbienceContext';
 
-export type Mood = 'sleep' | 'meditation' | 'fantasy' | 'nature' | 'energized' | null;
+export type Mood = 'sleep' | 'meditation' | 'fantasy' | 'nature' | 'energized';
 
 interface MoodSelectorProps {
     onSelect: (mood: Mood) => void;
@@ -51,20 +51,18 @@ const moods = [
         icon: Waves, // Reverted to Waves (Ocean)
         colorClass: 'bg-sky-100 text-slate-800',
         activeClass: 'ring-[3px] ring-sky-300 scale-105 bg-sky-200',
-        image: '/images/moods/sunset.png'
+        image: '/images/moods/ocean.png'
     }
 ];
-
-// Default Image (Foggy Lake / Pines) as requested
-const DEFAULT_IMAGE = '/images/moods/foggy_lake.png';
 
 export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSelectorProps) {
     const { isPlaying, togglePlay, currentTrack } = useAmbience();
 
     // Determine current background image
+    // Determine current background image
     const currentImage = activeMood
         ? moods.find(m => m.id === activeMood)?.image
-        : DEFAULT_IMAGE;
+        : moods[0].image; // Fallback to first (shouldn't happen with strict typing)
 
     return (
         <div className="relative w-full h-[85svh] flex items-center justify-center overflow-hidden">
@@ -104,11 +102,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
                 )}
             </div>
 
-            {/* Mobile Logo - Top Center */}
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 md:hidden flex items-center gap-2 pointer-events-none fade-in zoom-in duration-700">
-                <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight leading-none">Softale</span>
-            </div>
+
 
 
 
@@ -173,7 +167,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
                                     <motion.button
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.95 }}
-                                        onClick={() => onSelect(isActive ? null : m.id as Mood)}
+                                        onClick={() => onSelect(m.id as Mood)}
                                         className={`
                                             w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300
                                             ${m.colorClass}

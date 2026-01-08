@@ -30,56 +30,14 @@ const getById = (stories: Story[], idPartial: string) => {
 
 export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout => {
 
-    // DEFAULT LAYOUT (No Mood)
-    if (!mood) {
-        // Show everything categorized
-        return {
-            sections: [
-                {
-                    id: 'new',
-                    title: 'New Arrivals',
-                    items: allStories.slice(0, 5), // Just top 5 for now
-                    type: 'row',
-                    filterCategory: 'all'
-                },
-                {
-                    id: 'soundscapes',
-                    title: 'Immersive Soundscapes',
-                    subtitle: 'Transport yourself to another world',
-                    items: getByCat(allStories, ['soundscape', 'nature']),
-                    type: 'row',
-                    filterCategory: 'soundscape'
-                },
-                {
-                    id: 'binaural',
-                    title: 'Binaural Frequencies',
-                    subtitle: 'Science-backed audio for focus and rest',
-                    items: getByCat(allStories, ['binaural']),
-                    type: 'row',
-                    filterCategory: 'binaural'
-                },
-                {
-                    id: 'instrumental',
-                    title: 'Focus Music',
-                    subtitle: 'Pure instrumental tracks',
-                    items: getByCat(allStories, ['music_instrumental']),
-                    type: 'row',
-                    filterCategory: 'music_instrumental'
-                },
-                {
-                    id: 'all',
-                    title: 'All Content',
-                    items: allStories,
-                    type: 'grid'
-                }
-            ]
-        };
-    }
+
 
     // === RELAXED (Sleep) ===
     if (mood === 'sleep') {
+        // Dynamic: Get newest Sleep or Meditation story
+        const featured = getByCat(allStories, ['sleep', 'meditation'])[0];
         return {
-            featured: getById(allStories, 'Monsoon') || getById(allStories, 'Velvet'), // Fallback until Velvet exists
+            featured,
             sections: [
                 {
                     id: 'sleep_tales',
@@ -108,11 +66,11 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
     }
 
     // === FOCUSED (Work) ===
-    if (mood === 'meditation') { // Mapped to 'meditation' internally but means Focused/Work often
-        // Actually UI says "Focused" -> 'meditation' intent in logic usually
-        // Let's check typical mapping. In page.tsx: 'meditation' -> ['meditation', 'binaural', 'work_break'...]
+    if (mood === 'meditation') {
+        // Dynamic: Get newest Instrumental or Binaural
+        const featured = getByCat(allStories, ['music_instrumental', 'binaural', 'motivation'])[0];
         return {
-            featured: getById(allStories, 'Gamma') || getById(allStories, 'Focus'),
+            featured,
             sections: [
                 {
                     id: 'deep_work',
@@ -141,8 +99,10 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
 
     // === ENERGIZED ===
     if (mood === 'energized') {
+        // Dynamic: Get newest Motivation or Upbeat Instrumental
+        const featured = getByCat(allStories, ['motivation', 'music_instrumental'])[0];
         return {
-            featured: getById(allStories, 'Acoustic') || getById(allStories, 'Morning'),
+            featured,
             sections: [
                 {
                     id: 'morning',
@@ -164,8 +124,10 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
 
     // === PEACEFUL (Nature) ===
     if (mood === 'nature') {
+        // Dynamic: Get newest Nature or Soundscape
+        const featured = getByCat(allStories, ['nature', 'soundscape'])[0];
         return {
-            featured: getById(allStories, 'Bamboo') || getById(allStories, 'Forest'),
+            featured,
             sections: [
                 {
                     id: 'pure_nature',
@@ -187,8 +149,10 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
 
     // === DREAMY (Fantasy) ===
     if (mood === 'fantasy') {
+        // Dynamic: Get newest Fantasy, Kids, Soundscape, or Nature story (Broader fallback)
+        const featured = getByCat(allStories, ['fantasy', 'kids', 'soundscape', 'nature'])[0];
         return {
-            featured: getById(allStories, 'Apiary') || getById(allStories, 'Space'),
+            featured,
             sections: [
                 {
                     id: 'fantasy_journeys',

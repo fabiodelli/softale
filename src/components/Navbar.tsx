@@ -52,16 +52,16 @@ export default function Navbar() {
     };
 
     return (
-        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 hidden md:block">
-            <div className="w-full px-4 md:px-8 py-4 flex items-center justify-between">
+        <header className="absolute top-0 left-0 w-full z-50 md:sticky md:bg-white/80 md:backdrop-blur-lg border-b-0 md:border-b border-slate-200/60 block bg-transparent">
+            <div className="w-full px-4 md:px-8 py-4 flex items-center justify-center md:justify-between">
                 <Link href="/" className="flex items-center gap-2 group text-slate-900">
                     <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent hidden sm:block tracking-tight">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent block tracking-tight">
                         Softale
                     </h1>
                 </Link>
 
-                <nav className="flex items-center gap-2 md:gap-4">
+                <nav className="hidden md:flex items-center gap-2 md:gap-4">
                     {/* Search Component */}
                     <div className="flex items-center">
                         <form onSubmit={handleSearchSubmit} className={`flex items-center overflow-hidden transition-all duration-300 ${showSearch ? 'w-48 md:w-64 opacity-100 mr-2' : 'w-0 opacity-0'}`}>

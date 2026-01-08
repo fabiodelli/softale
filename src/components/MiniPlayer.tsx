@@ -23,7 +23,9 @@ export default function MiniPlayer() {
         isLoopable,
         loopDuration,
         totalLoopTime,
-        setLoopDuration
+        setLoopDuration,
+        isMobilePlayerOpen,
+        toggleMobilePlayer
     } = usePlayer();
 
     const [showDurationDropdown, setShowDurationDropdown] = useState(false);
@@ -91,7 +93,15 @@ export default function MiniPlayer() {
                 initial={{ y: 100 }}
                 animate={{ y: 0 }}
                 exit={{ y: 100 }}
-                className="fixed bottom-0 left-0 right-0 z-50"
+                // Desktop: fixed bottom-0 (standard)
+                // Mobile: controlled by isMobilePlayerOpen. 
+                // If Open: bottom-[84px] (above nav). If Closed: translate-y-full (hidden) or just hidden via conditional? 
+                // Let's use CSS transform for smoother toggle, or just conditional classes.
+                // We'll use 'bottom' classes directly.
+                className={`fixed left-0 right-0 z-50 transition-all duration-300
+                    md:bottom-0 
+                    ${isMobilePlayerOpen ? 'bottom-[84px] opacity-100 translate-y-0' : 'bottom-[84px] opacity-0 translate-y-10 pointer-events-none md:opacity-100 md:translate-y-0 md:pointer-events-auto'}
+                `}
             >
 
                 {/* Mini Player Content */}

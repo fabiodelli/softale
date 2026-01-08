@@ -34,7 +34,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   // Mood State
-  const [activeMood, setActiveMood] = useState<Mood>(null);
+  // Mood State
+  const [activeMood, setActiveMood] = useState<Mood>('sleep');
   const [greeting, setGreeting] = useState('');
 
   // Time-based Greeting Logic
@@ -79,21 +80,12 @@ export default function HomePage() {
   // Mood Handler with Persistence and Ambience Trigger
   const handleMoodSelect = (mood: Mood) => {
     setActiveMood(mood);
+    sessionStorage.setItem('reverie_active_mood', mood);
 
-    if (mood) {
-      sessionStorage.setItem('reverie_active_mood', mood);
-
-      // Trigger Ambience
-      const trackId = moodToAmbience[mood];
-      if (trackId) {
-        setTrack(trackId);
-        // Optional: Set slightly different volumes per mood?
-        // setVolume(0.5); 
-      }
-    } else {
-      sessionStorage.removeItem('reverie_active_mood');
-      // Optional: Stop ambience when mood cleared?
-      // For now, let's keep the vibe going or let user stop it manually via mixer
+    // Trigger Ambience
+    const trackId = moodToAmbience[mood];
+    if (trackId) {
+      setTrack(trackId);
     }
   };
 
@@ -113,7 +105,7 @@ export default function HomePage() {
 
   // Filter stories based on Active Mood or Search
   const displayedStories = allStories.filter(story => {
-    if (!activeMood && !searchQuery) return true;
+    if (!searchQuery && !activeMood) return true; // Should not happen with default mood
 
     if (searchQuery) {
       return story.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -131,7 +123,6 @@ export default function HomePage() {
   // Filter collections based on Active Mood
   const displayedCollections = allCollections.filter(collection => {
     if (searchQuery) return false; // Hide collections during search
-    if (!activeMood) return true; // Show all when no mood selected
 
     const targetCategories = moodToCategories[activeMood] || [];
     return targetCategories.includes(collection.category || '');

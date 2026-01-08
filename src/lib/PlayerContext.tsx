@@ -31,6 +31,11 @@ interface PlayerContextType {
     loopDuration: LoopDuration;
     totalLoopTime: number; // Total time played in loop mode (in seconds)
 
+    // Mobile UI State
+    isMobilePlayerOpen: boolean;
+    toggleMobilePlayer: () => void;
+    setMobilePlayerOpen: (open: boolean) => void;
+
     // Actions
     play: (story: Story) => void;
     playQueue: (stories: Story[], startIndex?: number, collectionInfo?: { slug: string; isLoopable: boolean }) => void;
@@ -69,6 +74,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const [isLoopable, setIsLoopable] = useState(false);
     const [loopDuration, setLoopDuration] = useState<LoopDuration>(0); // 0 = infinite
     const [totalLoopTime, setTotalLoopTime] = useState(0);
+
+    // --- Mobile UI State ---
+    const [isMobilePlayerOpen, setIsMobilePlayerOpen] = useState(false);
+    const toggleMobilePlayer = useCallback(() => setIsMobilePlayerOpen(prev => !prev), []);
 
     // --- Audio Properties ---
     const [currentTime, setCurrentTime] = useState(0);
@@ -478,6 +487,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             currentTime, duration, voiceVolume, ambientVolume, playbackRate,
             queue, queueIndex,
             collectionSlug, isLoopable, loopDuration, totalLoopTime,
+            isMobilePlayerOpen, toggleMobilePlayer, setMobilePlayerOpen: setIsMobilePlayerOpen,
             play, playQueue, next, previous, pause, toggle, seek,
             setVoiceVolume, setAmbientVolume, setPlaybackRate, setLoopDuration,
             audioRef: audioRef as React.RefObject<HTMLAudioElement>
