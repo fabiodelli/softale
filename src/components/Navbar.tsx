@@ -31,33 +31,28 @@ export default function Navbar() {
 
     // Live Search Logic: Debounce update to URL when on home page
     useEffect(() => {
-        // Only trigger live update if we are already on the home page
         if (pathname === '/') {
             const timer = setTimeout(() => {
                 const currentQ = searchParams?.get('q') || '';
-                // Only update if changed prevents loops, though router.replace usually safe
                 if (searchText !== currentQ) {
                     if (searchText) {
                         router.replace(`/?q=${encodeURIComponent(searchText)}`, { scroll: false });
                     } else {
-                        // If empty, remove param
                         router.replace('/', { scroll: false });
                     }
                 }
-            }, 300); // 300ms delay
-
+            }, 300);
             return () => clearTimeout(timer);
         }
     }, [searchText, pathname, router, searchParams]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Force navigation/update immediately on Enter
         router.push(`/?q=${encodeURIComponent(searchText)}`);
     };
 
     return (
-        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60">
+        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 hidden md:block">
             <div className="w-full px-4 md:px-8 py-4 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2 group text-slate-900">
                     <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
@@ -81,10 +76,8 @@ export default function Navbar() {
                         <button
                             onClick={() => {
                                 if (showSearch && searchText) {
-                                    // If open and has text, submit
                                     router.push(`/?q=${encodeURIComponent(searchText)}`);
                                 } else {
-                                    // Toggle open/close
                                     setShowSearch(!showSearch);
                                 }
                             }}
@@ -94,22 +87,24 @@ export default function Navbar() {
                         </button>
                     </div>
 
-                    {/* Ambience Mixer */}
-                    <AmbienceSelector />
+                    {/* Ambience Mixer - Hidden on Mobile */}
+                    <div className="hidden md:block">
+                        <AmbienceSelector />
+                    </div>
 
                     <div className="w-px h-6 bg-slate-200 mx-1 hidden md:block"></div>
 
-                    {/* Library Link */}
+                    {/* Library Link - Hidden on Mobile */}
                     <Link
                         href="/library"
-                        className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all ${isActive('/library')
+                        className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-full transition-all ${isActive('/library')
                             ? 'bg-indigo-50 text-indigo-600'
                             : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-100'
                             }`}
                         title="Library"
                     >
                         <Library className="w-5 h-5" />
-                        <span className="text-sm font-medium hidden md:inline">Library</span>
+                        <span className="text-sm font-medium">Library</span>
                     </Link>
 
 
@@ -117,7 +112,7 @@ export default function Navbar() {
                     {user ? (
                         <Link
                             href="/account"
-                            className={`flex items-center gap-2 px-1 pr-3 py-1 rounded-full transition border ${isActive('/account')
+                            className={`hidden md:flex items-center gap-2 px-1 pr-3 py-1 rounded-full transition border ${isActive('/account')
                                 ? 'bg-white border-indigo-200 shadow-sm'
                                 : 'bg-transparent border-transparent hover:bg-slate-50'
                                 }`}
@@ -129,14 +124,14 @@ export default function Navbar() {
                                     <User className="w-4 h-4 text-indigo-600" />
                                 )}
                             </div>
-                            <span className="text-sm font-semibold text-slate-700 hidden md:inline">
+                            <span className="text-sm font-semibold text-slate-700">
                                 {profile?.username || 'Account'}
                             </span>
                         </Link>
                     ) : (
                         <Link
                             href="/login"
-                            className="text-sm px-5 py-2.5 bg-slate-900 hover:bg-slate-800 rounded-full transition text-white font-semibold shadow-lg shadow-slate-900/10"
+                            className="hidden md:block text-sm px-5 py-2.5 bg-slate-900 hover:bg-slate-800 rounded-full transition text-white font-semibold shadow-lg shadow-slate-900/10"
                         >
                             Sign In
                         </Link>

@@ -227,9 +227,14 @@ export default function AccountPage() {
                                 const button = document.getElementById('manage-sub-btn');
                                 if (button) button.innerText = 'Loading...';
                                 try {
-                                    const res = await fetch('/api/portal', { method: 'POST' });
-                                    const { url } = await res.json();
+                                    const res = await fetch('/api/portal', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ userId: user?.id })
+                                    });
+                                    const { url, error } = await res.json();
                                     if (url) window.location.href = url;
+                                    else if (error) console.error('Portal error:', error);
                                 } catch (e) { console.error(e); }
                             }}
                             id="manage-sub-btn"

@@ -1,59 +1,209 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Sparkles, Shield, Zap, Headphones } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
+import { Crown, Check, Sparkles, Zap, Shield, Heart, ArrowRight, Settings } from 'lucide-react';
 import { useAuth } from '@/lib/AuthProvider';
 import { useRouter } from 'next/navigation';
-
-// Initialize Stripe Client
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY!);
+import { useState } from 'react';
+import Link from 'next/link';
 
 export default function UpgradePage() {
-    const { user } = useAuth();
+    const { user, isPremium, loading: authLoading } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [portalLoading, setPortalLoading] = useState(false);
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
     const handleSubscribe = async () => {
         if (!user) {
-            router.push('/login?redirect=/upgrade');
+            router.push('/login');
             return;
         }
 
         setLoading(true);
-
         try {
-            // Call API to create session
-            // Replace with your actual Price IDs from Stripe Dashboard
             const priceId = billingCycle === 'monthly'
-                ? 'price_MONTHLY_ID_HERE'
-                : 'price_YEARLY_ID_HERE';
+                ? process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY
+                : process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY;
 
-            const res = await fetch('/api/create-checkout-session', {
+            const response = await fetch('/api/create-checkout-session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ priceId }),
+                body: JSON.stringify({
+                    userId: user.id,
+                    email: user.email,
+                    priceId,
+                }),
             });
 
-            if (!res.ok) throw new Error('Failed to create checkout session');
-
-            const { url } = await res.json();
+            const { url, error } = await response.json();
 
             if (url) {
                 window.location.href = url;
             } else {
-                throw new Error('No checkout URL returned');
+                alert(`Errore: ${error || 'Impossibile creare la sessione di checkout'}`);
             }
         } catch (error) {
-            console.error(error);
+            console.error('Upgrade error:', error);
             alert('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
+    const handleManageSubscription = async () => {
+        if (!user) return;
+        setPortalLoading(true);
+        try {
+            const res = await fetch('/api/portal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id })
+            });
+            const { url, error } = await res.json();
+            if (url) window.location.href = url;
+            else if (error) alert(`Errore: ${error}`);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setPortalLoading(false);
+        }
+    };
+
+    // Loading state
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    // Premium User View - Thank You
+    if (isPremium) {
+        return (
+            <div className="min-h-screen bg-slate-50 pt-24 pb-12 px-4 md:px-8">
+                <div className="max-w-4xl mx-auto text-center">
+
+                    {/* Header */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-12"
+                    >
+                        <span className="inline-block p-3 rounded-2xl bg-indigo-100 text-indigo-600 mb-4">
+                            <Crown className="w-8 h-8" />
+                        </span>
+                        <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
+                            Grazie per essere Premium! ✨
+                        </h1>
+                        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                            Hai accesso completo a tutti i contenuti esclusivi di Softale.
+                        </p>
+                    </motion.div>
+
+                    {/* Premium Status Card */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ y: -5 }}
+                        className="max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 relative"
+                    >
+                        {/* Gradient Border/Glow */}
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+
+                        <div className="p-8">
+                            <div className="mb-6 flex items-center justify-center gap-3">
+                                <div className="relative">
+                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                                        <Crown className="w-8 h-8 text-white" />
+                                    </div>
+                                    <motion.div
+                                        animate={{ scale: [1, 1.2, 1] }}
+                                        transition={{ repeat: Infinity, duration: 2 }}
+                                        className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-md"
+                                    >
+                                        <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                                    </motion.div>
+                                </div>
+                                <div className="text-left">
+                                    <h2 className="text-2xl font-bold text-slate-900">Softale Premium</h2>
+                                    <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold tracking-wide uppercase">
+                                        Abbonamento Attivo
+                                    </span>
+                                </div>
+                            </div>
+
+                            <p className="text-center text-sm text-slate-500 mb-6 border-b border-slate-100 pb-6">
+                                Stai godendo di tutti i vantaggi esclusivi.<br />
+                                <strong>Grazie per il tuo supporto!</strong>
+                            </p>
+
+                            <div className="space-y-4 text-left mb-6">
+                                <div className="flex items-center gap-3 text-slate-700">
+                                    <span className="bg-emerald-100 text-emerald-600 p-1 rounded-full"><Check className="w-4 h-4" /></span>
+                                    <span className="font-medium">Unlimited Access to All Content</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-slate-700">
+                                    <span className="bg-emerald-100 text-emerald-600 p-1 rounded-full"><Check className="w-4 h-4" /></span>
+                                    <span className="font-medium">Exclusive Premium-Only Stories</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-slate-700">
+                                    <span className="bg-emerald-100 text-emerald-600 p-1 rounded-full"><Check className="w-4 h-4" /></span>
+                                    <span className="font-medium">High-Fidelity Audio Quality</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-slate-700">
+                                    <span className="bg-emerald-100 text-emerald-600 p-1 rounded-full"><Check className="w-4 h-4" /></span>
+                                    <span className="font-medium">Support Independent Creators</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <Link
+                                    href="/"
+                                    className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-bold text-lg shadow-lg hover:shadow-indigo-500/40 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Sparkles className="w-5 h-5" />
+                                    Explore Content
+                                    <ArrowRight className="w-5 h-5" />
+                                </Link>
+
+                                <button
+                                    onClick={handleManageSubscription}
+                                    disabled={portalLoading}
+                                    className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all flex items-center justify-center gap-2"
+                                >
+                                    {portalLoading ? (
+                                        <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Settings className="w-5 h-5" />
+                                            Manage Subscription
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Trust Badges */}
+                    <div className="mt-12 flex justify-center gap-8 text-slate-400 grayscale opacity-60">
+                        <div className="flex items-center gap-2">
+                            <Heart className="w-5 h-5" />
+                            <span className="text-sm font-semibold">Thank You</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Zap className="w-5 h-5" />
+                            <span className="text-sm font-semibold">Cancel Anytime</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        );
+    }
+
+    // Free User View - Upgrade Prompt (Original Style)
     return (
         <div className="min-h-screen bg-slate-50 pt-24 pb-12 px-4 md:px-8">
             <div className="max-w-4xl mx-auto text-center">
@@ -114,12 +264,12 @@ export default function UpgradePage() {
                         <div className="flex items-baseline justify-center gap-1 mb-2">
                             {/* Strikethrough Anchor Price */}
                             <span className="text-2xl text-slate-400 line-through decoration-slate-400/50 decoration-2 mr-2">
-                                {billingCycle === 'monthly' ? '$6.99' : '$59.99'}
+                                {billingCycle === 'monthly' ? '€6.99' : '€59.99'}
                             </span>
 
                             {/* Actual Price */}
                             <span className="text-5xl font-black text-slate-900">
-                                {billingCycle === 'monthly' ? '$4.99' : '$39.99'}
+                                {billingCycle === 'monthly' ? '€4.99' : '€39.99'}
                             </span>
                             <span className="text-slate-500 font-medium">
                                 /{billingCycle === 'monthly' ? 'mo' : 'yr'}
@@ -144,27 +294,27 @@ export default function UpgradePage() {
                         </button>
 
                         <p className="text-xs text-slate-400 mb-8 border-t border-slate-100 pt-4 mt-4">
-                            Regular price: $6.99/mo.<br />
-                            <strong>Today: $4.99/mo (Save 30%)</strong>
+                            Regular price: €6.99/mo.<br />
+                            <strong>Today: €4.99/mo (Save 30%)</strong>
                         </p>
 
                         <div className="space-y-4 text-left">
-                            <li className="flex items-center gap-3 text-slate-700">
+                            <div className="flex items-center gap-3 text-slate-700">
                                 <span className="bg-emerald-100 text-emerald-600 p-1 rounded-full"><Check className="w-4 h-4" /></span>
                                 <span className="font-medium">Unlimited Access to All Content</span>
-                            </li>
-                            <li className="flex items-center gap-3 text-slate-700">
+                            </div>
+                            <div className="flex items-center gap-3 text-slate-700">
                                 <span className="bg-emerald-100 text-emerald-600 p-1 rounded-full"><Check className="w-4 h-4" /></span>
                                 <span className="font-medium">Exclusive Premium-Only Stories</span>
-                            </li>
-                            <li className="flex items-center gap-3 text-slate-700">
+                            </div>
+                            <div className="flex items-center gap-3 text-slate-700">
                                 <span className="bg-emerald-100 text-emerald-600 p-1 rounded-full"><Check className="w-4 h-4" /></span>
                                 <span className="font-medium">High-Fidelity Audio Quality</span>
-                            </li>
-                            <li className="flex items-center gap-3 text-slate-700">
+                            </div>
+                            <div className="flex items-center gap-3 text-slate-700">
                                 <span className="bg-emerald-100 text-emerald-600 p-1 rounded-full"><Check className="w-4 h-4" /></span>
                                 <span className="font-medium">Support Independent Creators</span>
-                            </li>
+                            </div>
                         </div>
                     </div>
                 </motion.div>

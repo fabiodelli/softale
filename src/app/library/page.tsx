@@ -7,7 +7,7 @@ import StoryCard from '@/components/StoryCard';
 import CollectionCard from '@/components/CollectionCard';
 import { usePlayer } from '@/lib/PlayerContext';
 import { useAuth } from '@/lib/AuthProvider';
-import { Heart, Play, Layers, X } from 'lucide-react';
+import { Heart, Play, Layers, X, Search } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 
 // Filter types - add new loopable categories
@@ -24,6 +24,7 @@ export default function LibraryPage() {
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Data Fetching - Stories and Collections
     useEffect(() => {
@@ -77,28 +78,43 @@ export default function LibraryPage() {
 
     // Get displayed stories based on active filter
     const getDisplayedStories = (): (Story | StoryWithProgress)[] => {
-        switch (activeFilter) {
-            case 'favorites':
-                return favorites;
-            case 'continue':
-                return inProgress;
-            case 'all':
-                return allStories;
-            default:
-                // Category filter
-                return allStories.filter(story => story.category === activeFilter);
+        let stories = activeFilter === 'all'
+            ? allStories
+            : activeFilter === 'favorites'
+                ? favorites
+                : activeFilter === 'continue'
+                    ? inProgress
+                    : allStories.filter(story => story.category === activeFilter);
+
+        if (searchQuery) {
+            stories = stories.filter(story =>
+                story.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                story.description.toLowerCase().includes(searchQuery.toLowerCase())
+            );
         }
+        return stories;
     };
 
     // Get displayed collections based on active filter
     const getDisplayedCollections = (): Collection[] => {
+        let collections: Collection[] = [];
+
         if (activeFilter === 'favorites' || activeFilter === 'continue') {
-            return []; // No collections for these special filters
+            collections = [];
+        } else if (activeFilter === 'all') {
+            collections = allCollections;
+        } else {
+            collections = allCollections.filter(col => col.category === activeFilter);
         }
-        if (activeFilter === 'all') {
-            return allCollections;
+
+        if (searchQuery) {
+            collections = collections.filter(col =>
+                col.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (col.description && col.description.toLowerCase().includes(searchQuery.toLowerCase()))
+            );
         }
-        return allCollections.filter(col => col.category === activeFilter);
+
+        return collections;
     };
 
     const displayedStories = getDisplayedStories();
@@ -139,6 +155,36 @@ export default function LibraryPage() {
     return (
         <div className="min-h-screen bg-slate-50 pt-16 pb-24">
             <div className="max-w-[100vw] overflow-hidden px-6 md:px-12">
+
+
+
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-6 flex items-center justify-between">
+                        Library
+                    </h1>
+
+                    {/* Mobile Search Input - Visible only on mobile */}
+                    <div className="relative group md:hidden mb-4">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                        </div>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl py-3.5 pl-12 pr-4 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all"
+                            placeholder="Search stories..."
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
 
                 {/* Filters - Two Row Layout */}
                 <div className="mb-6 space-y-3">

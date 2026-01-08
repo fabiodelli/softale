@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Moon, Brain, Sparkles, Leaf, Waves } from 'lucide-react';
+import { Moon, Brain, Sparkles, Leaf, Waves, Headphones } from 'lucide-react';
+import { useAmbience } from '@/context/AmbienceContext';
 
 export type Mood = 'sleep' | 'meditation' | 'fantasy' | 'nature' | 'energized' | null;
 
@@ -58,6 +59,7 @@ const moods = [
 const DEFAULT_IMAGE = '/images/moods/foggy_lake.png';
 
 export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSelectorProps) {
+    const { isPlaying, togglePlay, currentTrack } = useAmbience();
 
     // Determine current background image
     const currentImage = activeMood
@@ -65,7 +67,50 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
         : DEFAULT_IMAGE;
 
     return (
-        <div className="relative w-full h-[85vh] flex items-center justify-center overflow-hidden transition-all duration-1000">
+        <div className="relative w-full h-[85svh] flex items-center justify-center overflow-hidden">
+
+            {/* Mobile Ambience Toggle - Top Left */}
+            <div className="absolute top-4 left-4 z-50 md:hidden">
+                {currentTrack && (
+                    <button
+                        onClick={togglePlay}
+                        className={`w-10 h-10 rounded-full backdrop-blur-xl flex items-center justify-center border shadow-lg transition-all duration-500 ${isPlaying
+                            ? 'bg-indigo-500/40 border-indigo-200/50 text-white ring-1 ring-indigo-400/50'
+                            : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                            }`}
+                    >
+                        {isPlaying ? (
+                            <div className="flex gap-0.5 items-end h-3">
+                                <motion.div
+                                    animate={{ height: [3, 12, 6, 12, 3] }}
+                                    transition={{ repeat: Infinity, duration: 1.2 }}
+                                    className="w-0.5 bg-white rounded-full"
+                                />
+                                <motion.div
+                                    animate={{ height: [6, 3, 12, 3, 6] }}
+                                    transition={{ repeat: Infinity, duration: 1.2, delay: 0.1 }}
+                                    className="w-0.5 bg-white rounded-full"
+                                />
+                                <motion.div
+                                    animate={{ height: [9, 6, 3, 6, 9] }}
+                                    transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }}
+                                    className="w-0.5 bg-white rounded-full"
+                                />
+                            </div>
+                        ) : (
+                            <Headphones className="w-4 h-4" />
+                        )}
+                    </button>
+                )}
+            </div>
+
+            {/* Mobile Logo - Top Center */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 md:hidden flex items-center gap-2 pointer-events-none fade-in zoom-in duration-700">
+                <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
+                <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight leading-none">Softale</span>
+            </div>
+
+
 
             {/* Background Image Layer */}
             <div className="absolute inset-0 z-0">
@@ -75,6 +120,10 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
                     animate={{ opacity: 1 }}
                     transition={{ duration: 1 }}
                     className="absolute inset-0"
+                    style={{
+                        maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)'
+                    }}
                 >
                     <img
                         src={currentImage}
@@ -83,8 +132,6 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
                     />
                     {/* Overlay to ensure text readability */}
                     <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
-                    {/* Gradient Fade to Bottom Content */}
-                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-50 to-transparent" />
                 </motion.div>
             </div>
 

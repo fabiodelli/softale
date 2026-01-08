@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { getStories, getCollections, type Story, type Collection } from '@/lib/supabase';
-import { useSearchParams } from 'next/navigation';
 import StoryCard from '@/components/StoryCard';
 import CollectionCard from '@/components/CollectionCard';
 import MoodSelector, { Mood } from '@/components/MoodSelector';
@@ -13,6 +12,7 @@ import { Layers } from 'lucide-react';
 import { getLayoutForMood } from '@/config/home-layout';
 import ContentSection from '@/components/ContentSection';
 import FeaturedCard from '@/components/FeaturedCard';
+import { useSearchParams } from 'next/navigation'; // Keeping for mood param
 
 // Mood to Categories Mapping (synced with Factory RECIPE_MATRIX)
 // Factory categories: sleep, meditation, fantasy, kids, motivation, work_break, nature, soundscape, music_instrumental, binaural

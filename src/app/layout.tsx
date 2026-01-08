@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import PremiumModal from "@/components/PremiumModal";
+import BottomNav from "@/components/BottomNav";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -60,6 +61,7 @@ export default function RootLayout({
           <CookieConsent />
           <MiniPlayer />
           <PremiumModal />
+          <BottomNav />
         </Providers>
       </body>
     </html>
