@@ -29,7 +29,7 @@ export default function Navbar() {
         }
     }, [pathname, searchParams]);
 
-    // Live Search Logic: Debounce update to URL when on home page
+    // Live Search Logic
     useEffect(() => {
         if (pathname === '/') {
             const timer = setTimeout(() => {
@@ -53,14 +53,25 @@ export default function Navbar() {
 
     return (
         <header className="absolute top-0 left-0 w-full z-50 md:sticky md:bg-white/80 md:backdrop-blur-lg border-b-0 md:border-b border-slate-200/60 block bg-transparent">
-            <div className="w-full px-4 md:px-8 py-4 flex items-center justify-center md:justify-between">
-                <Link href="/" className="flex items-center gap-2 group text-slate-900">
+            <div className="w-full px-4 md:px-8 py-4 flex items-center justify-between relative">
+
+                {/* Mobile: Logo Centers Absolute with Margin */}
+                <Link href="/" className="md:hidden absolute left-1/2 top-8 -translate-x-1/2 flex items-center gap-2 group text-slate-900">
                     <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
                     <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent block tracking-tight">
                         Softale
                     </h1>
                 </Link>
 
+                {/* Desktop: Logo Left */}
+                <Link href="/" className="hidden md:flex items-center gap-2 group text-slate-900">
+                    <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent block tracking-tight">
+                        Softale
+                    </h1>
+                </Link>
+
+                {/* Desktop Nav Actions */}
                 <nav className="hidden md:flex items-center gap-2 md:gap-4">
                     {/* Search Component */}
                     <div className="flex items-center">
@@ -87,14 +98,12 @@ export default function Navbar() {
                         </button>
                     </div>
 
-                    {/* Ambience Mixer - Hidden on Mobile */}
                     <div className="hidden md:block">
                         <AmbienceSelector />
                     </div>
 
                     <div className="w-px h-6 bg-slate-200 mx-1 hidden md:block"></div>
 
-                    {/* Library Link - Hidden on Mobile */}
                     <Link
                         href="/library"
                         className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-full transition-all ${isActive('/library')
@@ -107,8 +116,6 @@ export default function Navbar() {
                         <span className="text-sm font-medium">Library</span>
                     </Link>
 
-
-
                     {user ? (
                         <Link
                             href="/account"
@@ -119,7 +126,11 @@ export default function Navbar() {
                         >
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center overflow-hidden border border-white shadow-sm">
                                 {profile?.avatar_url ? (
-                                    <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                    profile.avatar_url.startsWith('http') ? (
+                                        <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-lg leading-none select-none">{profile.avatar_url}</span>
+                                    )
                                 ) : (
                                     <User className="w-4 h-4 text-indigo-600" />
                                 )}

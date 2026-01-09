@@ -56,7 +56,9 @@ export default function RootLayout({
             <div className="flex-grow">
               {children}
             </div>
-            <Footer />
+            <div className="hidden md:block">
+              <Footer />
+            </div>
           </div>
           <CookieConsent />
           <MiniPlayer />
