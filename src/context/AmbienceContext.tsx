@@ -66,10 +66,14 @@ export function AmbienceProvider({ children }: { children: React.ReactNode }) {
 
     const togglePlay = () => {
         if (!currentTrack) {
-            // Default to first track if none selected
             setTrack(AMBIENCE_TRACKS[0].id);
         } else {
-            setIsPlaying(!isPlaying);
+            const newState = !isPlaying;
+            setIsPlaying(newState);
+            // CRITICAL FIX: If user manually toggles, update the 'restore' intention.
+            // This ensures that if they turn it OFF while a story is playing,
+            // it won't auto-resume when the story ends.
+            wasPlayingBeforeInterrupt.current = newState;
         }
     };
 
@@ -77,12 +81,12 @@ export function AmbienceProvider({ children }: { children: React.ReactNode }) {
         const track = AMBIENCE_TRACKS.find(t => t.id === trackId);
         if (track) {
             if (currentTrack?.id === track.id) {
-                // If same track, just toggle
                 togglePlay();
             } else {
-                // Change track and play
                 setCurrentTrack(track);
                 setIsPlaying(true);
+                // User manually started a track, so we should restore to this if interrupted
+                wasPlayingBeforeInterrupt.current = true;
             }
         }
     };

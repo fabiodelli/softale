@@ -5,6 +5,7 @@ import { Story } from '@/lib/supabase';
 import { usePlayer } from '@/lib/PlayerContext';
 import { Play, Pause } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 interface FeaturedCardProps {
     story: Story;
@@ -14,6 +15,22 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
     const { currentStory, isPlaying, play, pause } = usePlayer();
     const isCurrent = currentStory?.id === story.id;
     const active = isCurrent && isPlaying;
+
+    // Image Fallback Logic
+    const [imgSrc, setImgSrc] = useState(story.cover_landscape_url || story.cover_url || '/placeholder-cover.jpg');
+
+    useEffect(() => {
+        setImgSrc(story.cover_landscape_url || story.cover_url || '/placeholder-cover.jpg');
+    }, [story]);
+
+    const handleImageError = () => {
+        // If landscape fails, try standard cover. If that fails (or was already active), placeholder.
+        if (imgSrc === story.cover_landscape_url && story.cover_url) {
+            setImgSrc(story.cover_url);
+        } else {
+            setImgSrc('/placeholder-cover.jpg');
+        }
+    };
 
     const handlePlayToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -33,7 +50,8 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
         >
             {/* Background Image */}
             <img
-                src={story.cover_landscape_url || story.cover_url || '/placeholder-cover.jpg'}
+                src={imgSrc}
+                onError={handleImageError}
                 alt={story.title}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />

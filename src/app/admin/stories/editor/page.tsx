@@ -32,6 +32,9 @@ export default function StoryEditor() {
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('sleep');
     const [duration, setDuration] = useState(120); // seconds
+    const [scriptText, setScriptText] = useState('');
+    const [voiceId, setVoiceId] = useState('');
+    const [audioPhasesJSON, setAudioPhasesJSON] = useState('[]'); // Editable JSON string
     const [isPremium, setIsPremium] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [isLoop, setIsLoop] = useState(false);
@@ -39,8 +42,13 @@ export default function StoryEditor() {
     // File State
     const [audioFile, setAudioFile] = useState<File | null>(null);
     const [coverFile, setCoverFile] = useState<File | null>(null);
+    const [wideFile, setWideFile] = useState<File | null>(null);
+    const [tallFile, setTallFile] = useState<File | null>(null);
+
     const [existingAudioUrl, setExistingAudioUrl] = useState('');
     const [existingCoverUrl, setExistingCoverUrl] = useState('');
+    const [existingWideUrl, setExistingWideUrl] = useState('');
+    const [existingTallUrl, setExistingTallUrl] = useState('');
 
     // UI State
     const [loading, setLoading] = useState(false);
@@ -51,6 +59,9 @@ export default function StoryEditor() {
     // Refs for file inputs
     const audioInputRef = useRef<HTMLInputElement>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
+    const wideInputRef = useRef<HTMLInputElement>(null);
+    const tallInputRef = useRef<HTMLInputElement>(null);
+    const audioPlayerRef = useRef<HTMLAudioElement>(null);
 
     // Load existing story if editing
     useEffect(() => {
@@ -77,11 +88,18 @@ export default function StoryEditor() {
             setDescription(data.description || '');
             setCategory(data.category || 'sleep');
             setDuration(data.duration || 120);
+            setScriptText(data.script_text || '');
+            setVoiceId(data.voice_id || '');
+            setAudioPhasesJSON(JSON.stringify(data.audio_phases || [], null, 2));
+
             setIsPremium(data.is_premium || false);
             setIsPublished(data.is_published || false);
             setIsLoop(data.is_loop || false);
+
             setExistingAudioUrl(data.audio_url || '');
             setExistingCoverUrl(data.cover_url || '');
+            setExistingWideUrl(data.cover_landscape_url || '');
+            setExistingTallUrl(data.cover_portrait_url || '');
 
         } catch (err: any) {
             setError(err.message);
@@ -102,37 +120,48 @@ export default function StoryEditor() {
 
             let audioUrl = existingAudioUrl;
             let coverUrl = existingCoverUrl;
+            let wideUrl = existingWideUrl;
+            let tallUrl = existingTallUrl;
 
             // Generate a unique ID for new stories
             const newId = isEditMode ? storyId : crypto.randomUUID();
 
-            // Upload Audio if new file selected
+            // Helper for uploading
+            const uploadFile = async (bucket: string, path: string, file: File, contentType: string) => {
+                const { error } = await supabase!.storage
+                    .from(bucket)
+                    .upload(path, file, { upsert: true, contentType });
+                if (error) throw error;
+                const { data } = supabase!.storage.from(bucket).getPublicUrl(path);
+                return `${data.publicUrl}?t=${Date.now()}`;
+            };
+
+            // Upload Audio
             if (audioFile) {
                 setStatus('Uploading audio...');
-                const audioFileName = `stories/${newId}/audio.mp3`;
-                const { error: uploadError } = await supabase.storage
-                    .from('audio')
-                    .upload(audioFileName, audioFile, { upsert: true, contentType: 'audio/mpeg' });
-
-                if (uploadError) throw new Error(`Audio upload failed: ${uploadError.message}`);
-
-                const { data: { publicUrl } } = supabase.storage.from('audio').getPublicUrl(audioFileName);
-                audioUrl = publicUrl;
+                audioUrl = await uploadFile('audio', `stories/${newId}/audio.mp3`, audioFile, 'audio/mpeg');
             }
 
-            // Upload Cover if new file selected
+            // Upload Images
             if (coverFile) {
-                setStatus('Uploading cover...');
-                const coverFileName = `stories/${newId}/cover.png`;
-                const { error: uploadError } = await supabase.storage
-                    .from('audio')
-                    .upload(coverFileName, coverFile, { upsert: true, contentType: 'image/png' });
+                setStatus('Uploading square cover...');
+                coverUrl = await uploadFile('audio', `stories/${newId}/cover.png`, coverFile, 'image/png');
+            }
+            if (wideFile) {
+                setStatus('Uploading wide cover...');
+                wideUrl = await uploadFile('audio', `stories/${newId}/wide.png`, wideFile, 'image/png');
+            }
+            if (tallFile) {
+                setStatus('Uploading tall cover...');
+                tallUrl = await uploadFile('audio', `stories/${newId}/tall.png`, tallFile, 'image/png');
+            }
 
-                if (uploadError) throw new Error(`Cover upload failed: ${uploadError.message}`);
-
-                const { data: { publicUrl } } = supabase.storage.from('audio').getPublicUrl(coverFileName);
-                // Add cache buster to force browser to fetch new image
-                coverUrl = `${publicUrl}?t=${Date.now()}`;
+            // Validate JSON
+            let audioPhases = null;
+            try {
+                audioPhases = JSON.parse(audioPhasesJSON);
+            } catch (e) {
+                throw new Error('Invalid JSON in Audio Phases');
             }
 
             // Prepare story data
@@ -146,6 +175,11 @@ export default function StoryEditor() {
                 is_loop: isLoop,
                 audio_url: audioUrl,
                 cover_url: coverUrl,
+                cover_landscape_url: wideUrl,
+                cover_portrait_url: tallUrl,
+                script_text: scriptText,
+                voice_id: voiceId || null,
+                audio_phases: audioPhases,
                 updated_at: new Date().toISOString()
             };
 
@@ -173,7 +207,7 @@ export default function StoryEditor() {
             // Redirect after short delay
             setTimeout(() => {
                 router.push('/admin/stories');
-            }, 1500);
+            }, 1000);
 
         } catch (err: any) {
             console.error('Save failed:', err);
@@ -187,7 +221,6 @@ export default function StoryEditor() {
         const file = e.target.files?.[0];
         if (file) {
             setAudioFile(file);
-            // Auto-detect duration
             const audio = new Audio();
             audio.src = URL.createObjectURL(file);
             audio.onloadedmetadata = () => {
@@ -196,12 +229,9 @@ export default function StoryEditor() {
         }
     };
 
-    const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setCoverFile(file);
-        }
-    };
+    const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => setCoverFile(e.target.files?.[0] || null);
+    const handleWideChange = (e: React.ChangeEvent<HTMLInputElement>) => setWideFile(e.target.files?.[0] || null);
+    const handleTallChange = (e: React.ChangeEvent<HTMLInputElement>) => setTallFile(e.target.files?.[0] || null);
 
     if (loading) {
         return (
@@ -240,146 +270,113 @@ export default function StoryEditor() {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* Basic Info */}
-                        <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
-                            <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
+                    <div className="mb-6 flex justify-end gap-2">
+                        {existingAudioUrl && (
+                            <div className="bg-slate-900 border border-white/10 rounded-lg p-3 flex items-center gap-3">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Preview Audio</span>
+                                <audio ref={audioPlayerRef} controls src={existingAudioUrl} className="h-8 w-64" />
+                            </div>
+                        )}
+                    </div>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Title *</label>
-                                    <input
-                                        type="text"
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                        placeholder="Enter story title..."
-                                        required
-                                    />
-                                </div>
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
-                                    <textarea
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        rows={3}
-                                        className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                                        placeholder="Brief description of the story..."
-                                    />
-                                </div>
+                        {/* LEFT COLUMN (Main Content) */}
+                        <div className="lg:col-span-7 space-y-8">
 
-                                <div className="grid grid-cols-2 gap-4">
+                            {/* Script Editor */}
+                            <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <span>📜</span> Script & Narrative
+                                </h2>
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
-                                        <select
-                                            value={category}
-                                            onChange={(e) => setCategory(e.target.value)}
-                                            className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                        >
-                                            {CATEGORIES.map(cat => (
-                                                <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-2">Duration (seconds)</label>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Title</label>
                                         <input
-                                            type="number"
-                                            value={duration}
-                                            onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
-                                            className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                            min={1}
+                                            type="text"
+                                            value={title}
+                                            onChange={(e) => setTitle(e.target.value)}
+                                            className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 font-medium text-lg"
+                                            placeholder="Story Title"
                                         />
-                                        <span className="text-xs text-gray-500 mt-1">{Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}</span>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                                        <textarea
+                                            value={description}
+                                            onChange={(e) => setDescription(e.target.value)}
+                                            rows={2}
+                                            className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 resize-none text-sm"
+                                            placeholder="Short description..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Full Script Text</label>
+                                        <textarea
+                                            value={scriptText}
+                                            onChange={(e) => setScriptText(e.target.value)}
+                                            rows={12}
+                                            className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-4 text-gray-300 font-mono text-sm focus:ring-2 focus:ring-indigo-500 leading-relaxed"
+                                            placeholder="Paste the full narration script here..."
+                                        />
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* File Uploads */}
-                        <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
-                            <h2 className="text-lg font-semibold mb-4">Media Files</h2>
-
-                            <div className="grid grid-cols-2 gap-6">
-                                {/* Audio Upload */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Audio File (MP3)</label>
-                                    <input
-                                        ref={audioInputRef}
-                                        type="file"
-                                        accept="audio/*"
-                                        onChange={handleAudioChange}
-                                        className="hidden"
-                                    />
-                                    <div
-                                        onClick={() => audioInputRef.current?.click()}
-                                        className="border-2 border-dashed border-white/10 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500/50 transition"
-                                    >
-                                        {audioFile ? (
-                                            <div className="text-indigo-400">
-                                                <span className="text-2xl">🎵</span>
-                                                <p className="mt-2 text-sm">{audioFile.name}</p>
+                            {/* Audio Manager */}
+                            <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <span>🎙️</span> Audio Source
+                                </h2>
+                                <div className="grid grid-cols-1 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Access & Voice</label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs text-gray-500 block mb-1">Duration (Sec)</label>
+                                                <input
+                                                    type="number"
+                                                    value={duration}
+                                                    onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
+                                                    className="w-full bg-slate-800 border border-white/10 rounded px-3 py-2 text-white"
+                                                />
                                             </div>
-                                        ) : existingAudioUrl ? (
-                                            <div className="text-emerald-400">
-                                                <span className="text-2xl">✓</span>
-                                                <p className="mt-2 text-sm">Audio uploaded</p>
-                                                <p className="text-xs text-gray-500 mt-1">Click to replace</p>
+                                            <div>
+                                                <label className="text-xs text-gray-500 block mb-1">Voice ID</label>
+                                                <input
+                                                    type="text"
+                                                    value={voiceId}
+                                                    onChange={(e) => setVoiceId(e.target.value)}
+                                                    className="w-full bg-slate-800 border border-white/10 rounded px-3 py-2 text-white font-mono text-xs"
+                                                    placeholder="ElevenLabs ID"
+                                                />
                                             </div>
-                                        ) : (
-                                            <div className="text-gray-500">
-                                                <span className="text-2xl">📁</span>
-                                                <p className="mt-2 text-sm">Click to upload audio</p>
-                                            </div>
-                                        )}
+                                        </div>
                                     </div>
-                                </div>
 
-                                {/* Cover Upload */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Cover Image</label>
-                                    <input
-                                        ref={coverInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleCoverChange}
-                                        className="hidden"
-                                    />
-                                    <div
-                                        onClick={() => coverInputRef.current?.click()}
-                                        className="border-2 border-dashed border-white/10 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500/50 transition relative overflow-hidden"
-                                    >
-                                        {coverFile ? (
-                                            <img
-                                                src={URL.createObjectURL(coverFile)}
-                                                alt="Preview"
-                                                className="absolute inset-0 w-full h-full object-cover opacity-50"
-                                            />
-                                        ) : existingCoverUrl ? (
-                                            <img
-                                                src={existingCoverUrl}
-                                                alt="Existing cover"
-                                                className="absolute inset-0 w-full h-full object-cover opacity-50"
-                                            />
-                                        ) : null}
-                                        <div className="relative z-10">
-                                            {coverFile ? (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Upload New Audio (MP3)</label>
+                                        <input
+                                            ref={audioInputRef}
+                                            type="file"
+                                            accept="audio/*"
+                                            onChange={handleAudioChange}
+                                            className="hidden"
+                                        />
+                                        <div
+                                            onClick={() => audioInputRef.current?.click()}
+                                            className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500/50 transition bg-slate-800/50"
+                                        >
+                                            {audioFile ? (
                                                 <div className="text-indigo-400">
-                                                    <span className="text-2xl">🖼️</span>
-                                                    <p className="mt-2 text-sm">{coverFile.name}</p>
-                                                </div>
-                                            ) : existingCoverUrl ? (
-                                                <div className="text-emerald-400">
-                                                    <span className="text-2xl">✓</span>
-                                                    <p className="mt-2 text-sm">Cover uploaded</p>
-                                                    <p className="text-xs text-gray-500 mt-1">Click to replace</p>
+                                                    <span className="text-3xl">🎵</span>
+                                                    <p className="mt-2 font-medium">{audioFile.name}</p>
+                                                    <p className="text-xs text-gray-500">Ready to upload</p>
                                                 </div>
                                             ) : (
                                                 <div className="text-gray-500">
-                                                    <span className="text-2xl">🖼️</span>
-                                                    <p className="mt-2 text-sm">Click to upload cover</p>
+                                                    <span className="text-3xl opacity-50">☁️</span>
+                                                    <p className="mt-2 text-sm">Click to upload new MP3</p>
                                                 </div>
                                             )}
                                         </div>
@@ -388,67 +385,145 @@ export default function StoryEditor() {
                             </div>
                         </div>
 
-                        {/* Settings */}
-                        <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
-                            <h2 className="text-lg font-semibold mb-4">Settings</h2>
+                        {/* RIGHT COLUMN (Assets & Config) */}
+                        <div className="lg:col-span-5 space-y-8">
 
-                            <div className="space-y-4">
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={isLoop}
-                                        onChange={(e) => setIsLoop(e.target.checked)}
-                                        className="w-5 h-5 rounded bg-slate-800 border-white/10 text-indigo-600 focus:ring-indigo-500"
-                                    />
+                            {/* Image Assets */}
+                            <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <span>🖼️</span> Visual Assets
+                                </h2>
+                                <div className="space-y-6">
+                                    {/* Square */}
                                     <div>
-                                        <span className="text-white">Mark as Loop (Component)</span>
-                                        <p className="text-xs text-gray-500">Enable if this is a reusable backing track, not a finished story.</p>
+                                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                            <span>Square (1:1)</span>
+                                            <span>Main Cover</span>
+                                        </div>
+                                        <div
+                                            onClick={() => coverInputRef.current?.click()}
+                                            className="relative aspect-square bg-slate-950 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/30 transition group"
+                                        >
+                                            <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
+                                            <img
+                                                src={coverFile ? URL.createObjectURL(coverFile) : existingCoverUrl || 'https://via.placeholder.com/400?text=No+Cover'}
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                                <span className="text-white text-xs font-bold uppercase tracking-widest border border-white px-3 py-1 rounded">Change</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </label>
 
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={isPremium}
-                                        onChange={(e) => setIsPremium(e.target.checked)}
-                                        className="w-5 h-5 rounded bg-slate-800 border-white/10 text-amber-600 focus:ring-amber-500"
-                                    />
-                                    <div>
-                                        <span className="text-white">Premium Content ⭐</span>
-                                        <p className="text-xs text-gray-500">Only accessible to subscribers.</p>
+                                    {/* Wide & Tall Grid */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                                <span>Wide (16:9)</span>
+                                            </div>
+                                            <div
+                                                onClick={() => wideInputRef.current?.click()}
+                                                className="relative aspect-video bg-slate-950 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/30 transition group"
+                                            >
+                                                <input ref={wideInputRef} type="file" accept="image/*" onChange={handleWideChange} className="hidden" />
+                                                <img
+                                                    src={wideFile ? URL.createObjectURL(wideFile) : existingWideUrl || 'https://via.placeholder.com/400x225?text=No+Wide'}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                                    <span className="text-xs text-white">Edit</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                                <span>Tall (9:16)</span>
+                                            </div>
+                                            <div
+                                                onClick={() => tallInputRef.current?.click()}
+                                                className="relative aspect-[9/16] bg-slate-950 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/30 transition group"
+                                            >
+                                                <input ref={tallInputRef} type="file" accept="image/*" onChange={handleTallChange} className="hidden" />
+                                                <img
+                                                    src={tallFile ? URL.createObjectURL(tallFile) : existingTallUrl || 'https://via.placeholder.com/225x400?text=No+Tall'}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                                    <span className="text-xs text-white">Edit</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </label>
-
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={isPublished}
-                                        onChange={(e) => setIsPublished(e.target.checked)}
-                                        className="w-5 h-5 rounded bg-slate-800 border-white/10 text-emerald-600 focus:ring-emerald-500"
-                                    />
-                                    <div>
-                                        <span className="text-white">Published</span>
-                                        <p className="text-xs text-gray-500">Make visible to users on the app.</p>
-                                    </div>
-                                </label>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Submit Button */}
-                        <div className="flex justify-end gap-4">
-                            <Link
-                                href="/admin/stories"
-                                className="px-6 py-3 bg-slate-800 text-white rounded-lg font-medium hover:bg-slate-700 transition"
-                            >
-                                Cancel
-                            </Link>
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {saving ? 'Saving...' : isEditMode ? 'Update Story' : 'Create Story'}
-                            </button>
+                            {/* Settings & Config */}
+                            <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
+                                <h2 className="text-lg font-semibold mb-4">Configuration</h2>
+
+                                <div className="space-y-4 mb-6">
+                                    <label className="block text-sm text-gray-400">Category</label>
+                                    <select
+                                        value={category}
+                                        onChange={(e) => setCategory(e.target.value)}
+                                        className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-white"
+                                    >
+                                        {CATEGORIES.map(cat => (
+                                            <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                                        ))}
+                                    </select>
+
+                                    <div className="space-y-3 pt-2">
+                                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-white/5">
+                                            <input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} className="w-5 h-5 rounded bg-slate-800 text-emerald-500" />
+                                            <div>
+                                                <span className="text-white block text-sm font-medium">Published</span>
+                                                <span className="text-xs text-gray-500">Visible in app</span>
+                                            </div>
+                                        </label>
+                                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-white/5">
+                                            <input type="checkbox" checked={isPremium} onChange={(e) => setIsPremium(e.target.checked)} className="w-5 h-5 rounded bg-slate-800 text-amber-500" />
+                                            <div>
+                                                <span className="text-white block text-sm font-medium">Premium Content</span>
+                                                <span className="text-xs text-gray-500">Subscribers only</span>
+                                            </div>
+                                        </label>
+                                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-white/5">
+                                            <input type="checkbox" checked={isLoop} onChange={(e) => setIsLoop(e.target.checked)} className="w-5 h-5 rounded bg-slate-800 text-indigo-500" />
+                                            <div>
+                                                <span className="text-white block text-sm font-medium">Loop / Backing</span>
+                                                <span className="text-xs text-gray-500">Reusable audio asset</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2 font-mono">Audio Phases (JSON)</label>
+                                    <textarea
+                                        value={audioPhasesJSON}
+                                        onChange={(e) => setAudioPhasesJSON(e.target.value)}
+                                        rows={6}
+                                        className="w-full bg-slate-950 border border-white/10 rounded px-3 py-2 text-xs font-mono text-green-400 focus:ring-1 focus:ring-green-500"
+                                        placeholder='[{"phase": "arrival", "intensity": 0.5, "intent": "calm"}]'
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="sticky bottom-8">
+                                <button
+                                    type="submit"
+                                    disabled={saving}
+                                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-900/20 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {saving ? 'Saving...' : '💾 Save All Changes'}
+                                </button>
+                                <div className="mt-4 text-center">
+                                    <Link href="/admin/stories" className="text-gray-500 hover:text-white text-sm transition">Cancel & Exit</Link>
+                                </div>
+                            </div>
+
                         </div>
                     </form>
                 </main>

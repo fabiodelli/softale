@@ -3,6 +3,7 @@
 
 import { Story } from '@/lib/supabase';
 import { motion } from 'framer-motion';
+import FeaturedCard from './FeaturedCard';
 import StoryCard from './StoryCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -12,7 +13,7 @@ interface ContentSectionProps {
     title: string;
     subtitle?: string;
     items: Story[];
-    type: 'row' | 'grid';
+    type: 'row' | 'grid' | 'mixed';
     delay?: number;
     /** Category filter to use when navigating to Library via "View All" */
     filterCategory?: string;
@@ -100,8 +101,8 @@ export default function ContentSection({
                                 disabled={!canScrollLeft}
                                 aria-label="Scroll left"
                                 className={`p-1.5 rounded-full border transition-all ${canScrollLeft
-                                        ? 'bg-white/80 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 shadow-sm'
-                                        : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                                    ? 'bg-white/80 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 shadow-sm'
+                                    : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
                                     }`}
                             >
                                 <ChevronLeft className="w-4 h-4" />
@@ -111,8 +112,8 @@ export default function ContentSection({
                                 disabled={!canScrollRight}
                                 aria-label="Scroll right"
                                 className={`p-1.5 rounded-full border transition-all ${canScrollRight
-                                        ? 'bg-white/80 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 shadow-sm'
-                                        : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                                    ? 'bg-white/80 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 shadow-sm'
+                                    : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
                                     }`}
                             >
                                 <ChevronRight className="w-4 h-4" />
@@ -122,7 +123,7 @@ export default function ContentSection({
                 </div>
 
                 {/* View All Link */}
-                {type === 'row' && items.length > 4 && filterCategory && (
+                {(type === 'row' || type === 'mixed') && items.length > 4 && filterCategory && (
                     <Link
                         href="/library"
                         onClick={handleViewAll}
@@ -134,7 +135,30 @@ export default function ContentSection({
             </div>
 
             {/* Content */}
-            {type === 'row' ? (
+            {type === 'mixed' ? (
+                // Mixed Layout: 1 Featured + List
+                <div className="flex flex-col gap-6">
+                    {/* Featured Lead */}
+                    {items.length > 0 && (
+                        <div className="w-full">
+                            <FeaturedCard story={items[0]} />
+                        </div>
+                    )}
+                    {/* Horizontal List */}
+                    {items.length > 1 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {items.slice(1).map((story, index) => (
+                                <StoryCard
+                                    key={story.id}
+                                    story={story}
+                                    aspectRatio="horizontal"
+                                    className={index >= 3 ? 'hidden md:flex' : ''}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ) : type === 'row' ? (
                 // Horizontal Carousel with proper margin handling
                 <div
                     ref={scrollRef}

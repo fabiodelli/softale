@@ -14,7 +14,6 @@ export default function MiniPlayer() {
         toggle,
         currentTime,
         duration,
-        seek,
         next,
         previous,
         queue,
@@ -43,8 +42,6 @@ export default function MiniPlayer() {
     }, []);
 
     if (!currentStory) return null;
-
-    const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
     const formatTime = (time: number) => {
         const minutes = Math.floor(time / 60);
@@ -93,19 +90,14 @@ export default function MiniPlayer() {
                 initial={{ y: 100 }}
                 animate={{ y: 0 }}
                 exit={{ y: 100 }}
-                // Desktop: fixed bottom-0 (standard)
-                // Mobile: controlled by isMobilePlayerOpen. 
-                // If Open: bottom-[84px] (above nav). If Closed: translate-y-full (hidden) or just hidden via conditional? 
-                // Let's use CSS transform for smoother toggle, or just conditional classes.
-                // We'll use 'bottom' classes directly.
                 className={`fixed left-0 right-0 z-50 transition-all duration-300
                     md:bottom-0 
-                    ${isMobilePlayerOpen ? 'bottom-[84px] opacity-100 translate-y-0' : 'bottom-[84px] opacity-0 translate-y-10 pointer-events-none md:opacity-100 md:translate-y-0 md:pointer-events-auto'}
+                    ${isMobilePlayerOpen ? 'bottom-[calc(82px+env(safe-area-inset-bottom))] opacity-100 translate-y-0' : 'bottom-[calc(82px+env(safe-area-inset-bottom))] opacity-0 translate-y-10 pointer-events-none md:opacity-100 md:translate-y-0 md:pointer-events-auto'}
                 `}
             >
 
                 {/* Mini Player Content */}
-                <div className="h-[72px] bg-white/90 backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center px-4 relative z-30">
+                <div className="h-[64px] bg-white/90 backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center px-4 relative z-30">
                     <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-4">
 
                         {/* Track Info (Clickable to open story page) */}
@@ -235,38 +227,7 @@ export default function MiniPlayer() {
                     </div>
                 </div>
 
-                {/* Progress Bar - Layout Bottom, Softer Colors (Hidden for Loops) */}
-                {!isLoopable && (
-                    <div
-                        className="w-full h-1.5 bg-indigo-50 cursor-pointer group z-40 relative"
-                        onClick={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const percent = (e.clientX - rect.left) / rect.width;
-                            seek(percent * duration);
-                        }}
-                    >
-                        <input
-                            type="range"
-                            min={0}
-                            max={duration || 100}
-                            step="0.1"
-                            value={currentTime}
-                            onChange={(e) => {
-                                e.stopPropagation();
-                                seek(Number(e.target.value));
-                            }}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
-                            style={{ height: '16px', top: '-8px' }}
-                        />
-                        {/* Visual Track */}
-                        <div className="absolute inset-0 bg-indigo-100/50 pointer-events-none" />
-                        {/* Visual Progress */}
-                        <div
-                            className="absolute left-0 top-0 h-full bg-indigo-500 pointer-events-none transition-all duration-100 shadow-[0_0_10px_rgba(99,102,241,0.3)]"
-                            style={{ width: `${progress}%` }}
-                        />
-                    </div>
-                )}
+
             </motion.div>
         </AnimatePresence >
     );

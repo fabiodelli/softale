@@ -1,349 +1,77 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import AdminGuard from '@/components/admin/AdminGuard';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Helper to get formatted prompts
-const getPrompt = (category: string) => {
-    // We'll keep the full text here for reference, but in V3 the backend also has them.
-    // This allows the admin to override/tweak before sending.
-    return ''; // We will rely on backend defaults unless manually set, or we can duplicate the long strings here.
-    // For now, let's keep the detailed strings so the Admin sees what's happening.
-};
+export default function FactoryStudio() {
+    const [activeTab, setActiveTab] = useState<'concept' | 'production'>('concept');
+    const [status, setStatus] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-const PROMPTS: Record<string, string> = {
-    sleep: `[v2.0 - Global Guard active, Signature Motif enabled]
+    // Concept State
+    const [idea, setIdea] = useState('');
+    const [category, setCategory] = useState('sleep');
+    const [generatedConcept, setGeneratedConcept] = useState<any>(null);
+    const [conceptPath, setConceptPath] = useState('');
 
-You are a SLEEP STORYTELLER for 'Softale'.
+    // Production State
+    const [productionLogs, setProductionLogs] = useState('');
+    const [builtStoryId, setBuiltStoryId] = useState('');
 
-**SUBTYPE** (choose silently): comfort/safety, slow travel, cozy domestic, abstract sensory
-
-**STRUCTURE**:
-1. Arrival (10%): Start with sensation, NOT "imagine yourself"
-2. Exploration (50%): Textures, temperatures, micro-sounds
-3. Settling (30%): Stillness, comfort, weight
-4. Fade (10%): Fragmented sentences... sensory echoes... silence...
-
-**RULES**:
-- NO "suddenly", surprises, questions, dialogue
-- Present tense, second person
-- 5-8 [pause] markers
-- Use Signature Motif rule
-
-**BANNED**: "you find yourself", "gentle warmth", "peaceful calm"
-**TONE**: Protective presence, whispering`,
-
-    meditation: `[v2.0 - Global Guard active, Signature Motif enabled]
-
-You are a MEDITATION GUIDE for 'Softale'.
-
-**MODE** (choose silently): MINDFULNESS or VISUALIZATION
-**APPROACH** (choose silently): somatic, breath-centered, emotional regulation, grounding, open awareness
-
-**STRUCTURE**:
-1. Grounding (15%): Physical awareness
-2. Breath Focus (25%): Varied breathing cues
-3. Visualization/Presence (40%): Imagery OR pure awareness
-4. Integration (20%): Return gently
-
-**RULES**:
-- Simple, direct language
-- Varied breath cues (not always "take a deep breath")
-- 8-12 [pause] markers
-- Never say "let go of tension" — describe the release
-
-**BANNED**: "take a moment", "allow yourself", "simply breathe"
-**TONE**: Warm companion, steady`,
-
-    fantasy: `[v2.0 - Global Guard active, Anti-Cliché Filter, Signature Motif enabled]
-
-You are a FANTASY NARRATOR for 'Softale'.
-
-**MODE** (choose silently): PASSIVE or EXPLORATIVE
-
-**STRUCTURE**:
-1. Portal (10%): Start with sensation, NOT "you find yourself"
-2. Discovery (60%): Explore, encounter benevolent elements
-3. Rest (20%): Find comfort
-4. Embrace (10%): Soft conclusion, safe and held
-
-**ANTI-CLICHÉ FILTER**:
-BANNED: glowing, ancient, mystical, magical, ethereal, crystal clear
-REPLACE WITH: function-based descriptions
-❌ "mystical forest" → ✅ "trees whose leaves fold inward when the air cools"
-
-**RULES**:
-- ORIGINAL imagery only, no borrowed fantasy
-- NO danger, conflict, antagonists
-- 5-7 [pause] markers
-- Use Signature Motif rule
-
-**TONE**: Wonder-struck, sharing secrets`,
-
-    nature: `[v2.0 - Global Guard active, Signature Motif enabled]
-
-You are a NATURE SOUNDSCAPE NARRATOR for 'Softale'.
-
-**REALISM MODE** (choose silently): DOCUMENTARY or POETIC-NATURALISM
-
-**STRUCTURE**:
-1. Arrival (15%): Where, when, weather, soundscape
-2. Observation (55%): Slowly pan, layered sounds
-3. Stillness (20%): Simply be present
-4. Gratitude (10%): Gentle appreciation, fade
-
-**RULES**:
-- REAL locations/ecosystems
-- Prioritize auditory (birds, water, wind, insects)
-- Specific species: "a cardinal calls", "oak leaves rustle"
-- 6-10 [pause] markers
-- Time passes naturally
-
-**DIFFERENTIATION**: You are a presence noticing, not Wikipedia.
-**TONE**: David Attenborough meets mindfulness`,
-
-    work_break: `[v2.0 - Global Guard active]
-
-You are a FOCUS & RESET COACH for 'Softale'.
-
-**MODE** (choose silently): RESET or FOCUS
-
-**STRUCTURE**:
-1. The Stop (10%): Halt momentum.
-2. The Shift (40%): Physical or mental pivot.
-3. The Center (30%): Find the quiet core.
-4. The Return (20%): Re-enter with clarity.
-
-**RULES**:
-- Brief, efficient sentences.
-- 3-5 [pause] markers.
-- NO "flowery" language.
-
-**TONE**: Crisp, clear, refreshing.`,
-
-    motivation: `[v2.0 - Global Guard active]
-
-You are a MOTIVATIONAL MENTOR for 'Softale'.
-
-**MODE** (choose silently): RESILIENCE, POTENTIAL, or CLARITY
-
-**STRUCTURE**:
-1. Validation (15%): Acknowledge struggle.
-2. Reframing (35%): Shift the view.
-3. Strengthening (35%): Build internal resource.
-4. Action (15%): Gentle push forward.
-
-**RULES**:
-- Strong, declarative verbs.
-- "You are", "You can".
-- 4-6 [pause] markers.
-- NO toxic positivity.
-
-**TONE**: Strong, grounded, unwavering belief.`,
-};
-
-// VOICES V3.3 - Updated Selection
-const VOICES: Record<string, string> = {
-    // Male voices
-    'Milo': 'GUDYcgRAONiI1nXDcNQQ',         // Calm, Soothing, Meditative
-    'Spuds': 'NOpBlnGInO9m6vDvFkFC',        // Grandpa storyteller
-    'Callum': 'N2lVS1w4EtoT3dr4eOWO',       // American, hoarse
-    'Christopher': 'G17SuINrv2H9FC6nvetn',  // Multilingual
-    'James': 'ZQe5CZNOzWyzPSCn5a3c',        // Meditation guide
-    // Female voices
-    'Rachel': '21m00Tcm4TlvDq8ikWAM',       // Soft American
-    'Bella': 'EXAVITQu4vr4xnSDxMaL',        // British, warm
-    'Brittney': 'pjcYQlDFKMbcOUp6F5GD',     // Warm, inviting
-    'Delilah': 'mZ3kbJNnKRWI4YzJXA9j',      // Relaxing, soothing
-    'Hope': 'iCrDUkL56s3C8sCRl7wb',         // Soothing narrator
-    'AImee': 'zA6D7RyKdc2EClouEMkP',        // ASMR, meditation
-    // Category defaults
-    sleep: 'GUDYcgRAONiI1nXDcNQQ',          // Milo
-    meditation: 'mZ3kbJNnKRWI4YzJXA9j',     // Delilah
-    fantasy: 'NOpBlnGInO9m6vDvFkFC',        // Spuds (storyteller)
-    nature: '21m00Tcm4TlvDq8ikWAM',         // Rachel
-    default: 'GUDYcgRAONiI1nXDcNQQ',        // Milo
-    work_break: 'N2lVS1w4EtoT3dr4eOWO',     // Callum
-    motivation: 'N2lVS1w4EtoT3dr4eOWO',     // Callum
-    kids: 'iCrDUkL56s3C8sCRl7wb',           // Hope
-};
-
-// Mood presets per category
-const MOOD_OPTIONS = ['peaceful', 'calm', 'dreamy', 'mystical', 'cozy', 'grounding', 'uplifting'];
-const TIME_OPTIONS = ['dawn', 'morning', 'afternoon', 'dusk', 'night', 'timeless'];
-const SENSORY_OPTIONS = ['neutral', 'visual', 'auditory', 'tactile', 'olfactory', 'mixed'];
-const PERSPECTIVE_OPTIONS = ['second_person', 'first_person', 'observer'];
-const LANGUAGE_OPTIONS = ['English', 'Italian', 'Spanish', 'French', 'German', 'Portuguese'];
-
-// Random story ideas for inspiration
-const RANDOM_IDEAS = [
-    'A quiet night in a Japanese ryokan listening to rain',
-    'Floating through the northern lights',
-    'Walking through an ancient library at midnight',
-    'A warm cabin by a frozen lake',
-    'Drifting on a boat through a bioluminescent bay',
-    'Exploring a hidden garden behind an old mansion',
-    'A peaceful meadow as the sun sets',
-    'Inside a cozy treehouse during a thunderstorm',
-    'A slow train ride through snowy mountains',
-    'Wandering through a night market in a distant city',
-    'Resting by a campfire under the stars',
-    'A misty morning walk through bamboo forest',
-];
-
-export default function FactoryController() {
-    const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<string>('');
-    const [error, setError] = useState<any>(null);
-
-    // Form State - Core
-    const [theme, setTheme] = useState('');
-    const [category, setCategory] = useState('fantasy');
-    const [duration, setDuration] = useState(2);
-    const [voiceId, setVoiceId] = useState('');
-    const [systemPrompt, setSystemPrompt] = useState(PROMPTS.fantasy);
-    const [musicFile, setMusicFile] = useState('auto');
-    const [availableAmbients, setAvailableAmbients] = useState<string[]>([]);
-
-    // Dynamic Voices from ElevenLabs
-    interface Voice {
-        id: string;
-        name: string;
-        previewUrl: string | null;
-        gender: 'male' | 'female' | 'unknown';
-        style: string;
-    }
-    const [voices, setVoices] = useState<Voice[]>([]);
-    const [voicesLoading, setVoicesLoading] = useState(true);
-    const [previewAudio, setPreviewAudio] = useState<HTMLAudioElement | null>(null);
-    const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
-
-    // Fetch voices from ElevenLabs
-    useEffect(() => {
-        async function fetchVoices() {
-            try {
-                const res = await fetch('/api/voices');
-                if (res.ok) {
-                    const data = await res.json();
-                    setVoices(data.voices || []);
-                    // Set default voice to first available
-                    if (data.voices?.length > 0 && !voiceId) {
-                        setVoiceId(data.voices[0].id);
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to fetch voices:', e);
-            } finally {
-                setVoicesLoading(false);
-            }
-        }
-        fetchVoices();
-    }, []);
-
-    // Preview voice audio
-    const playPreview = (voice: Voice) => {
-        if (!voice.previewUrl) return;
-
-        // Stop current if playing
-        if (previewAudio) {
-            previewAudio.pause();
-            previewAudio.currentTime = 0;
-        }
-
-        if (playingVoiceId === voice.id) {
-            setPlayingVoiceId(null);
-            return;
-        }
-
-        const audio = new Audio(voice.previewUrl);
-        audio.play();
-        audio.onended = () => setPlayingVoiceId(null);
-        setPreviewAudio(audio);
-        setPlayingVoiceId(voice.id);
-    };
-
-    // Fetch available Stock Loops from Supabase (Harvest Engine)
-    useEffect(() => {
-        async function fetchLoops() {
-            if (!supabase) return;
-            const { data, error } = await supabase
-                .from('stories')
-                .select('title')
-                .eq('is_loop', true);
-
-            if (!error && data) {
-                setAvailableAmbients(data.map(d => d.title));
-            }
-        }
-        fetchLoops();
-    }, []);
-
-    // Form State - NEW Parameters
-    const [language, setLanguage] = useState('English');
-    // Deprecated parameters removed for "Intent-Based" V3 Simplification
-    // const [mood, setMood] = useState('dreamy');
-    // const [setting, setSetting] = useState('');
-    // ... all handled by AI now
-
-    const [lastPrompts, setLastPrompts] = useState<{ system: string; user: string } | null>(null);
-    const [lastUsage, setLastUsage] = useState<{ input: number; output: number; model: string } | null>(null);
-
-    const handleCategoryChange = (newCategory: string) => {
-        setCategory(newCategory);
-        // Auto-update prompt if a template exists (Visual Reference Only now)
-        if (PROMPTS[newCategory]) {
-            setSystemPrompt(PROMPTS[newCategory]);
-        }
-        // Auto-update voice (type-safe check)
-        const newVoice = (VOICES as any)[newCategory] || VOICES.default;
-        setVoiceId(newVoice);
-    };
-
-    const handleGenerate = async () => {
-        setLoading(true);
-        setStatus('Initializing Factory...');
-        setError('');
-        setLastPrompts(null); // Reset prompts
-        setLastUsage(null); // Reset usage
+    const handleGenerateConcept = async () => {
+        if (!idea) return;
+        setIsLoading(true);
+        setStatus('🧠 Dreaming up concept... (this takes ~30s)');
+        setGeneratedConcept(null);
 
         try {
-            const res = await fetch('/api/factory/generate', {
+            const res = await fetch('/api/factory/concept', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: `Generated: ${theme.slice(0, 20)}...`,
-                    category,
-                    duration,
-                    description: theme,
-                    // mood: 'auto', // Handled by AI
-                    // setting: 'auto',
-                    language,
-                    voiceId,
-                    systemPrompt, // Still sending for legacy overriding support if needed
-                    musicFile
-                })
+                body: JSON.stringify({ idea, category })
             });
 
             const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
 
-            if (!res.ok) {
-                const combinedError: any = new Error(`${data.error}\n${data.details || ''}`);
-                combinedError.debugEnv = data.debugEnv;
-                throw combinedError;
-            }
-
-            // Capture Metadata
-            if (data.prompts) setLastPrompts(data.prompts);
-            if (data.usage) setLastUsage(data.usage);
-
-            setStatus('✅ Success! Story generated and uploaded.');
-        } catch (err: any) {
-            setError(err);
-            setStatus('❌ Failed');
+            setGeneratedConcept(data.concept);
+            setConceptPath(data.filePath);
+            setStatus('✨ Concept Created! Review it below.');
+            // Switch intention to next step
+        } catch (e: any) {
+            setStatus(`❌ Error: ${e.message}`);
         } finally {
-            setLoading(false);
+            setIsLoading(false);
+        }
+    };
+
+    const handleBuildStory = async () => {
+        if (!conceptPath) return;
+        setIsLoading(true);
+        setStatus('🏗️ Building Story... (this takes 2-4 mins)');
+        setProductionLogs('Initializing Factory Build...\n');
+
+        try {
+            const res = await fetch('/api/factory/build', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ conceptPath })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            setBuiltStoryId(data.storyId);
+            setProductionLogs(data.logs); // Full logs
+            setStatus('✅ Build Complete!');
+        } catch (e: any) {
+            setStatus(`❌ Build Failed: ${e.message}`);
+            if (e.logs) setProductionLogs(e.logs);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -351,300 +79,213 @@ export default function FactoryController() {
         <AdminGuard>
             <div className="min-h-screen bg-slate-950 pb-20 text-white">
                 <header className="bg-slate-900 border-b border-white/5 sticky top-0 z-40">
-                    <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+                    <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Link href="/admin" className="text-gray-400 hover:text-white">← Back</Link>
-                            <h1 className="text-xl font-bold ml-4">Audio Factory Controller</h1>
+                            <h1 className="text-xl font-bold ml-4">Factory Studio <span className="text-indigo-400 text-xs px-2 py-0.5 bg-indigo-500/10 rounded-full border border-indigo-500/20">V5.0</span></h1>
                         </div>
                     </div>
                 </header>
 
-                <main className="max-w-4xl mx-auto px-4 py-8">
-                    <div className="bg-slate-900 border border-white/5 rounded-2xl p-8">
-                        <div className="mb-8">
-                            <h2 className="text-xl font-semibold mb-2">Story Configuration</h2>
-                            <p className="text-gray-400 text-sm">Configure the parameters for the AI generation pipeline.</p>
+                <main className="max-w-5xl mx-auto px-4 py-8">
+                    {/* Status Bar */}
+                    {status && (
+                        <div className={`mb-6 p-4 rounded-lg flex justify-between items-center ${status.startsWith('❌') ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20'}`}>
+                            <span className="font-medium animate-pulse">{status}</span>
+                            <button onClick={() => setStatus('')} className="opacity-50 hover:opacity-100">×</button>
                         </div>
+                    )}
 
-                        {/* Theme */}
-                        <div className="mb-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-sm font-medium text-gray-300">Story Concept</label>
-                                <button
-                                    type="button"
-                                    onClick={() => setTheme(RANDOM_IDEAS[Math.floor(Math.random() * RANDOM_IDEAS.length)])}
-                                    className="text-xs px-3 py-1 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-full transition flex items-center gap-1"
-                                >
-                                    🎲 Random
-                                </button>
-                            </div>
-                            <textarea
-                                value={theme}
-                                onChange={(e) => setTheme(e.target.value)}
-                                rows={2}
-                                className="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 resize-none"
-                                placeholder="Describe your story, simple or detailed"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            {/* Category */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-300">Category</label>
-                                <select
-                                    value={category}
-                                    onChange={(e) => handleCategoryChange(e.target.value)}
-                                    className="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
-                                >
-                                    <option value="expectation">Select Category...</option>
-                                    <option value="sleep">🌙 Sleep Story</option>
-                                    <option value="meditation">🧘 Meditation</option>
-                                    <option value="fantasy">🌟 Fantasy Escape</option>
-                                    <option value="nature">🌿 Nature (Narrated)</option>
-                                    <option value="soundscape">🌊 Soundscape (Loopable)</option>
-                                    <option value="binaural">🔮 Binaural (Loopable)</option>
-                                    <option value="work_break">☕ Work Break (Focus/Reset)</option>
-                                    <option value="motivation">🔥 Motivation (Music Cost)</option>
-                                    <option value="kids">🧸 Kids (Bedtime/Adventure)</option>
-                                    <option value="music_instrumental">🎵 Instrumental Only (Music Cost)</option>
-                                </select>
-                                {(category === 'motivation' || category === 'kids' || category === 'work_break' || category === 'music_instrumental') && (
-                                    <div className="mt-2 text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
-                                        ⚠️ Uses Stable Audio (Credits Required)
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Duration */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-300">Duration (Minutes)</label>
-                                <select
-                                    value={duration}
-                                    onChange={(e) => setDuration(Number(e.target.value))}
-                                    className="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
-                                >
-                                    <option value={2}>2 Minutes (Test)</option>
-                                    <option value={5}>5 Minutes</option>
-                                    <option value={10}>10 Minutes</option>
-                                    <option value={20}>20 Minutes</option>
-                                    <option value={30}>30 Minutes (Standard Sleep)</option>
-                                    <option value={45}>45 Minutes (Long Sleep)</option>
-                                    <option value={60}>60 Minutes (Deep Dive)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            {/* Language */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-300">Language</label>
-                                <select
-                                    value={language}
-                                    onChange={(e) => setLanguage(e.target.value)}
-                                    className="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 text-sm"
-                                >
-                                    {LANGUAGE_OPTIONS.map(l => (
-                                        <option key={l} value={l}>{l}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Voice Selection - Dynamic from ElevenLabs */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-300">Narrator Voice</label>
-                                {voicesLoading ? (
-                                    <div className="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-gray-500">
-                                        Loading voices from ElevenLabs...
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <select
-                                            value={voiceId}
-                                            onChange={(e) => setVoiceId(e.target.value)}
-                                            className="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
-                                        >
-                                            <optgroup label="👩 Female Voices">
-                                                {voices.filter(v => v.gender === 'female').map(v => (
-                                                    <option key={v.id} value={v.id}>
-                                                        {v.name} ({v.style})
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                            <optgroup label="👨 Male Voices">
-                                                {voices.filter(v => v.gender === 'male').map(v => (
-                                                    <option key={v.id} value={v.id}>
-                                                        {v.name} ({v.style})
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                            {voices.filter(v => v.gender === 'unknown').length > 0 && (
-                                                <optgroup label="🌐 Other">
-                                                    {voices.filter(v => v.gender === 'unknown').map(v => (
-                                                        <option key={v.id} value={v.id}>
-                                                            {v.name} ({v.style})
-                                                        </option>
-                                                    ))}
-                                                </optgroup>
-                                            )}
-                                        </select>
-
-                                        {/* Preview Button */}
-                                        {voiceId && (() => {
-                                            const selectedVoice = voices.find(v => v.id === voiceId);
-                                            return selectedVoice?.previewUrl ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => playPreview(selectedVoice)}
-                                                    className={`text-xs px-3 py-1.5 rounded-full transition flex items-center gap-1 ${playingVoiceId === voiceId
-                                                            ? 'bg-indigo-500 text-white'
-                                                            : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-                                                        }`}
-                                                >
-                                                    {playingVoiceId === voiceId ? '⏹ Stop' : '▶️ Preview'}
-                                                </button>
-                                            ) : null;
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Ambient - Controlled by AI */}
-                        <div className="mb-6 bg-indigo-500/5 border border-indigo-500/10 rounded-lg p-4 flex items-center gap-3">
-                            <span className="text-2xl">🤖</span>
-                            <div className="flex-1">
-                                <h4 className="text-sm font-medium text-indigo-300">V3 Harvest Engine Active</h4>
-                                <p className="text-xs text-indigo-400/70">
-                                    The AI Director will prioritize reusing {availableAmbients.length} stock loops. New assets are harvested automatically.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Live Prompt Analysis (ReadOnly) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                            <div>
-                                <h3 className="text-sm font-medium mb-2 text-gray-300 flex items-center gap-2">
-                                    🧐 Pipeline Trace
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-gray-400">Live View</span>
-                                </h3>
-
-                                {lastPrompts ? (
-                                    <div className="space-y-4">
-                                        <div className="bg-slate-950 border border-emerald-500/30 rounded-lg p-4 overflow-hidden">
-                                            <div className="text-xs font-mono text-emerald-500 mb-2 uppercase tracking-wide">Step 1: System Persona (Resolved)</div>
-                                            <div className="text-xs text-gray-400 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">
-                                                {lastPrompts.system}
-                                            </div>
-                                        </div>
-                                        <div className="bg-slate-950 border border-blue-500/30 rounded-lg p-4 overflow-hidden">
-                                            <div className="text-xs font-mono text-blue-500 mb-2 uppercase tracking-wide">Step 2: User Brief (Injected)</div>
-                                            <div className="text-xs text-gray-400 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">
-                                                {lastPrompts.user}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="bg-slate-950/50 border border-dashed border-white/10 rounded-lg p-8 text-center text-gray-600 text-sm h-full flex flex-col justify-center items-center">
-                                        <p>Run a generation to see the exact prompts constructed by the pipeline.</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* COST REPORT */}
-                            <div>
-                                <h3 className="text-sm font-medium mb-2 text-gray-300 flex items-center gap-2">
-                                    💰 Production Cost Report
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-gray-400">Est.</span>
-                                </h3>
-
-                                {lastUsage ? (
-                                    <div className="bg-slate-950 border border-amber-500/30 rounded-lg p-6">
-                                        <div className="grid grid-cols-2 gap-4 mb-6">
-                                            <div>
-                                                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Script Gen (Claude Opus 4.5)</div>
-                                                <div className="text-2xl font-mono text-white">
-                                                    ${((lastUsage.input * 15 / 1000000) + (lastUsage.output * 75 / 1000000)).toFixed(4)}
-                                                </div>
-                                                <div className="text-xs text-gray-600 font-mono">
-                                                    {lastUsage.input} in / {lastUsage.output} out
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Voice (ElevenLabs)</div>
-                                                <div className="text-2xl font-mono text-white">
-                                                    ${(duration * 130 * 5 * 0.30 / 1000).toFixed(4)}
-                                                </div>
-                                                <div className="text-xs text-gray-600 font-mono">
-                                                    ~{duration * 130 * 5} chars (Est)
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                                            <div>
-                                                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Visuals (DALL-E 3)</div>
-                                                <div className="text-lg font-mono text-gray-300">$0.0800</div>
-                                                <div className="text-xs text-gray-600 font-mono">2 images (Land/Port)</div>
-                                            </div>
-                                            {(category === 'motivation' || category === 'kids' || category === 'work_break' || category === 'music_instrumental' || category === 'fantasy') && (
-                                                <div>
-                                                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Music (Stable Audio)</div>
-                                                    <div className="text-lg font-mono text-gray-300">$0.1000</div>
-                                                    <div className="text-xs text-gray-600 font-mono">High Quality (or $0.00 if Reused)</div>
-                                                </div>
-                                            )}
-                                            <div>
-                                                <div className="text-xs text-emerald-500 uppercase tracking-wide mb-1">Total Cost</div>
-                                                <div className="text-lg font-bold font-mono text-emerald-400">
-                                                    ${(
-                                                        ((lastUsage.input * 15 / 1000000) + (lastUsage.output * 75 / 1000000)) +
-                                                        (duration * 130 * 5 * 0.30 / 1000) +
-                                                        0.08 +
-                                                        ((category === 'motivation' || category === 'kids' || category === 'work_break' || category === 'music_instrumental' || category === 'fantasy') ? 0.10 : 0)
-                                                    ).toFixed(4)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="bg-slate-950/50 border border-dashed border-white/10 rounded-lg p-8 text-center text-gray-600 text-sm h-full flex flex-col justify-center items-center">
-                                        <p>Usage data will appear here after generation.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Error Viewer */}
-                        {error && (
-                            <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-300 text-xs font-mono whitespace-pre-wrap">
-                                <strong>Error Log:</strong><br />
-                                {error.message || JSON.stringify(error)}
-                                {error.debugEnv && (
-                                    <div className="mt-2 pt-2 border-t border-rose-500/20">
-                                        <pre>{JSON.stringify(error.debugEnv, null, 2)}</pre>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
+                    {/* Tabs */}
+                    <div className="flex gap-4 border-b border-white/10 mb-8">
                         <button
-                            onClick={handleGenerate}
-                            disabled={loading}
-                            className={`px-6 py-3 rounded-xl font-semibold transition flex items-center gap-2 ${loading
-                                ? 'bg-slate-700 text-gray-500 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/20'
-                                }`}
+                            onClick={() => setActiveTab('concept')}
+                            className={`pb-4 px-2 text-sm font-medium transition relative ${activeTab === 'concept' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                         >
-                            {loading ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    <span>Processing...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span>✨ Generate Story</span>
-                                </>
-                            )}
+                            1. Concept Lab (Ideation)
+                            {activeTab === 'concept' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />}
                         </button>
+                        <button
+                            onClick={() => setActiveTab('production')}
+                            disabled={!generatedConcept}
+                            className={`pb-4 px-2 text-sm font-medium transition relative ${activeTab === 'production' ? 'text-white' : 'text-gray-500'} ${!generatedConcept && 'opacity-30 cursor-not-allowed'}`}
+                        >
+                            2. Production (Build)
+                            {activeTab === 'production' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500" />}
+                        </button>
+                    </div>
+
+                    <div className="min-h-[500px]">
+                        {activeTab === 'concept' ? (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                <div className="bg-slate-900 border border-white/5 rounded-2xl p-6 md:p-8">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold mb-2">Dream up a Concept</h2>
+                                        <p className="text-gray-400">The Factory uses a "Showrunner AI" to flesh out your ideas before writing a script.</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-400 mb-2">Core Idea</label>
+                                            <textarea
+                                                value={idea}
+                                                onChange={(e) => setIdea(e.target.value)}
+                                                placeholder="e.g. A young boy finds a map to the stars, but instead of gold, it leads to lost memories."
+                                                className="w-full bg-slate-950 border border-white/10 rounded-xl p-4 text-white h-32 focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                                                <div>
+                                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Narrative</div>
+                                                    <div className="space-y-1">
+                                                        {['sleep', 'kids', 'fantasy', 'meditation', 'nature', 'motivation', 'work_break'].map(cat => (
+                                                            <button
+                                                                key={cat}
+                                                                onClick={() => setCategory(cat)}
+                                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition border ${category === cat ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-950 border-white/5 text-gray-400 hover:border-white/20'}`}
+                                                            >
+                                                                {cat.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 mt-4">Pure Audio</div>
+                                                    <div className="space-y-1">
+                                                        {['soundscape', 'binaural', 'music_instrumental'].map(cat => (
+                                                            <button
+                                                                key={cat}
+                                                                onClick={() => setCategory(cat)}
+                                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition border ${category === cat ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-slate-950 border-white/5 text-gray-400 hover:border-white/20'}`}
+                                                            >
+                                                                {cat.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end pt-4 border-t border-white/5">
+                                        <button
+                                            onClick={handleGenerateConcept}
+                                            disabled={isLoading || !idea}
+                                            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-medium transition flex items-center gap-2"
+                                        >
+                                            {isLoading ? 'Dreaming...' : '✨ Draft Concept'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Concept Result Preview */}
+                                {generatedConcept && (
+                                    <div className="mt-8 bg-slate-900 border border-white/5 rounded-2xl overflow-hidden">
+                                        <div className="p-4 bg-slate-800/50 border-b border-white/5 flex justify-between items-center">
+                                            <h3 className="font-bold text-indigo-400">Concept Draft: "{generatedConcept.title}"</h3>
+                                            <button
+                                                onClick={() => setActiveTab('production')}
+                                                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold uppercase tracking-wide transition"
+                                            >
+                                                Approve & Build →
+                                            </button>
+                                        </div>
+                                        <div className="p-0">
+                                            <div className="grid grid-cols-2 text-sm">
+                                                <div className="p-6 border-r border-white/5 space-y-4">
+                                                    <div>
+                                                        <span className="text-gray-500 block text-xs uppercase mb-1">Logline</span>
+                                                        <p className="text-gray-300 italic">"{generatedConcept.logline}"</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500 block text-xs uppercase mb-1">Protagonist</span>
+                                                        <div className="text-white font-medium">{generatedConcept.protagonist?.name || 'Unknown'}</div>
+                                                        <div className="text-gray-400">{generatedConcept.protagonist?.role} • {generatedConcept.protagonist?.desire}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="p-6 space-y-4">
+                                                    <div>
+                                                        <span className="text-gray-500 block text-xs uppercase mb-1">Audio Identity</span>
+                                                        <ul className="text-gray-400 space-y-1">
+                                                            <li>🎵 {generatedConcept.audioIdentity?.musicStyle || 'N/A'}</li>
+                                                            <li>🎤 {generatedConcept.audioIdentity?.voiceStyle} ({generatedConcept.audioIdentity?.voicePacing})</li>
+                                                            <li>🔊 {generatedConcept.audioIdentity?.keySoundEffects?.join(', ') || 'None'}</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 bg-slate-950 border-t border-white/5">
+                                                <details>
+                                                    <summary className="text-xs text-gray-500 cursor-pointer hover:text-white transition">View Full JSON Source</summary>
+                                                    <pre className="mt-4 text-xs font-mono text-gray-400 overflow-x-auto">
+                                                        {JSON.stringify(generatedConcept, null, 2)}
+                                                    </pre>
+                                                </details>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                                <div className="bg-slate-900 border border-white/5 rounded-2xl p-6 md:p-8">
+                                    <div className="mb-8 flex items-center justify-between">
+                                        <div>
+                                            <h2 className="text-2xl font-bold mb-2">Production Floor</h2>
+                                            <p className="text-gray-400">Ready to build "{generatedConcept?.title}".</p>
+                                        </div>
+                                        {!builtStoryId && (
+                                            <button
+                                                onClick={handleBuildStory}
+                                                disabled={isLoading}
+                                                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition flex items-center gap-2"
+                                            >
+                                                {isLoading ? 'Building...' : '🏗️ Start Production'}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Terminal / Logs */}
+                                    <div className="bg-slate-950 rounded-xl border border-white/10 p-4 font-mono text-xs h-[400px] overflow-y-auto relative">
+                                        <div className="absolute top-2 right-2 text-gray-600 text-[10px] uppercase tracking-wider">Factory Logs</div>
+                                        {productionLogs ? (
+                                            <pre className="text-gray-300 whitespace-pre-wrap leading-relaxed">{productionLogs}</pre>
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-gray-600 italic">
+                                                Waiting for production command...
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Success Action */}
+                                    {builtStoryId && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="mt-6 p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex justify-between items-center"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-black text-2xl">✓</div>
+                                                <div>
+                                                    <div className="font-bold text-emerald-400">Story Produced Successfully</div>
+                                                    <div className="text-sm text-emerald-500/60">ID: {builtStoryId}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                {/* <Link href={`/admin/stories/preview/${builtStoryId}`} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm text-white font-medium transition">
+                                                    Quick Preview
+                                                </Link> */}
+                                                <Link href={`/admin/stories/editor?id=${builtStoryId}`} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm text-white font-bold transition shadow-lg shadow-emerald-500/20">
+                                                    Open in Super Editor →
+                                                </Link>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
                     </div>
                 </main>
             </div>

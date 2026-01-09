@@ -7,7 +7,7 @@ export interface ContentSection {
     title: string;
     subtitle?: string;
     items: Story[];
-    type: 'row' | 'grid'; // 'row' for horizontal scroll, 'grid' for standard
+    type: 'row' | 'grid' | 'mixed'; // 'row' for horizontal scroll, 'grid' for standard, 'mixed' for Featured + List
     /** Category filter to use when navigating to Library via "View All" */
     filterCategory?: string;
 }
@@ -44,21 +44,21 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     title: 'Sleep Tales',
                     subtitle: 'Drift off with soothing narratives',
                     items: getByCat(allStories, ['sleep']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'sleep'
                 },
                 {
                     id: 'peaceful',
                     title: 'Peaceful Environments',
                     items: getByCat(allStories, ['soundscape', 'nature']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'soundscape'
                 },
                 {
                     id: 'deep_rest',
                     title: 'Deep Rest Frequencies',
                     items: getByCat(allStories, ['binaural', 'meditation']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'binaural'
                 }
             ]
@@ -76,21 +76,21 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     id: 'deep_work',
                     title: 'Deep Work Music',
                     items: getByCat(allStories, ['music_instrumental']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'music_instrumental'
                 },
                 {
                     id: 'science_focus',
                     title: 'Focus Science',
                     items: getByCat(allStories, ['binaural']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'binaural'
                 },
                 {
                     id: 'quick_reset',
                     title: 'Quick Resets',
                     items: getByCat(allStories, ['work_break', 'meditation']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'work_break'
                 }
             ]
@@ -108,14 +108,14 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     id: 'morning',
                     title: 'Morning Routine',
                     items: getByCat(allStories, ['motivation', 'meditation']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'motivation'
                 },
                 {
                     id: 'upbeat',
                     title: 'Energizing Audio',
                     items: getByCat(allStories, ['music_instrumental', 'nature']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'music_instrumental'
                 }
             ]
@@ -133,14 +133,14 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     id: 'pure_nature',
                     title: 'Pure Nature',
                     items: getByCat(allStories, ['nature', 'soundscape']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'nature'
                 },
                 {
                     id: 'grounding',
                     title: 'Grounding Practices',
                     items: getByCat(allStories, ['meditation']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'meditation'
                 }
             ]
@@ -158,14 +158,14 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     id: 'fantasy_journeys',
                     title: 'Fantasy Journeys',
                     items: getByCat(allStories, ['fantasy', 'kids']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'fantasy'
                 },
                 {
                     id: 'surreal',
                     title: 'Surreal Soundscapes',
                     items: getByCat(allStories, ['soundscape', 'music_instrumental']),
-                    type: 'row',
+                    type: 'mixed',
                     filterCategory: 'soundscape'
                 }
             ]

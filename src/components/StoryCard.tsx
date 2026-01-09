@@ -8,7 +8,7 @@ interface StoryCardProps {
     story: Story;
     onClick?: () => void;
     className?: string;
-    aspectRatio?: 'video' | 'portrait' | 'square';
+    aspectRatio?: 'video' | 'portrait' | 'square' | 'horizontal';
     progress?: number; // 0 to 100 for progress bar
     rank?: number; // 1, 2, 3... for Top Charts
 }
@@ -104,6 +104,79 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
 
     // Remaining time for progress
     const remainingTime = progress ? formatDuration(story.duration - (story.duration * (progress / 100))) : null;
+
+    if (aspectRatio === 'horizontal') {
+        const categoryColor = (() => {
+            const colors: Record<string, string> = {
+                sleep: 'bg-indigo-100 text-indigo-700',
+                meditation: 'bg-teal-100 text-teal-700',
+                fantasy: 'bg-fuchsia-100 text-fuchsia-700',
+                nature: 'bg-emerald-100 text-emerald-700',
+                soundscape: 'bg-cyan-100 text-cyan-700',
+                frequencies: 'bg-purple-100 text-purple-700',
+                music_instrumental: 'bg-sky-100 text-sky-700',
+                motivation: 'bg-amber-100 text-amber-700',
+                work_break: 'bg-orange-100 text-orange-700',
+                kids: 'bg-pink-100 text-pink-700'
+            };
+            return colors[story.category] || 'bg-slate-100 text-slate-700';
+        })();
+
+        return (
+            <div
+                className={`group flex items-center gap-4 p-3 pr-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer ${className}`}
+                onClick={handlePlay}
+            >
+                {/* Image (Left) */}
+                <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100">
+                    {imageUrl ? (
+                        <img src={imageUrl} alt={story.title} className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl">🎧</div>
+                    )}
+
+                    {/* Play Overlay */}
+                    <div className={`absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px] transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        <div className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
+                            {isActive ? <Pause className="w-3.5 h-3.5 fill-slate-900 text-slate-900" /> : <Play className="w-3.5 h-3.5 fill-slate-900 text-slate-900 ml-0.5" />}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Info (Right) */}
+                <div className="flex-1 min-w-0 py-1">
+                    <div className="flex items-center gap-2 mb-1.5">
+                        <span className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md ${categoryColor}`}>
+                            {story.category?.replace(/_/g, ' ') || 'Story'}
+                        </span>
+                        {story.is_premium && (
+                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1">
+                                PREMIUM
+                            </span>
+                        )}
+                    </div>
+
+                    <h3 className={`font-bold text-base md:text-lg leading-tight truncate mb-1 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-800 group-hover:text-indigo-600'}`}>
+                        {story.title}
+                    </h3>
+
+                    <div className="flex items-center gap-3 text-xs font-medium text-slate-400">
+                        <span>{formatDuration(story.duration)}</span>
+                        {isFavorite && <Heart className="w-3 h-3 fill-red-500 text-red-500" />}
+                    </div>
+                </div>
+
+                {/* Desktop Action (Optional, e.g. Heart) */}
+                <button
+                    onClick={handleFavoriteClick}
+                    disabled={favoriteLoading}
+                    className={`hidden md:flex p-2 rounded-full hover:bg-slate-50 transition ${isFavorite ? 'text-red-500' : 'text-slate-300 hover:text-red-500'}`}
+                >
+                    <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                </button>
+            </div>
+        );
+    }
 
     const Content = (
         <div
