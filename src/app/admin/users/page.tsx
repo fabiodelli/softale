@@ -3,12 +3,24 @@
 import { useState, useEffect } from 'react';
 import AdminGuard from '@/components/admin/AdminGuard';
 import Link from 'next/link';
-import { getAllProfiles, updateUserStatus, type UserProfile } from '@/lib/supabase';
+import { getAllProfiles, updateUserStatus, deleteProfile, type UserProfile } from '@/lib/supabase';
+import ConfirmModal from '@/components/admin/ConfirmModal';
 
 export default function UsersManager() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState('');
+
+    // Modal State
+    const [modal, setModal] = useState({
+        isOpen: false,
+        type: '' as 'premium' | 'admin' | 'delete',
+        targetUser: null as UserProfile | null,
+        title: '',
+        message: '',
+        isDestructive: false
+    });
+    const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
         fetchUsers();
@@ -21,52 +33,71 @@ export default function UsersManager() {
         setLoading(false);
     };
 
-    const togglePremium = async (user: UserProfile) => {
-        try {
-            const newValue = !user.is_premium;
-            const success = await updateUserStatus(user.id, { is_premium: newValue });
-
-            if (!success) throw new Error('Update failed');
-
-            // Optimistic update
-            setUsers(users.map(u => u.id === user.id ? { ...u, is_premium: newValue } : u));
-            setStatus(`Updated status for ${user.email || 'user'}`);
-        } catch (error: any) {
-            console.error('Failed to toggle premium:', error);
-            setStatus('Error updating user status');
-        }
+    const promptAction = (type: 'premium' | 'admin' | 'delete', user: UserProfile, title: string, message: string, isDestructive: boolean) => {
+        setModal({
+            isOpen: true,
+            type,
+            targetUser: user,
+            title,
+            message,
+            isDestructive
+        });
     };
 
-    const makeAdmin = async (user: UserProfile) => {
-        if (!confirm(`Are you sure you want to make ${user.email} an Admin?`)) return;
+    const handleConfirmAction = async () => {
+        if (!modal.targetUser) return;
+        setProcessing(true);
+        const user = modal.targetUser;
 
         try {
-            const success = await updateUserStatus(user.id, { role: 'admin' });
-            if (!success) throw new Error('Update failed');
-
-            setUsers(users.map(u => u.id === user.id ? { ...u, role: 'admin' } : u));
-            setStatus(`Promoted ${user.email} to Admin`);
+            if (modal.type === 'premium') {
+                const newValue = !user.is_premium;
+                const success = await updateUserStatus(user.id, { is_premium: newValue });
+                if (success) {
+                    setUsers(users.map(u => u.id === user.id ? { ...u, is_premium: newValue } : u));
+                    setStatus(`Updated status for ${user.email}`);
+                }
+            } else if (modal.type === 'admin') {
+                const success = await updateUserStatus(user.id, { role: 'admin' });
+                if (success) {
+                    setUsers(users.map(u => u.id === user.id ? { ...u, role: 'admin' } : u));
+                    setStatus(`Promoted ${user.email} to Admin`);
+                }
+            } else if (modal.type === 'delete') {
+                const success = await deleteProfile(user.id);
+                if (success) {
+                    setUsers(users.filter(u => u.id !== user.id));
+                    setStatus(`Deleted user ${user.email}`);
+                }
+            }
         } catch (error) {
-            setStatus('Error promoting user');
+            console.error('Action failed:', error);
+            setStatus('Action failed. Check console.');
+        } finally {
+            setProcessing(false);
+            setModal(prev => ({ ...prev, isOpen: false }));
         }
     };
 
     return (
         <AdminGuard>
             <div className="min-h-screen bg-slate-950 pb-20 text-white">
-                <header className="bg-slate-900 border-b border-white/5 sticky top-0 z-40">
-                    <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+                <header className="bg-slate-900 border-b border-white/5 sticky top-0 z-40 shadow-sm">
+                    <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Link href="/admin" className="text-gray-400 hover:text-white">← Back</Link>
-                            <h1 className="text-xl font-bold ml-4">User Management</h1>
+                            <Link href="/admin" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1 text-sm font-medium">
+                                <span>←</span> Back
+                            </Link>
+                            <div className="h-6 w-px bg-white/10 mx-4" />
+                            <h1 className="text-xl font-bold tracking-tight">User Management</h1>
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm font-medium px-3 py-1 bg-white/5 rounded-full border border-white/5 text-gray-300">
                             Total Users: {users.length}
                         </div>
                     </div>
                 </header>
 
-                <main className="max-w-7xl mx-auto px-4 py-8">
+                <main className="max-w-[1600px] mx-auto px-6 py-8">
                     {status && (
                         <div className="mb-6 p-4 rounded-lg bg-slate-900 border border-white/10 text-emerald-400 flex justify-between items-center">
                             <span>{status}</span>
@@ -120,19 +151,46 @@ export default function UsersManager() {
                                             <td className="p-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        onClick={() => togglePremium(user)}
-                                                        className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-white transition border border-white/5"
+                                                        onClick={() => promptAction(
+                                                            'premium',
+                                                            user,
+                                                            user.is_premium ? 'Revoke Premium Status' : 'Grant Premium Status',
+                                                            `Are you sure you want to ${user.is_premium ? 'remove' : 'grant'} Premium status for ${user.email}?`,
+                                                            false
+                                                        )}
+                                                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white transition border border-white/5 font-medium"
                                                     >
                                                         {user.is_premium ? 'Revoke Premium' : 'Grant Premium'}
                                                     </button>
 
                                                     {user.role !== 'admin' && (
-                                                        <button
-                                                            onClick={() => makeAdmin(user)}
-                                                            className="px-3 py-1 rounded bg-slate-800 hover:bg-purple-900/30 text-xs text-purple-300 transition border border-white/5"
-                                                        >
-                                                            Make Admin
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                onClick={() => promptAction(
+                                                                    'admin',
+                                                                    user,
+                                                                    'Promote to Admin',
+                                                                    `DANGER: This will give ${user.email} full control over the system.`,
+                                                                    true
+                                                                )}
+                                                                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-purple-900/30 text-xs text-purple-300 hover:text-purple-200 transition border border-white/5 font-medium"
+                                                            >
+                                                                Make Admin
+                                                            </button>
+                                                            <button
+                                                                onClick={() => promptAction(
+                                                                    'delete',
+                                                                    user,
+                                                                    'Delete User',
+                                                                    `PERMANENTLY delete ${user.email}? This cannot be undone.`,
+                                                                    true
+                                                                )}
+                                                                className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition"
+                                                                title="Delete User"
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </>
                                                     )}
                                                 </div>
                                             </td>
@@ -143,6 +201,16 @@ export default function UsersManager() {
                         </div>
                     )}
                 </main>
+
+                <ConfirmModal
+                    isOpen={modal.isOpen}
+                    onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+                    onConfirm={handleConfirmAction}
+                    title={modal.title}
+                    message={modal.message}
+                    isDestructive={modal.isDestructive}
+                    loading={processing}
+                />
             </div>
         </AdminGuard>
     );

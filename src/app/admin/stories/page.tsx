@@ -98,19 +98,22 @@ export default function StoriesManager() {
     return (
         <AdminGuard>
             <div className="min-h-screen bg-slate-950 pb-20 text-white">
-                <header className="bg-slate-900 border-b border-white/5 sticky top-0 z-40">
-                    <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+                <header className="bg-slate-900 border-b border-white/5 sticky top-0 z-40 shadow-sm">
+                    <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Link href="/admin" className="text-gray-400 hover:text-white">← Back</Link>
-                            <h1 className="text-xl font-bold ml-4">Story Manager</h1>
+                            <Link href="/admin" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1 text-sm font-medium">
+                                <span>←</span> Back
+                            </Link>
+                            <div className="h-6 w-px bg-white/10 mx-4" />
+                            <h1 className="text-xl font-bold tracking-tight">Story Manager</h1>
                         </div>
-                        <Link href="/admin/stories/editor" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition">
+                        <Link href="/admin/stories/editor" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-bold shadow-lg shadow-indigo-500/20 transition transform active:scale-95">
                             + New Story
                         </Link>
                     </div>
                 </header>
 
-                <main className="max-w-7xl mx-auto px-4 py-8">
+                <main className="max-w-[1600px] mx-auto px-6 py-8">
                     {status && (
                         <div className="mb-6 p-4 rounded-lg bg-slate-900 border border-white/10 text-emerald-400 flex justify-between items-center">
                             <span>{status}</span>

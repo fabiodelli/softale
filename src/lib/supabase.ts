@@ -445,6 +445,21 @@ export async function updateUserStatus(userId: string, updates: Partial<UserProf
     return true;
 }
 
+export async function deleteProfile(userId: string): Promise<boolean> {
+    if (!supabase) return false;
+
+    const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+    if (error) {
+        console.error('Error deleting profile:', error);
+        return false;
+    }
+    return true;
+}
+
 // Admin: Collections
 export async function getAllCollections(): Promise<Collection[]> {
     if (!supabase) return [];

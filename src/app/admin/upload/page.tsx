@@ -111,7 +111,7 @@ export default function UploadPage() {
                     </div>
                 </header>
 
-                <main className="max-w-4xl mx-auto px-4 py-8">
+                <main className="max-w-[1600px] mx-auto px-6 py-8">
                     {status && (
                         <div className={`mb-6 p-4 rounded-lg border flex justify-between items-center ${status.includes('✅') ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
                             status.includes('⚠️') ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
@@ -123,90 +123,106 @@ export default function UploadPage() {
                         </div>
                     )}
 
-                    {/* Upload Section */}
-                    <div className="bg-slate-900 border border-white/5 rounded-2xl p-6 mb-8">
-                        <h2 className="text-lg font-semibold mb-4">Upload Ambient Sounds</h2>
-                        <p className="text-gray-400 text-sm mb-6">
-                            Upload MP3 files to the <code className="bg-slate-800 px-1 rounded">ambient/</code> folder.
-                            These files can be used as background sounds in stories.
-                        </p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                        {/* LEFT: Upload Section */}
+                        <div className="bg-slate-900 border border-white/5 rounded-2xl p-6 shadow-xl sticky top-24">
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span className="text-emerald-400">📤</span> Upload Ambient Sounds
+                            </h2>
+                            <p className="text-gray-400 text-sm mb-6">
+                                Upload MP3 files to the <code className="bg-slate-800 px-1 rounded text-emerald-400">ambient/</code> folder.
+                                These assets become available immediately for new stories.
+                            </p>
 
-                        <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-indigo-500/50 transition">
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".mp3,audio/mpeg"
-                                multiple
-                                onChange={handleFileSelect}
-                                className="hidden"
-                                id="ambient-upload"
-                            />
-                            <label
-                                htmlFor="ambient-upload"
-                                className="cursor-pointer"
-                            >
-                                <div className="text-4xl mb-3">🔊</div>
-                                <div className="text-white font-medium mb-1">Click to select MP3 files</div>
-                                <div className="text-gray-500 text-sm">or drag and drop</div>
-                            </label>
+                            <div className="border-2 border-dashed border-white/10 rounded-xl p-12 text-center hover:border-emerald-500/50 hover:bg-emerald-500/5 transition group cursor-pointer">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".mp3,audio/mpeg"
+                                    multiple
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                    id="ambient-upload"
+                                />
+                                <label
+                                    htmlFor="ambient-upload"
+                                    className="cursor-pointer w-full h-full block"
+                                >
+                                    <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🔊</div>
+                                    <div className="text-white font-bold text-lg mb-1 group-hover:text-emerald-400">Click to Select Files</div>
+                                    <div className="text-gray-500 text-sm">Supported: MP3</div>
+                                </label>
+                            </div>
+
+                            {files.length > 0 && (
+                                <div className="mt-6 animate-in fade-in slide-in-from-top-4">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Queue ({files.length})</h3>
+                                        <button onClick={() => setFiles([])} className="text-xs text-red-400 hover:text-red-300">Clear</button>
+                                    </div>
+                                    <div className="space-y-2 max-h-40 overflow-y-auto bg-slate-950 p-2 rounded-lg border border-white/5">
+                                        {files.map((file, i) => (
+                                            <div key={i} className="flex items-center justify-between bg-slate-800/30 px-3 py-2 rounded text-sm">
+                                                <div className="truncate max-w-[70%] text-white">{file.name}</div>
+                                                <div className="text-gray-500 text-xs text-mono">{(file.size / 1024 / 1024).toFixed(1)} MB</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={handleUpload}
+                                        disabled={uploading}
+                                        className="mt-6 w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:grayscale rounded-xl font-bold text-white shadow-lg shadow-emerald-900/20 transition transform hover:scale-[1.02]"
+                                    >
+                                        {uploading ? 'Processing...' : `🚀 Upload ${files.length} File(s)`}
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
-                        {files.length > 0 && (
-                            <div className="mt-6">
-                                <h3 className="text-sm font-medium text-gray-400 mb-3">Selected Files ({files.length})</h3>
-                                <div className="space-y-2 max-h-40 overflow-y-auto">
-                                    {files.map((file, i) => (
-                                        <div key={i} className="flex items-center justify-between bg-slate-800/50 px-3 py-2 rounded-lg text-sm">
-                                            <span className="text-white">{file.name}</span>
-                                            <span className="text-gray-500">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                        {/* RIGHT: Existing Files */}
+                        <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-lg font-bold">Library ({existingAmbients.length})</h2>
+                                <button onClick={fetchExistingAmbients} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                                    <span>↻</span> Refresh
+                                </button>
+                            </div>
+
+                            {existingAmbients.length === 0 ? (
+                                <div className="p-12 text-center text-gray-600 border border-dashed border-white/5 rounded-xl">
+                                    Empty Library
+                                </div>
+                            ) : (
+                                <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
+                                    {existingAmbients.map((name) => (
+                                        <div key={name} className="flex items-center justify-between bg-slate-800/30 hover:bg-slate-800/80 p-4 rounded-xl transition group border border-transparent hover:border-white/5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-lg shadow-inner">🎵</div>
+                                                <span className="text-gray-200 font-medium">{name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition">
+                                                <a
+                                                    href={supabase?.storage.from('audio').getPublicUrl(`ambient/${name}`).data.publicUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-3 py-1.5 bg-slate-700 hover:bg-white hover:text-black rounded-lg text-xs font-bold transition"
+                                                    title="Play"
+                                                >
+                                                    ▶
+                                                </a>
+                                                <button
+                                                    onClick={() => handleDelete(name)}
+                                                    className="p-2 hover:bg-red-500/20 text-gray-500 hover:text-red-400 rounded-lg transition"
+                                                    title="Delete"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                                <button
-                                    onClick={handleUpload}
-                                    disabled={uploading}
-                                    className="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-xl font-medium transition"
-                                >
-                                    {uploading ? 'Uploading...' : `Upload ${files.length} File(s)`}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Existing Files */}
-                    <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
-                        <h2 className="text-lg font-semibold mb-4">Existing Ambient Files ({existingAmbients.length})</h2>
-
-                        {existingAmbients.length === 0 ? (
-                            <p className="text-gray-500 text-center py-6">No ambient files uploaded yet.</p>
-                        ) : (
-                            <div className="space-y-2">
-                                {existingAmbients.map((name) => (
-                                    <div key={name} className="flex items-center justify-between bg-slate-800/50 px-4 py-3 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-lg">🎵</span>
-                                            <span className="text-white font-medium">{name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <a
-                                                href={supabase?.storage.from('audio').getPublicUrl(`ambient/${name}`).data.publicUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition"
-                                            >
-                                                Preview
-                                            </a>
-                                            <button
-                                                onClick={() => handleDelete(name)}
-                                                className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded transition"
-                                            >
-                                                🗑️
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </main>
             </div>

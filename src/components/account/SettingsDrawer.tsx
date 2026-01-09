@@ -5,7 +5,8 @@ import { X, ChevronRight, Mail, Info, FileText, Shield, CreditCard, Lock, LogOut
 import Link from 'next/link';
 import { useState } from 'react';
 import { useAuth } from '@/lib/AuthProvider';
-import { updateUserStatus, supabase } from '@/lib/supabase';
+import { updateUserStatus, supabase, deleteProfile } from '@/lib/supabase';
+import ConfirmModal from '@/components/admin/ConfirmModal';
 
 interface SettingsDrawerProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
     const [editAvatar, setEditAvatar] = useState(profile?.avatar_url || '');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const handleSaveProfile = async () => {
         if (!user) return;
@@ -54,8 +56,26 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
         window.location.href = '/';
     };
 
+    const handleDeleteAccount = async () => {
+        if (!user) return;
+        setLoading(true);
+        const success = await deleteProfile(user.id);
+        if (success) {
+            await signOut();
+            window.location.href = '/';
+        } else {
+            setMessage({ type: 'error', text: 'Failed to delete account. Contact support.' });
+            setLoading(false);
+            setShowDeleteConfirm(false);
+        }
+    };
+
     return (
         <AnimatePresence>
+            {/* Modal outside of drawer motion div to avoid clipping/transform issues if possible, though handling nested AnimatePresence can be tricky.
+                Actually ConfirmModal has dynamic Portal-like behavior or fixed positioning.
+            */}
+
             {isOpen && (
                 <>
                     {/* Backdrop */}
@@ -85,6 +105,7 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
+
 
                             {/* Profile Section */}
                             <section>
@@ -240,10 +261,45 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
 
                             <div className="flex-1" />
 
+                            {/* Danger Zone */}
+                            <section className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                                <h3 className="text-xs font-bold text-red-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <Shield className="w-3 h-3" /> Danger Zone
+                                </h3>
+
+                                {isPremium ? (
+                                    <div className="text-sm text-red-700 space-y-3">
+                                        <p>You have an active Premium subscription.</p>
+                                        <p className="font-medium">To delete your account, you must first cancel your subscription to prevent further billing.</p>
+                                        <button
+                                            onClick={async () => {
+                                                const res = await fetch('/api/portal', { method: 'POST', body: JSON.stringify({ userId: user?.id }) });
+                                                const { url } = await res.json();
+                                                if (url) window.location.href = url;
+                                            }}
+                                            className="w-full py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg font-bold transition flex items-center justify-center gap-2"
+                                        >
+                                            <CreditCard className="w-4 h-4" />
+                                            Manage Subscription
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <p className="text-xs text-red-600/80">Once you delete your account, there is no going back. Please be certain.</p>
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            className="w-full py-2 bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white rounded-lg text-sm font-medium transition"
+                                        >
+                                            Delete Account
+                                        </button>
+                                    </div>
+                                )}
+                            </section>
+
                             {/* Logout */}
                             <button
                                 onClick={handleLogout}
-                                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 font-bold transition"
+                                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold transition border border-slate-200 hover:border-slate-300"
                             >
                                 <LogOut className="w-5 h-5" />
                                 Sign Out
@@ -256,6 +312,17 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                     </motion.div>
                 </>
             )}
+
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleDeleteAccount}
+                title="Delete Account?"
+                message="This will permanently delete your profile and listening history. This action cannot be undone."
+                confirmText="Permanently Delete"
+                isDestructive={true}
+                loading={loading}
+            />
         </AnimatePresence>
     );
 }

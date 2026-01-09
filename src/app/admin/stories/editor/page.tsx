@@ -326,8 +326,14 @@ export default function StoryEditor() {
                             {/* Audio Manager */}
                             <div className="bg-slate-900 border border-white/5 rounded-2xl p-6">
                                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <span>🎙️</span> Audio Source
+                                    <span>🎙️</span> Master Audio Source
                                 </h2>
+                                <div className="mb-4 bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-3">
+                                    <p className="text-xs text-indigo-300">
+                                        <strong>ℹ️ Factory Mix:</strong> This file contains the final mix (Voice + Background Music).
+                                        <br />The background track is baked into this MP3 during the build process.
+                                    </p>
+                                </div>
                                 <div className="grid grid-cols-1 gap-6">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-2">Access & Voice</label>

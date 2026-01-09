@@ -8,6 +8,8 @@ export interface StoryConcept {
     theme?: string;
     mood?: string;
     targetAudience?: string;
+    intendedDuration?: number; // User preference for build length (minutes)
+    mixLevel?: number; // Background music volume (0.1 - 0.5)
 
     protagonist?: {
         name?: string;
@@ -44,8 +46,8 @@ export interface StoryConcept {
 
 export class ConceptEngine {
 
-    static async generate(idea: string, category: string): Promise<StoryConcept> {
-        console.log(`🧠 Concept Engine: Dreaming up "${idea}" (${category})...`);
+    static async generate(idea: string, category: string, duration: number = 10, mixLevel: number = 0.25): Promise<StoryConcept> {
+        console.log(`🧠 Concept Engine: Dreaming up "${idea}" (${category}, ${duration}min, mix=${mixLevel})...`);
 
         const systemPrompt = `You are the LEAD SHOWRUNNER for Softale, a premium audio storytelling studio.
 Your job is to take a vague idea and expand it into a rich, detailed Creative Brief (Series Concept).
@@ -115,6 +117,10 @@ RETURN JSON OBJECT EXACTLY LIKE THIS:
 
         try {
             const concept = JSON.parse(jsonMatch[0]) as StoryConcept;
+            // Inject user preference
+            concept.intendedDuration = duration;
+            concept.mixLevel = mixLevel;
+
             console.log(`   ✨ Concept Born: "${concept.title}"`);
             return concept;
         } catch (e) {

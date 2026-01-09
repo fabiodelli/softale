@@ -25,11 +25,13 @@ export async function POST(req: NextRequest) {
         // Sanitize inputs for CLI
         const cleanCategory = body.category.replace(/[^a-zA-Z0-9_]/g, '');
         const cleanIdea = body.idea.replace(/"/g, '\\"'); // Escape quotes
+        const duration = body.duration || 10;
+        const mixLevel = body.mixLevel || 0.25;
 
-        console.log(`🧠 Generating Concept: "${body.idea}" [${cleanCategory}]`);
+        console.log(`🧠 Generating Concept: "${body.idea}" [${cleanCategory}, ${duration}min, mix=${mixLevel}]`);
 
-        // Execute CLI: npx tsx src/index.ts concept <category> <idea>
-        const command = `npx tsx src/index.ts concept ${cleanCategory} "${cleanIdea}"`;
+        // Execute CLI: npx tsx src/index.ts concept <category> <idea> <duration> <mixLevel>
+        const command = `npx tsx src/index.ts concept ${cleanCategory} "${cleanIdea}" ${duration} ${mixLevel}`;
 
         const { stdout, stderr } = await execPromise(command, {
             cwd: toolsDir,

@@ -18,6 +18,7 @@ import * as path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { CATALOG_ITEMS } from './catalog-config.js';
 import { ConceptEngine, StoryConcept } from './ConceptEngine.js';
+import { voiceService } from './VoiceService.js';
 
 dotenv.config();
 
@@ -64,6 +65,8 @@ export interface GeneratedScript {
     musicPrompt: string;
     audioPhases?: AudioPhase[];
     voiceIdOverride?: string;
+    mixLevel?: number;
+    voiceStyle?: string;
     musicFile?: string;
     backingCategory?: string;
     backingTitle?: string;
@@ -713,7 +716,27 @@ export async function generateVoice(script: GeneratedScript): Promise<string> {
         return '';
     }
 
-    const voiceId = script.voiceIdOverride || PREMIUM_VOICES['Delilah'];
+    let voiceId = script.voiceIdOverride;
+
+    if (!voiceId) {
+        // Map 'soft_female' or 'neutral' -> female, 'soft_male' -> male
+        let targetGender: 'male' | 'female' = 'female';
+
+        if (script.voiceStyle && script.voiceStyle.includes('male')) {
+            targetGender = 'male';
+        }
+
+        console.log(`   🔍 Looking for ${targetGender} voice (Style: ${script.voiceStyle || 'default'})...`);
+
+        // Use VoiceService to pick from available account voices
+        const voice = await voiceService.pickVoice({ gender: targetGender });
+
+        // Fallbacks: Spuds (Male) or Delilah (Female) if auto-pick fails
+        const fallbackId = targetGender === 'male' ? 'NOpBlnGInO9m6vDvFkFC' : 'mZ3kbJNnKRWI4YzJXA9j';
+
+        voiceId = voice?.voice_id || fallbackId;
+        console.log(`   🗣️ Selected Voice: ${voice?.name || 'Fallback'} (${voiceId})`);
+    }
     const outputPath = path.join(OUTPUT_DIR, `${script.title.replace(/\s+/g, '_')}_voice.mp3`);
 
     // Helper: Split text into chunks < 4000 chars
@@ -1024,7 +1047,8 @@ export async function mixAudio(voicePath: string, loopPath: string, script: Gene
         return voicePath;
     }
 
-    const command = `ffmpeg -stream_loop -1 -i "${loopPath}" -i "${voicePath}" -filter_complex "[0:a]volume=0.25[bg];[1:a]volume=1.0[vc];[bg][vc]amix=inputs=2:duration=shortest" -y "${outputPath}"`;
+    const mixVol = script.mixLevel || 0.25;
+    const command = `ffmpeg -stream_loop -1 -i "${loopPath}" -i "${voicePath}" -filter_complex "[0:a]volume=${mixVol}[bg];[1:a]volume=1.0[vc];[bg][vc]amix=inputs=2:duration=shortest" -y "${outputPath}"`;
 
     try {
         const { exec } = require('child_process');
@@ -1048,7 +1072,8 @@ export async function mixAudio(voicePath: string, loopPath: string, script: Gene
 export async function uploadStory(
     scriptOrId: GeneratedScript | string,
     audioPath?: string,
-    assets?: AssetPack
+    assets?: AssetPack,
+    voicePath?: string
 ): Promise<string> {
     console.log('☁️ Uploading to Supabase...');
 
@@ -1076,7 +1101,7 @@ export async function uploadStory(
         console.log(`      🔄 Merging with existing story ID: ${existingStory.id}`);
     }
 
-    // Upload audio
+    // Upload audio (Master Mix)
     let audioUrl = existingStory?.audio_url || '';
     if (audioPath && fs.existsSync(audioPath)) {
         const audioBuffer = fs.readFileSync(audioPath);
@@ -1086,6 +1111,14 @@ export async function uploadStory(
             const { data: urlData } = supabase.storage.from('audio').getPublicUrl(audioFileName);
             audioUrl = urlData.publicUrl;
         }
+    }
+
+    // Upload Voice Source (Stems) - Silent Backup
+    if (voicePath && fs.existsSync(voicePath)) {
+        console.log('      🎙️ Archiving voice source...');
+        const voiceBuffer = fs.readFileSync(voicePath);
+        const voiceFileName = `${storagePath}/voice_source.mp3`;
+        await supabase.storage.from('audio').upload(voiceFileName, voiceBuffer, { contentType: 'audio/mpeg', upsert: true });
     }
 
     // Upload Assets Helper
@@ -1166,7 +1199,7 @@ async function generateStory(brief: any): Promise<string> {
 
     const mixedPath = await mixAudio(voicePath, loopPath, script);
 
-    const storyId = await uploadStory(script, mixedPath, assetPack);
+    const storyId = await uploadStory(script, mixedPath, assetPack, voicePath);
     console.log(`   ✅ Story Complete! ID: ${storyId}`);
 
     return storyId;
@@ -1244,9 +1277,12 @@ Commands:
             case 'concept': {
                 const category = args[1];
                 const idea = args[2];
-                if (!category || !idea) throw new Error('Usage: concept <category> <"idea string">');
+                const duration = parseInt(args[3]) || 10;
+                const mixLevel = parseFloat(args[4]) || 0.25;
 
-                const concept = await ConceptEngine.generate(idea, category);
+                if (!category || !idea) throw new Error('Usage: concept <category> <"idea string"> [duration] [mixLevel]');
+
+                const concept = await ConceptEngine.generate(idea, category, duration, mixLevel);
                 const safeSlug = concept.title.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
                 const outputPath = path.join(OUTPUT_DIR, `concept_${safeSlug}.json`);
                 fs.writeFileSync(outputPath, JSON.stringify(concept, null, 2));
@@ -1286,7 +1322,7 @@ Commands:
 
                 const brief: StoryBrief = {
                     category: concept.category || 'sleep',
-                    duration: 10,
+                    duration: concept.intendedDuration || 10,
                     theme: concept.theme || 'Relaxation',
                     mood: concept.mood || 'Calm',
                     voiceStyle: concept.audioIdentity?.voiceStyle as any
@@ -1294,6 +1330,8 @@ Commands:
 
                 // Generate with Override
                 const script = await generateScript(brief, concept);
+                script.mixLevel = concept.mixLevel || 0.25;
+                script.voiceStyle = brief.voiceStyle;
 
                 // Continue standard pipeline
                 const safeTitle = script.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
@@ -1304,7 +1342,7 @@ Commands:
                 const loopPath = await generateOrFetchLoop(script);
                 const assetPack = await generateAssetPack(script);
                 const mixedPath = await mixAudio(voicePath, loopPath, script);
-                const storyId = await uploadStory(script, mixedPath, assetPack);
+                const storyId = await uploadStory(script, mixedPath, assetPack, voicePath);
                 console.log(`✅ Build Complete! ID: ${storyId}`);
                 break;
             }
