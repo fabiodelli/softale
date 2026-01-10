@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Story, toggleFavorite, checkIsFavorite } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthProvider';
+import { cleanDescription, formatDuration } from '@/lib/formatters';
 import { useState, useEffect } from 'react';
 
 interface SituationalHeroProps {
@@ -132,7 +133,7 @@ export default function SituationalHero({ story, onPlay }: SituationalHeroProps)
                     transition={{ duration: 0.7, delay: 0.2 }}
                     className="text-lg md:text-xl text-slate-200/90 max-w-xl md:max-w-2xl line-clamp-3 md:line-clamp-none font-light leading-relaxed drop-shadow-md"
                 >
-                    {story.description}
+                    {cleanDescription(story.description)}
                 </motion.p>
 
                 {/* Tags / Duration */}
@@ -143,7 +144,7 @@ export default function SituationalHero({ story, onPlay }: SituationalHeroProps)
                     className="flex flex-wrap gap-3 text-sm font-medium text-slate-300"
                 >
                     <span className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
-                        {Math.floor(story.duration / 60)} min
+                        {formatDuration(story.duration)}
                     </span>
                     <span className="bg-indigo-500/20 backdrop-blur-md px-3 py-1 rounded-full border border-indigo-500/30 text-indigo-300">
                         {story.category}

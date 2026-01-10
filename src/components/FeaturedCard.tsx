@@ -3,6 +3,7 @@
 
 import { Story } from '@/lib/supabase';
 import { usePlayer } from '@/lib/PlayerContext';
+import { cleanDescription, formatDuration } from '@/lib/formatters';
 import { Play, Pause } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -66,7 +67,7 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
                         Featured • {story.category.replace('_', ' ')}
                     </span>
                     <span className="text-white/70 text-xs font-medium">
-                        {story.duration} min
+                        {formatDuration(story.duration)}
                     </span>
                 </div>
 
@@ -75,7 +76,7 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
                 </h2>
 
                 <p className="text-white/80 line-clamp-2 mb-6 text-sm md:text-base max-w-lg">
-                    {story.description}
+                    {cleanDescription(story.description)}
                 </p>
 
                 <button

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Story, toggleFavorite, checkIsFavorite } from '@/lib/supabase';
+import { cleanDescription, formatDuration, isLoopable } from '@/lib/formatters';
 import Link from 'next/link';
-import { Play, Pause, Heart } from 'lucide-react';
+import { Play, Pause, Heart, Infinity } from 'lucide-react';
 
 interface StoryCardProps {
     story: Story;
@@ -92,11 +93,6 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
         setFavoriteLoading(false);
     };
 
-    const formatDuration = (seconds: number) => {
-        const m = Math.floor(seconds / 60);
-        return `${m} min`;
-    };
-
     // Determine Main Image (Prioritize Landscape for Video aspect, Portrait for Portrait aspect)
     let imageUrl = story.cover_url;
     if (aspectRatio === 'video' && story.cover_landscape_url) imageUrl = story.cover_landscape_url;
@@ -104,6 +100,8 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
 
     // Remaining time for progress
     const remainingTime = progress ? formatDuration(story.duration - (story.duration * (progress / 100))) : null;
+    const formattedDuration = formatDuration(story.duration);
+    const showLoop = isLoopable(story.category, story.duration);
 
     if (aspectRatio === 'horizontal') {
         const categoryColor = (() => {
@@ -161,7 +159,7 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
                     </h3>
 
                     <div className="flex items-center gap-3 text-xs font-medium text-slate-400">
-                        <span>{formatDuration(story.duration)}</span>
+                        <span>{formattedDuration}</span>
                         {isFavorite && <Heart className="w-3 h-3 fill-red-500 text-red-500" />}
                     </div>
                 </div>
@@ -288,8 +286,15 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
                 </h3>
 
                 <div className="flex items-center justify-between mt-2 text-xs text-white/80 font-medium opacity-90 group-hover:opacity-100 transition-opacity">
-                    {!['music_instrumental', 'frequencies', 'meditation', 'sleep'].includes(story.category) && (
-                        <span>{remainingTime ? `${remainingTime} left` : formatDuration(story.duration)}</span>
+                    {!['music_instrumental', 'frequencies', 'meditation', 'sleep', 'soundscape'].includes(story.category) && (
+                        <span>{remainingTime ? `${remainingTime} left` : formattedDuration}</span>
+                    )}
+                    {/* For ambient categories, show duration or loop */}
+                    {['music_instrumental', 'frequencies', 'meditation', 'sleep', 'soundscape'].includes(story.category) && (
+                        <div className="flex items-center gap-1">
+                            {showLoop && <Infinity className="w-3 h-3 text-white/70" />}
+                            <span>{formattedDuration}</span>
+                        </div>
                     )}
                 </div>
             </div>

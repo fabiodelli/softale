@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Story, toggleFavorite, checkIsFavorite } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthProvider';
+import { cleanDescription } from '@/lib/formatters';
 import { useState, useEffect } from 'react';
 
 interface CinematicHeroProps {
@@ -107,7 +108,7 @@ export default function CinematicHero({ story, onPlay, showMoreInfo = true }: Ci
                     transition={{ duration: 0.7, delay: 0.2 }}
                     className="text-lg md:text-xl text-slate-200/90 max-w-xl md:max-w-2xl line-clamp-3 md:line-clamp-none font-light leading-relaxed drop-shadow-md"
                 >
-                    {story.description || "Immerse yourself in this audio journey. Let the soundscape carry you away to a place of focus and relaxation."}
+                    {cleanDescription(story.description) || "Immerse yourself in this audio journey. Let the soundscape carry you away to a place of focus and relaxation."}
                 </motion.p>
 
                 {/* Action Buttons */}

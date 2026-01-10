@@ -22,12 +22,12 @@ const moods = [
         image: '/images/moods/starry_night.png'
     },
     {
-        id: 'meditation',
-        label: 'Focused',
-        icon: Brain,
-        colorClass: 'bg-amber-100 text-slate-800', // Swapped to Amber (Focus Lamp warmth)
-        activeClass: 'ring-[3px] ring-amber-300 scale-105 bg-amber-200',
-        image: '/images/moods/zen_stones.png'
+        id: 'nature',
+        label: 'Peaceful',
+        icon: Leaf,
+        colorClass: 'bg-emerald-100 text-slate-800',
+        activeClass: 'ring-[3px] ring-emerald-300 scale-105 bg-emerald-200',
+        image: '/images/moods/forest.png'
     },
     {
         id: 'fantasy',
@@ -38,19 +38,19 @@ const moods = [
         image: '/images/moods/sunset.png'
     },
     {
-        id: 'nature',
-        label: 'Peaceful',
-        icon: Leaf,
-        colorClass: 'bg-emerald-100 text-slate-800',
-        activeClass: 'ring-[3px] ring-emerald-300 scale-105 bg-emerald-200',
-        image: '/images/moods/forest.png'
+        id: 'meditation',
+        label: 'Focused',
+        icon: Brain,
+        colorClass: 'bg-sky-100 text-slate-800', // Swapped to Sky (Cool Blue for Focus)
+        activeClass: 'ring-[3px] ring-sky-300 scale-105 bg-sky-200',
+        image: '/images/moods/zen_stones.png'
     },
     {
         id: 'energized',
         label: 'Energized',
-        icon: Waves, // Reverted to Waves (Ocean)
-        colorClass: 'bg-sky-100 text-slate-800',
-        activeClass: 'ring-[3px] ring-sky-300 scale-105 bg-sky-200',
+        icon: Waves,
+        colorClass: 'bg-amber-100 text-slate-800', // Swapped to Amber (Warm Energy)
+        activeClass: 'ring-[3px] ring-amber-300 scale-105 bg-amber-200',
         image: '/images/moods/ocean.png'
     }
 ];
