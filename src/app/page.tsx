@@ -178,7 +178,7 @@ export default function HomePage() {
         The MoodSelector contains the Hero Image and the Greeting Text.
         We fix it to the viewport so it stays behind while content scrolls up.
       */}
-      <div className="fixed top-0 inset-x-0 h-[85vh] md:h-screen z-0">
+      <div className="fixed top-0 inset-x-0 h-[100dvh] z-0">
         <MoodSelector
           activeMood={activeMood}
           onSelect={handleMoodSelect}
@@ -188,15 +188,11 @@ export default function HomePage() {
 
       {/* 
         2. SCROLLING CONTENT LAYER (Z-10) 
-        Starts below the Hero (85vh on mobile, 100vh on desktop), then scrolls up over it.
-        The negative top-margin gradient provides the smooth transition.
+        Starts overlapping hero. CSS Mask creates seamless fade-in.
       */}
-      <div className="relative z-10 mt-[85vh] md:mt-[100vh] bg-slate-50 min-h-screen pb-20 md:pb-12 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+      <div className="relative z-10 mt-[85vh] md:mt-[70vh] bg-slate-50/60 backdrop-blur-2xl min-h-screen pb-20 md:pb-12 shadow-none [mask-image:linear-gradient(to_bottom,transparent,black_25vh)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_25vh)]">
 
-        {/* The White Fade (Transferred from Hero to here) */}
-        <div className="absolute bottom-[99%] inset-x-0 h-40 bg-gradient-to-t from-slate-50 from-15% via-slate-50/60 to-transparent pointer-events-none" />
-
-        <div className="max-w-[1600px] mx-auto px-6 md:px-12 pt-10">
+        <div className="max-w-[1600px] mx-auto px-6 md:px-12 pt-[15vh]">
 
           {/* SEARCH MODE */}
           {searchQuery ? (

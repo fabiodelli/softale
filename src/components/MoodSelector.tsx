@@ -20,7 +20,8 @@ const moods = [
         icon: Moon,
         colorClass: 'bg-indigo-100 text-slate-800',
         activeClass: 'ring-[3px] ring-indigo-300 scale-105 bg-indigo-200',
-        image: '/images/moods/starry_night.png'
+        image: '/images/moods/starry_night.png',
+        mobileImage: '/images/moods/mobile/starry_night.jpg'
     },
     {
         id: 'nature',
@@ -28,7 +29,8 @@ const moods = [
         icon: Leaf,
         colorClass: 'bg-emerald-100 text-slate-800',
         activeClass: 'ring-[3px] ring-emerald-300 scale-105 bg-emerald-200',
-        image: '/images/moods/forest.png'
+        image: '/images/moods/forest.png',
+        mobileImage: '/images/moods/mobile/forest.jpg'
     },
     {
         id: 'fantasy',
@@ -36,7 +38,8 @@ const moods = [
         icon: Sparkles,
         colorClass: 'bg-rose-100 text-slate-800',
         activeClass: 'ring-[3px] ring-rose-300 scale-105 bg-rose-200',
-        image: '/images/moods/sunset.png'
+        image: '/images/moods/sunset.png',
+        mobileImage: '/images/moods/mobile/sunset.jpg'
     },
     {
         id: 'meditation',
@@ -44,7 +47,8 @@ const moods = [
         icon: Brain,
         colorClass: 'bg-sky-100 text-slate-800', // Swapped to Sky (Cool Blue for Focus)
         activeClass: 'ring-[3px] ring-sky-300 scale-105 bg-sky-200',
-        image: '/images/moods/zen_stones.png'
+        image: '/images/moods/zen_stones.png',
+        mobileImage: '/images/moods/mobile/zen_stones.jpg'
     },
     {
         id: 'energized',
@@ -52,21 +56,19 @@ const moods = [
         icon: Waves,
         colorClass: 'bg-amber-100 text-slate-800', // Swapped to Amber (Warm Energy)
         activeClass: 'ring-[3px] ring-amber-300 scale-105 bg-amber-200',
-        image: '/images/moods/ocean-vibrant.jpg'
+        image: '/images/moods/ocean-vibrant.jpg',
+        mobileImage: '/images/moods/mobile/ocean-vibrant.jpg'
     }
 ];
 
 export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSelectorProps) {
     const { isPlaying, togglePlay, currentTrack } = useAmbience();
 
-    // Determine current background image
-    // Determine current background image
-    const currentImage = activeMood
-        ? moods.find(m => m.id === activeMood)?.image
-        : moods[0].image; // Fallback to first (shouldn't happen with strict typing)
+    // Determine current mood object
+    const currentMood = moods.find(m => m.id === activeMood) || moods[0];
 
     return (
-        <div className="relative w-full h-[85svh] md:h-screen flex items-center justify-center overflow-hidden">
+        <div className="relative w-full h-[100dvh] flex items-center justify-center overflow-hidden">
 
             {/* Mobile Ambience Toggle - Top Left */}
             <div className="absolute top-4 left-4 z-50 md:hidden">
@@ -118,17 +120,20 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
             {/* Background Image Layer */}
             <div className="absolute inset-0 z-0">
                 <motion.div
-                    key={currentImage} // Key change triggers animation
+                    key={currentMood.id} // Key change triggers animation
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 1 }}
                     className="absolute inset-0"
                 >
-                    <img
-                        src={currentImage}
-                        className="w-full h-full object-cover"
-                        alt="Background"
-                    />
+                    <picture>
+                        <source media="(max-width: 768px)" srcSet={currentMood.mobileImage} />
+                        <img
+                            src={currentMood.image}
+                            className="w-full h-full object-cover"
+                            alt={currentMood.label}
+                        />
+                    </picture>
                 </motion.div>
             </div>
 
