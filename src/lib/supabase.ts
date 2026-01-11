@@ -76,6 +76,18 @@ export async function signInWithDiscord() {
     return data;
 }
 
+export async function signInWithApple() {
+    const supabaseBrowser = createSupabaseBrowserClient();
+    const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+        },
+    });
+    if (error) throw error;
+    return data;
+}
+
 // ========================================
 // Database Types
 // ========================================

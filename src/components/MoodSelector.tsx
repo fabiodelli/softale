@@ -124,8 +124,6 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
                         className="w-full h-full object-cover"
                         alt="Background"
                     />
-                    {/* Overlay to ensure text readability */}
-                    <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
                 </motion.div>
             </div>
 

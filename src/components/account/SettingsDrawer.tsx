@@ -23,6 +23,7 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
 
     const handleSaveProfile = async () => {
         if (!user) return;
@@ -42,14 +43,49 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
         setLoading(false);
     };
 
+    const [resetStatus, setResetStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
     const handleResetPassword = async () => {
         if (!user?.email || !supabase) return;
+        setResetStatus('loading');
         const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
             redirectTo: `${window.location.origin}/auth/callback?next=/account/reset-password`,
         });
-        if (!error) setMessage({ type: 'success', text: 'Reset email sent!' });
-        else setMessage({ type: 'error', text: 'Error sending email.' });
+
+        if (!error) {
+            setResetStatus('success');
+            setTimeout(() => setResetStatus('idle'), 3000); // Reset after 3s
+        } else {
+            setResetStatus('error');
+            setTimeout(() => setResetStatus('idle'), 3000);
+        }
     };
+    // ...
+    // Scroll down to button replacement
+    <button
+        onClick={handleResetPassword}
+        disabled={resetStatus !== 'idle'}
+        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition text-slate-600 disabled:opacity-70 disabled:cursor-not-allowed"
+    >
+        <div className={`p-2 rounded-lg ${resetStatus === 'success' ? 'bg-green-50 text-green-600' :
+            resetStatus === 'error' ? 'bg-red-50 text-red-600' :
+                'bg-blue-50 text-blue-600'
+            }`}>
+            {resetStatus === 'loading' ? (
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : resetStatus === 'success' ? (
+                <Shield className="w-5 h-5" />
+            ) : (
+                <Lock className="w-5 h-5" />
+            )}
+        </div>
+        <span className="flex-1 text-left font-medium">
+            {resetStatus === 'loading' ? 'Sending Email...' :
+                resetStatus === 'success' ? 'Email Sent! Check Inbox' :
+                    resetStatus === 'error' ? 'Error Sending Email' :
+                        'Reset Password'}
+        </span>
+    </button>
 
     const handleLogout = async () => {
         await signOut();
@@ -249,58 +285,54 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                                 <section>
                                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Security</h3>
                                     <div className="space-y-2">
-                                        <button onClick={handleResetPassword} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition text-slate-600">
-                                            <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><Lock className="w-5 h-5" /></div>
-                                            <span className="flex-1 text-left font-medium">Reset Password</span>
+                                        <button
+                                            onClick={handleResetPassword}
+                                            disabled={resetStatus !== 'idle'}
+                                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition text-slate-600 disabled:opacity-70 disabled:cursor-not-allowed"
+                                        >
+                                            <div className={`p-2 rounded-lg ${resetStatus === 'success' ? 'bg-green-50 text-green-600' :
+                                                resetStatus === 'error' ? 'bg-red-50 text-red-600' :
+                                                    'bg-blue-50 text-blue-600'
+                                                }`}>
+                                                {resetStatus === 'loading' ? (
+                                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                ) : resetStatus === 'success' ? (
+                                                    <Shield className="w-5 h-5" />
+                                                ) : (
+                                                    <Lock className="w-5 h-5" />
+                                                )}
+                                            </div>
+                                            <span className="flex-1 text-left font-medium">
+                                                {resetStatus === 'loading' ? 'Sending Email...' :
+                                                    resetStatus === 'success' ? 'Email Sent! Check Inbox' :
+                                                        resetStatus === 'error' ? 'Error Sending Email' :
+                                                            'Reset Password'}
+                                            </span>
                                         </button>
-                                        <Link href="mailto:support@softale.com" onClick={onClose} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition text-slate-600">
+                                        <Link href="mailto:support@softale.app" onClick={onClose} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition text-slate-600">
                                             <div className="p-2 bg-purple-50 rounded-lg text-purple-600"><Mail className="w-5 h-5" /></div>
                                             <span className="flex-1 text-left font-medium">Contact Support</span>
                                         </Link>
+                                        <button onClick={() => {
+                                            if (isPremium) {
+                                                setShowSubscriptionAlert(true);
+                                            } else {
+                                                setShowDeleteConfirm(true);
+                                            }
+                                        }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition text-slate-500 group">
+                                            <div className="p-2 bg-slate-50 group-hover:bg-slate-100 rounded-lg text-slate-400 transition"><LogOut className="w-5 h-5 rotate-180" /></div>
+                                            <span className="flex-1 text-left font-medium">Delete Account</span>
+                                            <ChevronRight className="w-4 h-4 text-slate-200 group-hover:text-slate-400" />
+                                        </button>
                                     </div>
                                 </section>
 
                                 <div className="flex-1" />
 
-                                {/* Danger Zone */}
-                                <section className="bg-red-50 p-4 rounded-2xl border border-red-100">
-                                    <h3 className="text-xs font-bold text-red-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <Shield className="w-3 h-3" /> Danger Zone
-                                    </h3>
-
-                                    {isPremium ? (
-                                        <div className="text-sm text-red-700 space-y-3">
-                                            <p>You have an active Premium subscription.</p>
-                                            <p className="font-medium">To delete your account, you must first cancel your subscription to prevent further billing.</p>
-                                            <button
-                                                onClick={async () => {
-                                                    const res = await fetch('/api/portal', { method: 'POST', body: JSON.stringify({ userId: user?.id }) });
-                                                    const { url } = await res.json();
-                                                    if (url) window.location.href = url;
-                                                }}
-                                                className="w-full py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg font-bold transition flex items-center justify-center gap-2"
-                                            >
-                                                <CreditCard className="w-4 h-4" />
-                                                Manage Subscription
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            <p className="text-xs text-red-600/80">Once you delete your account, there is no going back. Please be certain.</p>
-                                            <button
-                                                onClick={() => setShowDeleteConfirm(true)}
-                                                className="w-full py-2 bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white rounded-lg text-sm font-medium transition"
-                                            >
-                                                Delete Account
-                                            </button>
-                                        </div>
-                                    )}
-                                </section>
-
                                 {/* Logout */}
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold transition border border-slate-200 hover:border-slate-300"
+                                    className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 font-bold transition border border-red-100 hover:border-red-200"
                                 >
                                     <LogOut className="w-5 h-5" />
                                     Sign Out
@@ -315,6 +347,7 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                 )}
             </AnimatePresence>
 
+            {/* Delete Confirmation (Free Users) */}
             <ConfirmModal
                 isOpen={showDeleteConfirm}
                 onClose={() => setShowDeleteConfirm(false)}
@@ -324,6 +357,21 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                 confirmText="Permanently Delete"
                 isDestructive={true}
                 loading={loading}
+            />
+
+            {/* Premium Subscription Alert */}
+            <ConfirmModal
+                isOpen={showSubscriptionAlert}
+                onClose={() => setShowSubscriptionAlert(false)}
+                onConfirm={async () => {
+                    const res = await fetch('/api/portal', { method: 'POST', body: JSON.stringify({ userId: user?.id }) });
+                    const { url } = await res.json();
+                    if (url) window.location.href = url;
+                }}
+                title="Active Subscription"
+                message="You have an active Premium plan. Please cancel your subscription before deleting your account to avoid future charges."
+                confirmText="Manage Subscription"
+                isDestructive={false}
             />
         </>
     );

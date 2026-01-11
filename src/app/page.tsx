@@ -34,7 +34,6 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   // Mood State
-  // Mood State
   const [activeMood, setActiveMood] = useState<Mood>('sleep');
   const [greeting, setGreeting] = useState('');
 
