@@ -56,7 +56,7 @@ export default function RootLayout({
             <div className="flex-grow">
               {children}
             </div>
-            <div className="hidden md:block">
+            <div className="hidden md:block relative z-10 bg-slate-50">
               <Footer />
             </div>
           </div>

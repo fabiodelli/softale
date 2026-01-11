@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { Moon, Brain, Sparkles, Leaf, Waves, Headphones } from 'lucide-react';
 import { useAmbience } from '@/context/AmbienceContext';
 
@@ -51,7 +52,7 @@ const moods = [
         icon: Waves,
         colorClass: 'bg-amber-100 text-slate-800', // Swapped to Amber (Warm Energy)
         activeClass: 'ring-[3px] ring-amber-300 scale-105 bg-amber-200',
-        image: '/images/moods/ocean.png'
+        image: '/images/moods/ocean-vibrant.jpg'
     }
 ];
 
@@ -65,7 +66,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
         : moods[0].image; // Fallback to first (shouldn't happen with strict typing)
 
     return (
-        <div className="relative w-full h-[85svh] flex items-center justify-center overflow-hidden">
+        <div className="relative w-full h-[85svh] md:h-screen flex items-center justify-center overflow-hidden">
 
             {/* Mobile Ambience Toggle - Top Left */}
             <div className="absolute top-4 left-4 z-50 md:hidden">
@@ -102,6 +103,14 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
                 )}
             </div>
 
+            {/* Mobile Logo - Fixed in Hero (Footer Gradient Match) */}
+            <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 z-50 md:hidden flex items-center gap-2 group drop-shadow-lg">
+                <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
+                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600 block tracking-tight">
+                    Softale
+                </h1>
+            </Link>
+
 
 
 
@@ -114,10 +123,6 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
                     animate={{ opacity: 1 }}
                     transition={{ duration: 1 }}
                     className="absolute inset-0"
-                    style={{
-                        maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)',
-                        WebkitMaskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)'
-                    }}
                 >
                     <img
                         src={currentImage}
@@ -135,15 +140,15 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
                     <motion.h2
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-xl md:text-2xl font-medium text-slate-800/80 mb-2 mix-blend-hard-light"
+                        className="text-xl md:text-2xl font-medium text-white mb-2 tracking-wide drop-shadow-md [-webkit-text-stroke:0.5px_rgba(0,0,0,0.4)] [paint-order:stroke_fill]"
                     >
-                        {greeting || 'Good Morning'}
+                        {greeting}
                     </motion.h2>
                     <motion.h1
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-5xl md:text-7xl font-bold text-slate-900 tracking-tight leading-none mix-blend-color-burn"
+                        className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-none drop-shadow-2xl [-webkit-text-stroke:1.5px_rgba(0,0,0,0.4)] [paint-order:stroke_fill]"
                     >
                         What are you<br />looking for?
                     </motion.h1>

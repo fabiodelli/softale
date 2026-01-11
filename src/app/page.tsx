@@ -171,97 +171,100 @@ export default function HomePage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
-      className="min-h-screen bg-slate-50 pb-20"
+      className="min-h-screen bg-slate-50 selection:bg-indigo-100 selection:text-indigo-900"
     >
-      {/* Mood Selector (Hero Section) */}
-      <MoodSelector
-        activeMood={activeMood}
-        onSelect={handleMoodSelect}
-        greeting={greeting}
-      />
+      {/* 
+        1. FIXED HERO LAYER (Z-0) 
+        The MoodSelector contains the Hero Image and the Greeting Text.
+        We fix it to the viewport so it stays behind while content scrolls up.
+      */}
+      <div className="fixed top-0 inset-x-0 h-[85vh] md:h-screen z-0">
+        <MoodSelector
+          activeMood={activeMood}
+          onSelect={handleMoodSelect}
+          greeting={greeting}
+        />
+      </div>
 
-      {/* Main Content Feed */}
-      <div className="max-w-[100vw] overflow-x-clip px-6 md:px-12 py-6">
+      {/* 
+        2. SCROLLING CONTENT LAYER (Z-10) 
+        Starts below the Hero (85vh on mobile, 100vh on desktop), then scrolls up over it.
+        The negative top-margin gradient provides the smooth transition.
+      */}
+      <div className="relative z-10 mt-[85vh] md:mt-[100vh] bg-slate-50 min-h-screen pb-20 md:pb-12 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
 
-        {/* --- SEARCH MODE --- */}
-        {searchQuery ? (
-          <>
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-slate-800">Results for "{searchQuery}"</h2>
-            </div>
-            {displayedStories.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
-                {displayedStories.map((story) => (
-                  <StoryCard key={story.id} story={story} aspectRatio="square" />
-                ))}
+        {/* The White Fade (Transferred from Hero to here) */}
+        <div className="absolute bottom-[99%] inset-x-0 h-40 bg-gradient-to-t from-slate-50 from-15% via-slate-50/60 to-transparent pointer-events-none" />
+
+        <div className="max-w-[1600px] mx-auto px-6 md:px-12 pt-10">
+
+          {/* SEARCH MODE */}
+          {searchQuery ? (
+            <div className="mb-20">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-slate-800">Results for "{searchQuery}"</h2>
               </div>
-            ) : (
-              <div className="py-20 text-center text-slate-500">No results found.</div>
-            )}
-          </>
-        ) : (
-          /* --- CONTEXTUAL MODE (Mood Layout) --- */
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-            {/* 1. Collections Row (Top Priority) */}
-            {displayedCollections.length > 0 && (
-              <div className="mb-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <Layers className="w-4 h-4 text-indigo-600" />
-                  <h3 className="text-lg font-bold text-slate-900">Collections</h3>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide w-full">
-                  {displayedCollections.slice(0, 6).map((collection, i) => (
-                    <motion.div
-                      key={collection.id}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.05 * i }}
-                      className="flex-shrink-0 w-40 md:w-48"
-                    >
-                      <CollectionCard collection={collection} />
-                    </motion.div>
+              {displayedStories.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
+                  {displayedStories.map((story) => (
+                    <StoryCard key={story.id} story={story} aspectRatio="square" />
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="py-20 text-center text-slate-500">No results found.</div>
+              )}
+            </div>
+          ) : (
+            /* CONTEXTUAL FEED MODE */
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-            {/* Global Featured Card REMOVED as per user request */}
-            {/* {layout.featured && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <FeaturedCard story={layout.featured} />
-              </motion.div>
-            )} */}
+              {/* 1. Collections Row */}
+              {displayedCollections.length > 0 && (
+                <div className="mb-12">
+                  <div className="flex items-center gap-2 mb-4 px-1">
+                    <Layers className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-lg font-bold text-slate-900">Collections</h3>
+                  </div>
+                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide w-full items-start">
+                    {displayedCollections.slice(0, 6).map((collection, i) => (
+                      <motion.div
+                        key={collection.id}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.05 * i }}
+                        className="flex-shrink-0"
+                      >
+                        <CollectionCard collection={collection} className="w-60 md:w-80" />
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            {/* 3. Content Sections */}
-            {layout.sections.map((section, idx) => (
-              <div key={section.id}>
-                {/* Horizontal Divider (Indented, subtle) - Between sections only */}
-                {idx > 0 && <div className="border-t border-slate-200/60 mx-6 md:mx-12 my-10" />}
+              {/* 2. Content Sections */}
+              {layout.sections.map((section, idx) => (
+                <div key={section.id}>
+                  {/* Horizontal Divider */}
+                  {idx > 0 && <div className="border-t border-slate-200/60 mx-6 md:mx-12 my-10" />}
 
-                <ContentSection
-                  title={section.title}
-                  subtitle={section.subtitle}
-                  items={section.items}
-                  type={section.type}
-                />
-              </div>
-            ))}
+                  <ContentSection
+                    title={section.title}
+                    subtitle={section.subtitle}
+                    items={section.items}
+                    type={section.type}
+                  />
+                </div>
+              ))}
 
-            {/* Empty State Fallback */}
-            {!layout.featured && layout.sections.length === 0 && (
-              <div className="py-20 text-center">
-                <div className="text-4xl mb-4">🍂</div>
-                <h3 className="text-lg font-medium text-slate-900">Coming Soon</h3>
-                <p className="text-slate-500 mt-2 max-w-xs mx-auto">
-                  We are crafting content for this mood.
-                </p>
-              </div>
-            )}
-
-          </div>
-        )}
-
+              {/* Empty State Fallback */}
+              {layout.sections.length === 0 && (
+                <div className="text-center py-20 text-slate-400">
+                  <p>No stories found for this mood.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </motion.div>
   );
