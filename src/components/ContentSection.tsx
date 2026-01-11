@@ -136,25 +136,29 @@ export default function ContentSection({
 
             {/* Content */}
             {type === 'mixed' ? (
-                // Mixed Layout: 1 Featured + List
-                <div className="flex flex-col gap-6">
-                    {/* Featured Lead */}
+                // Mixed Layout: 1 Featured Banner + Horizontal Slider below
+                <div className="flex flex-col gap-8">
+                    {/* Featured Banner */}
                     {items.length > 0 && (
                         <div className="w-full">
                             <FeaturedCard story={items[0]} />
                         </div>
                     )}
-                    {/* Horizontal List */}
+                    {/* Horizontal Slider (Starting from index 1) */}
                     {items.length > 1 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {items.slice(1).map((story, index) => (
-                                <StoryCard
-                                    key={story.id}
-                                    story={story}
-                                    aspectRatio="horizontal"
-                                    className={index >= 3 ? 'hidden md:flex' : ''}
-                                />
-                            ))}
+                        <div>
+                            {/* Optional Sub-header for the slider part */}
+                            <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 px-1">More in this section</h4>
+                            <div
+                                className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x scroll-smooth w-full"
+                                ref={scrollRef} // Reusing scroll ref logic if needed, or create new one
+                            >
+                                {items.slice(1).map((story) => (
+                                    <div key={story.id} className="w-48 md:w-56 flex-shrink-0 snap-start">
+                                        <StoryCard story={story} aspectRatio="square" />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>

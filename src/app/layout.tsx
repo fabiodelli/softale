@@ -5,7 +5,7 @@ import "./globals.css";
 import MiniPlayer from "@/components/MiniPlayer";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import CookieConsent from "@/components/CookieConsent";
+import CookieConsent from "@/components/legal/CookieConsent";
 import PremiumModal from "@/components/PremiumModal";
 import BottomNav from "@/components/BottomNav";
 

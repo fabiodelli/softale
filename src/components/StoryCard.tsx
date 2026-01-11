@@ -177,125 +177,110 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
     }
 
     const Content = (
-        <div
-            className={`relative group rounded-xl overflow-hidden cursor-pointer bg-white border border-slate-200/60 shadow-sm hover:shadow-xl transition-all ${aspectClasses[aspectRatio]} ${className}`}
-            onClick={handlePlay}
-        >
-            {/* Image Layer */}
-            <div className="absolute inset-0">
-                {imageUrl ? (
-                    <img
-                        src={imageUrl}
-                        alt={story.title}
-                        className={`w-full h-full object-cover transition-transform duration-700 ${isActive ? 'scale-105' : 'group-hover:scale-110'}`}
-                    />
-                ) : (
-                    <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                        <span className="text-3xl opacity-20">🎧</span>
-                    </div>
-                )}
-            </div>
-
-            {/* Gradient Overlay - Always visible but darker at bottom */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-70 transition-opacity duration-300" />
-
-            {/* Favorite Heart Button - Top Right */}
-            <button
-                onClick={handleFavoriteClick}
-                disabled={favoriteLoading}
-                className={`absolute top-2.5 right-2.5 z-30 p-1.5 rounded-full transition-all duration-200
-                    ${isFavorite
-                        ? 'bg-red-500/90 text-white shadow-lg'
-                        : 'bg-black/30 text-white/80 hover:bg-black/50 hover:text-white backdrop-blur-sm'
-                    }
-                    ${favoriteLoading ? 'opacity-50' : 'opacity-0 group-hover:opacity-100'}
-                    ${isFavorite ? '!opacity-100' : ''}
-                `}
-            >
-                <Heart
-                    className={`w-3.5 h-3.5 transition-transform ${favoriteLoading ? 'animate-pulse' : ''}`}
-                    fill={isFavorite ? 'currentColor' : 'none'}
-                    strokeWidth={2}
-                />
-            </button>
-
-            {/* Progress Bar (if provided) */}
-            {progress !== undefined && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
-                    <div
-                        className="h-full bg-white/90 shadow-[0_0_10px_rgba(255,255,255,0.5)]"
-                        style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-                    />
-                </div>
-            )}
-
-            {/* Rank Number (if provided) - Huge & Stylized */}
-            {rank && (
-                <div className="absolute -top-4 -left-2 z-20 font-black text-6xl md:text-7xl text-white/10 drop-shadow-sm select-none pointer-events-none">
-                    <span className="stroke-text" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.3)', color: 'transparent' }}>{rank}</span>
-                </div>
-            )}
-
-            {/* Play Overlay (Centered) */}
-            <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 pointer-events-none z-30 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                <div className={`w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center text-white border border-white/30 shadow-lg transform transition-transform ${isActive ? 'bg-indigo-600/90 scale-100' : 'bg-white/20 scale-75 group-hover:scale-100'}`}>
-                    {isActive ? (
-                        <Pause className="w-5 h-5 fill-current" />
+        <div className={`group cursor-pointer flex flex-col gap-3 ${className}`} onClick={handlePlay}>
+            {/* Image Container */}
+            <div className={`relative rounded-xl overflow-hidden transition-all duration-500 border border-slate-100 
+                ${aspectClasses[aspectRatio]}
+                ${isActive
+                    ? 'animate-pulse scale-[0.98] shadow-none'
+                    : 'shadow-md hover:shadow-xl hover:-translate-y-0.5'
+                }
+            `}>
+                {/* Image Layer */}
+                <div className="absolute inset-0">
+                    {imageUrl ? (
+                        <img
+                            src={imageUrl}
+                            alt={story.title}
+                            className={`w-full h-full object-cover transition-transform duration-1000 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}
+                        />
                     ) : (
-                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                        <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                            <span className="text-3xl opacity-20">🎧</span>
+                        </div>
                     )}
                 </div>
-            </div>
 
-            {/* Text Content - Positioned Bottom */}
-            <div className={`absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300 z-20 ${progress ? 'pb-5' : ''}`}> {/* Add padding if progress bar exists */}
-                <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-sm backdrop-blur-sm shadow-sm ${(() => {
-                        const colors: Record<string, string> = {
-                            sleep: 'bg-indigo-500/80 text-white',
-                            meditation: 'bg-teal-500/80 text-white',
-                            fantasy: 'bg-fuchsia-600/80 text-white',
-                            nature: 'bg-emerald-600/80 text-white',
-                            soundscape: 'bg-cyan-600/80 text-white',
-                            frequencies: 'bg-purple-600/80 text-white',
-                            music_instrumental: 'bg-sky-600/80 text-white',
-                            motivation: 'bg-amber-500/80 text-white',
-                            work_break: 'bg-orange-500/80 text-white',
-                            kids: 'bg-pink-500/80 text-white'
-                        };
-                        return colors[story.category] || 'bg-slate-700/80 text-white';
-                    })()
-                        }`}>
-                        {story.category?.replace(/_/g, ' ') || 'Story'}
-                    </span>
-                    {story.is_premium && (
-                        <span className="ml-1 text-[10px] bg-black/40 text-amber-300 px-1.5 py-0.5 rounded-sm font-bold backdrop-blur-sm shadow-sm flex items-center gap-1 border border-amber-500/30">
-                            {/* Logic: If user is premium -> Show nothing or Key? If locked -> Show Lock */}
-                            {/* We show Lock if story is premium, visual indicator. Logic handles access. */}
+                {/* Subtle Gradient for readability of white icons (Heart) */}
+                <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Premium Badge - Top Left (On Image) */}
+                {story.is_premium && (
+                    <div className="absolute top-2.5 left-2.5 z-20">
+                        <span className="text-[10px] bg-black/60 text-amber-300 px-1.5 py-0.5 rounded-md font-bold backdrop-blur-md flex items-center gap-1 border border-amber-500/30 shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                             </svg>
-                            PREMIUM
                         </span>
-                    )}
-                </div>
+                    </div>
+                )}
 
-                <h3 className="text-white font-bold text-base leading-tight drop-shadow-md line-clamp-2 group-hover:text-white transition-colors">
+                {/* Favorite Heart Button - Top Right */}
+                <button
+                    onClick={handleFavoriteClick}
+                    disabled={favoriteLoading}
+                    className={`absolute top-2.5 right-2.5 z-30 p-1.5 rounded-full transition-all duration-200
+                        ${isFavorite
+                            ? 'bg-red-500/90 text-white shadow-lg'
+                            : 'bg-black/30 text-white/80 hover:bg-black/50 hover:text-white backdrop-blur-sm'
+                        }
+                        ${favoriteLoading ? 'opacity-50' : 'opacity-0 group-hover:opacity-100'}
+                        ${isFavorite ? '!opacity-100' : ''}
+                    `}
+                >
+                    <Heart
+                        className={`w-3.5 h-3.5 transition-transform ${favoriteLoading ? 'animate-pulse' : ''}`}
+                        fill={isFavorite ? 'currentColor' : 'none'}
+                        strokeWidth={2}
+                    />
+                </button>
+
+                {/* Play Button Overlay - HIDDEN (User Request: "Senza mostrare play e pausa") */}
+                {/* We strictly rely on the Pulse/Glow + Scale to indicate state */}
+
+                {/* Rank Number (if provided) */}
+                {rank && (
+                    <div className="absolute -top-4 -left-2 z-20 font-black text-6xl md:text-7xl text-white/10 drop-shadow-sm select-none pointer-events-none">
+                        <span className="stroke-text" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.3)', color: 'transparent' }}>{rank}</span>
+                    </div>
+                )}
+
+                {/* Progress Bar (if provided) */}
+                {progress !== undefined && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
+                        <div
+                            className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Info Container (Outside) */}
+            <div>
+                <h3 className={`font-bold text-base leading-tight mb-1.5 line-clamp-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-900 group-hover:text-indigo-600'}`}>
                     {story.title}
                 </h3>
 
-                <div className="flex items-center justify-between mt-2 text-xs text-white/80 font-medium opacity-90 group-hover:opacity-100 transition-opacity">
-                    {!['music_instrumental', 'frequencies', 'meditation', 'sleep', 'soundscape'].includes(story.category) && (
-                        <span>{remainingTime ? `${remainingTime} left` : formattedDuration}</span>
-                    )}
-                    {/* For ambient categories, show duration or loop */}
-                    {['music_instrumental', 'frequencies', 'meditation', 'sleep', 'soundscape'].includes(story.category) && (
-                        <div className="flex items-center gap-1">
-                            {showLoop && <Infinity className="w-3 h-3 text-white/70" />}
-                            <span>{formattedDuration}</span>
-                        </div>
-                    )}
+                <div className="flex items-center gap-2">
+                    {/* Author Avatar */}
+                    <div className="w-5 h-5 rounded-full bg-slate-200 overflow-hidden flex-shrink-0 border border-slate-100">
+                        {story.author_image_url ? (
+                            <img src={story.author_image_url} alt={story.author} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-[8px] text-indigo-600 font-bold">
+                                {(story.author || 'S').charAt(0)}
+                            </div>
+                        )}
+                    </div>
+                    {/* Author Name */}
+                    <span className="text-xs font-medium text-slate-500 truncate">
+                        {story.author || 'Softale'}
+                    </span>
+                    {/* Optional: Dot + Duration if space */}
+                    {/* <span className="text-[10px] text-slate-300">•</span>
+                    <span className="text-xs text-slate-400">{formattedDuration}</span> */}
                 </div>
             </div>
         </div>

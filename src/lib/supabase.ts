@@ -107,6 +107,7 @@ export interface Story {
     title: string;
     description: string;
     author: string;
+    author_image_url?: string; // Avatar of the narrator/author
     cover_url: string;
     cover_portrait_url?: string; // Vertical (2:3)
     cover_landscape_url?: string; // Horizontal (16:9)

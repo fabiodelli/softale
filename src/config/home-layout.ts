@@ -51,14 +51,14 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     id: 'peaceful',
                     title: 'Peaceful Environments',
                     items: getByCat(allStories, ['soundscape', 'nature']),
-                    type: 'mixed',
+                    type: 'mixed', // Banner + Slider
                     filterCategory: 'soundscape'
                 },
                 {
                     id: 'deep_rest',
                     title: 'Deep Rest Frequencies',
                     items: getByCat(allStories, ['binaural', 'meditation']),
-                    type: 'mixed',
+                    type: 'mixed', // Banner + Slider
                     filterCategory: 'binaural'
                 }
             ]
@@ -67,7 +67,6 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
 
     // === FOCUSED (Work) ===
     if (mood === 'meditation') {
-        // Dynamic: Get newest Instrumental or Binaural
         const featured = getByCat(allStories, ['music_instrumental', 'binaural', 'motivation'])[0];
         return {
             featured,
@@ -83,14 +82,14 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     id: 'science_focus',
                     title: 'Focus Science',
                     items: getByCat(allStories, ['binaural']),
-                    type: 'mixed',
+                    type: 'mixed', // Banner + Slider
                     filterCategory: 'binaural'
                 },
                 {
                     id: 'quick_reset',
                     title: 'Quick Resets',
                     items: getByCat(allStories, ['work_break', 'meditation']),
-                    type: 'mixed',
+                    type: 'mixed', // Banner + Slider
                     filterCategory: 'work_break'
                 }
             ]
@@ -99,7 +98,6 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
 
     // === ENERGIZED ===
     if (mood === 'energized') {
-        // Dynamic: Get newest Motivation or Upbeat Instrumental
         const featured = getByCat(allStories, ['motivation', 'music_instrumental'])[0];
         return {
             featured,
@@ -115,7 +113,7 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     id: 'upbeat',
                     title: 'Energizing Audio',
                     items: getByCat(allStories, ['music_instrumental', 'nature']),
-                    type: 'mixed',
+                    type: 'mixed', // Banner + Slider
                     filterCategory: 'music_instrumental'
                 }
             ]
@@ -124,7 +122,6 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
 
     // === PEACEFUL (Nature) ===
     if (mood === 'nature') {
-        // Dynamic: Get newest Nature or Soundscape
         const featured = getByCat(allStories, ['nature', 'soundscape'])[0];
         return {
             featured,
@@ -140,7 +137,7 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     id: 'grounding',
                     title: 'Grounding Practices',
                     items: getByCat(allStories, ['meditation']),
-                    type: 'mixed',
+                    type: 'mixed', // Banner + Slider
                     filterCategory: 'meditation'
                 }
             ]
@@ -149,7 +146,6 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
 
     // === DREAMY (Fantasy) ===
     if (mood === 'fantasy') {
-        // Dynamic: Get newest Fantasy, Kids, Soundscape, or Nature story (Broader fallback)
         const featured = getByCat(allStories, ['fantasy', 'kids', 'soundscape', 'nature'])[0];
         return {
             featured,
@@ -165,7 +161,7 @@ export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout =>
                     id: 'surreal',
                     title: 'Surreal Soundscapes',
                     items: getByCat(allStories, ['soundscape', 'music_instrumental']),
-                    type: 'mixed',
+                    type: 'mixed', // Banner + Slider
                     filterCategory: 'soundscape'
                 }
             ]

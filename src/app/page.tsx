@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { getStories, getCollections, type Story, type Collection } from '@/lib/supabase';
 import StoryCard from '@/components/StoryCard';
@@ -12,10 +12,11 @@ import { Layers } from 'lucide-react';
 import { getLayoutForMood } from '@/config/home-layout';
 import ContentSection from '@/components/ContentSection';
 import FeaturedCard from '@/components/FeaturedCard';
-import { useSearchParams } from 'next/navigation'; // Keeping for mood param
+import { useSearchParams } from 'next/navigation';
+import { useAuth } from '@/lib/AuthProvider'; // Import Auth
+import LandingPage from '@/components/landing/LandingPage'; // Import Landing
 
-// Mood to Categories Mapping (synced with Factory RECIPE_MATRIX)
-// Factory categories: sleep, meditation, fantasy, kids, motivation, work_break, nature, soundscape, music_instrumental, binaural
+// Mood to Categories Mapping
 const moodToCategories: Record<string, string[]> = {
   'sleep': ['sleep', 'meditation', 'nature', 'soundscape', 'binaural', 'music_instrumental'],
   'meditation': ['meditation', 'binaural', 'work_break', 'nature', 'soundscape', 'music_instrumental'],
@@ -25,19 +26,56 @@ const moodToCategories: Record<string, string[]> = {
 };
 
 export default function HomePage() {
+  const { user, loading: authLoading } = useAuth();
   const { play } = usePlayer();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
+  // STATE: Landing vs App
+  const [showLanding, setShowLanding] = useState(true);
+  const [appReady, setAppReady] = useState(false);
+
+  // DATA STATE
   const [allStories, setAllStories] = useState<Story[]>([]);
   const [allCollections, setAllCollections] = useState<Collection[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  // Mood State
+  // MOOD STATE
   const [activeMood, setActiveMood] = useState<Mood>('sleep');
   const [greeting, setGreeting] = useState('');
 
-  // Time-based Greeting Logic
+  // 1. CHECK VISITOR STATUS (Hybrid Logic)
+  useEffect(() => {
+    // If Auth is still loading, wait.
+    if (authLoading) return;
+
+    // If User is logged in, ALWAYS skip landing.
+    if (user) {
+      setShowLanding(false);
+      setAppReady(true);
+      return;
+    }
+
+    // If User is NOT logged in, check if they've visited before.
+    const hasVisited = localStorage.getItem('softale_has_visited');
+    if (hasVisited === 'true') {
+      setShowLanding(false);
+      setAppReady(true);
+    } else {
+      // First timer: Show Landing
+      setShowLanding(true);
+      // Pre-fetch App data in background while they read the landing page...
+    }
+  }, [user, authLoading]);
+
+  // Transition Handler
+  const handleEnterApp = () => {
+    localStorage.setItem('softale_has_visited', 'true');
+    setShowLanding(false);
+    setTimeout(() => setAppReady(true), 500); // Small delay for fade effect if needed
+  };
+
+  // Time-based Greeting
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) setGreeting('Good Morning');
@@ -45,93 +83,81 @@ export default function HomePage() {
     else setGreeting('Good Evening');
   }, []);
 
-  // Sync Mood with URL Query Param (e.g. from Footer links)
+  // Sync Mood with URL
   useEffect(() => {
     const moodParam = searchParams.get('mood');
     if (moodParam && moodToCategories[moodParam]) {
-      // Direct state update + storage update
-      const mood = moodParam as Mood;
-      setActiveMood(mood);
-      sessionStorage.setItem('reverie_active_mood', mood!);
+      setActiveMood(moodParam as Mood);
+      sessionStorage.setItem('reverie_active_mood', moodParam);
     }
   }, [searchParams]);
 
-  // Restore Mood from SessionStorage
+  // Restore Mood
   useEffect(() => {
     const savedMood = sessionStorage.getItem('reverie_active_mood');
-    if (savedMood) {
-      setActiveMood(savedMood as Mood);
-    }
+    if (savedMood) setActiveMood(savedMood as Mood);
   }, []);
 
-
   // Ambience Integration
-  const { setTrack, setVolume } = useAmbience();
-
+  const { setTrack } = useAmbience();
   const moodToAmbience: Record<string, string> = {
-    'sleep': 'night',        // Relaxed -> Night Nature (Crickets)
-    'meditation': 'river',   // Focused -> River
-    'fantasy': 'wind',       // Dreamy -> Wind
-    'nature': 'forest',      // Peaceful -> Forest
-    'energized': 'ocean'     // Energized -> Ocean
+    'sleep': 'night',
+    'meditation': 'river',
+    'fantasy': 'wind',
+    'nature': 'forest',
+    'energized': 'ocean'
   };
 
-  // Mood Handler with Persistence and Ambience Trigger
   const handleMoodSelect = (mood: Mood) => {
     setActiveMood(mood);
     sessionStorage.setItem('reverie_active_mood', mood);
-
-    // Trigger Ambience
     const trackId = moodToAmbience[mood];
-    if (trackId) {
-      setTrack(trackId);
-    }
+    if (trackId) setTrack(trackId);
   };
 
-  // Data Fetching - Stories and Collections
+  // Data Fetching
   useEffect(() => {
     async function fetchData() {
+      // If we are showing landing, we can still fetch in background
       const [stories, collections] = await Promise.all([
         getStories(),
         getCollections()
       ]);
       setAllStories(stories);
       setAllCollections(collections);
-      setLoading(false);
+      setDataLoading(false);
     }
     fetchData();
-  }, []);
+  }, []); // Run once on mount
 
-  // Filter stories based on Active Mood or Search
+  // ... Filter Logic ...
   const displayedStories = allStories.filter(story => {
-    if (!searchQuery && !activeMood) return true; // Should not happen with default mood
-
-    if (searchQuery) {
-      return story.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        story.description.toLowerCase().includes(searchQuery.toLowerCase());
-    }
-
-    if (activeMood) {
-      const targetCategories = moodToCategories[activeMood] || [];
-      return targetCategories.includes(story.category);
-    }
-
+    if (!searchQuery && !activeMood) return true;
+    if (searchQuery) return story.title.toLowerCase().includes(searchQuery.toLowerCase()) || story.description.toLowerCase().includes(searchQuery.toLowerCase());
+    if (activeMood) return (moodToCategories[activeMood] || []).includes(story.category);
     return true;
   });
 
-  // Filter collections based on Active Mood
-  const displayedCollections = allCollections.filter(collection => {
-    if (searchQuery) return false; // Hide collections during search
-
-    const targetCategories = moodToCategories[activeMood] || [];
-    return targetCategories.includes(collection.category || '');
+  const displayedCollections = allCollections.filter(c => {
+    if (searchQuery) return false;
+    return (moodToCategories[activeMood] || []).includes(c.category || '');
   });
 
-
-  // Layout Engine
   const layout = getLayoutForMood(activeMood, allStories);
 
-  if (loading) {
+  // --- RENDER ---
+
+  // 1. LANDING PAGE STATE
+  if (showLanding && !user) {
+    return <LandingPage onEnterApp={handleEnterApp} />;
+  }
+
+  // 2. APP LOADING STATE (Transition)
+  if (!appReady && !dataLoading) {
+    return <div className="min-h-screen bg-slate-50" />; // Empty flash during swap
+  }
+
+  if (dataLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
@@ -139,9 +165,14 @@ export default function HomePage() {
     );
   }
 
+  // 3. APP DASHBOARD STATE
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      className="min-h-screen bg-slate-50 pb-20"
+    >
       {/* Mood Selector (Hero Section) */}
       <MoodSelector
         activeMood={activeMood}
@@ -172,21 +203,14 @@ export default function HomePage() {
           /* --- CONTEXTUAL MODE (Mood Layout) --- */
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-            {/* 1. Featured Hero Card */}
-            {layout.featured && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <FeaturedCard story={layout.featured} />
-              </motion.div>
-            )}
-
-            {/* 2. Collections Row (Legacy logic preserved) */}
+            {/* 1. Collections Row (Top Priority) */}
             {displayedCollections.length > 0 && (
-              <div className="mb-12">
+              <div className="mb-10">
                 <div className="flex items-center gap-2 mb-4">
                   <Layers className="w-4 h-4 text-indigo-600" />
                   <h3 className="text-lg font-bold text-slate-900">Collections</h3>
                 </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-6 md:-mx-12 px-6 md:px-12">
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide w-full">
                   {displayedCollections.slice(0, 6).map((collection, i) => (
                     <motion.div
                       key={collection.id}
@@ -202,13 +226,26 @@ export default function HomePage() {
               </div>
             )}
 
+            {/* Global Featured Card REMOVED as per user request */}
+            {/* {layout.featured && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <FeaturedCard story={layout.featured} />
+              </motion.div>
+            )} */}
+
             {/* 3. Content Sections */}
             {layout.sections.map((section, idx) => (
-              <ContentSection
-                key={section.id}
-                {...section}
-                delay={0.1 * idx}
-              />
+              <div key={section.id}>
+                {/* Horizontal Divider (Indented, subtle) - Between sections only */}
+                {idx > 0 && <div className="border-t border-slate-200/60 mx-6 md:mx-12 my-10" />}
+
+                <ContentSection
+                  title={section.title}
+                  subtitle={section.subtitle}
+                  items={section.items}
+                  type={section.type}
+                />
+              </div>
             ))}
 
             {/* Empty State Fallback */}
@@ -226,6 +263,6 @@ export default function HomePage() {
         )}
 
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -3,6 +3,9 @@
 
 import { Story } from '@/lib/supabase';
 import { usePlayer } from '@/lib/PlayerContext';
+import { useAuth } from '@/lib/AuthProvider'; // Added
+import { usePremiumModal } from '@/lib/usePremiumModal'; // Added
+import { useRouter } from 'next/navigation'; // Added
 import { cleanDescription, formatDuration } from '@/lib/formatters';
 import { Play, Pause } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -33,8 +36,25 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
         }
     };
 
+    const { user, profile } = useAuth();
+    const router = useRouter();
+    const { open: openPremiumModal } = usePremiumModal();
+    const isLocked = story.is_premium && !profile?.is_premium;
+
     const handlePlayToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
+
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+
+        if (isLocked) {
+            // router.push('/upgrade'); // Or open modal
+            openPremiumModal();
+            return;
+        }
+
         if (active) {
             pause();
         } else {
@@ -44,57 +64,62 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden shadow-2xl group cursor-pointer mb-12"
-            onClick={() => play(story)}
+            className="w-full relative mb-6 group"
         >
-            {/* Background Image */}
-            <img
-                src={imgSrc}
-                onError={handleImageError}
-                alt={story.title}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
+            {/* 
+              Responsive Container:
+              - Mobile: Transparent stack.
+              - Desktop: Glassmorphic Box, Compact Height (to match standard cards).
+            */}
+            <div className={`relative flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 transition-all duration-500
+                md:rounded-2xl md:border md:p-4
+                ${active
+                    ? 'md:bg-white/80 md:backdrop-blur-2xl md:border-indigo-100 md:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.2)]'
+                    : 'md:bg-white/60 md:backdrop-blur-xl md:border-slate-100 md:shadow-lg md:hover:shadow-xl md:hover:bg-white/70'
+                }`}
+            >
+                {/* Image Container - Fixed Height on Desktop (Visual Alignment) */}
+                <div
+                    className={`relative w-full md:w-auto md:h-48 lg:h-56 aspect-video rounded-xl overflow-hidden cursor-pointer transition-all duration-700
+                    ${active
+                            ? 'animate-pulse scale-[0.98] shadow-inner'
+                            : 'shadow-md hover:shadow-lg hover:-translate-y-0.5'
+                        }`}
+                    onClick={handlePlayToggle}
+                >
+                    {/* Background Image */}
+                    <img
+                        src={imgSrc}
+                        onError={handleImageError}
+                        alt={story.title}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                    />
 
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent" />
-
-            {/* Content */}
-            <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full md:w-2/3">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-medium text-white uppercase tracking-wider border border-white/10">
-                        Featured • {story.category.replace('_', ' ')}
-                    </span>
-                    <span className="text-white/70 text-xs font-medium">
-                        {formatDuration(story.duration)}
-                    </span>
+                    {/* Gradient for Depth */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 md:h-1/3 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
                 </div>
 
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight">
-                    {story.title}
-                </h2>
+                {/* Info Container */}
+                <div className="flex-1 flex flex-col justify-center items-start gap-1 md:gap-2 px-1 md:px-0 w-full">
+                    {/* Title */}
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-[1.1] tracking-tight line-clamp-2">
+                        {story.title}
+                    </h2>
 
-                <p className="text-white/80 line-clamp-2 mb-6 text-sm md:text-base max-w-lg">
-                    {cleanDescription(story.description)}
-                </p>
-
-                <button
-                    onClick={handlePlayToggle}
-                    className="flex items-center gap-3 px-6 py-3 bg-white text-slate-900 rounded-full font-bold hover:bg-indigo-50 transition-colors shadow-lg hover:shadow-indigo-500/20 active:scale-95 transform duration-100"
-                >
-                    {active ? (
-                        <>
-                            <Pause className="w-5 h-5 fill-current" />
-                            Pause
-                        </>
-                    ) : (
-                        <>
-                            <Play className="w-5 h-5 fill-current" />
-                            Play Now
-                        </>
-                    )}
-                </button>
+                    {/* Author Info */}
+                    <div className="flex items-center gap-2 mt-1">
+                        <div className="w-5 h-5 md:w-6 md:h-6 rounded-full overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
+                            {story.author_image_url ? (
+                                <img src={story.author_image_url} alt={story.author} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-[9px] text-indigo-600 font-bold">S</div>
+                            )}
+                        </div>
+                        <span className="text-sm font-semibold text-slate-500">{story.author || 'Softale Production'}</span>
+                    </div>
+                </div>
             </div>
         </motion.div>
     );
