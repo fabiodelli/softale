@@ -6,8 +6,10 @@ import { getStories, getCollections, type Story, type Collection } from '@/lib/s
 import StoryCard from '@/components/StoryCard';
 import CollectionCard from '@/components/CollectionCard';
 import MoodSelector, { Mood } from '@/components/MoodSelector';
+import MoodToggleButton from '@/components/MoodToggleButton';
 import { usePlayer } from '@/lib/PlayerContext';
 import { useAmbience } from '@/context/AmbienceContext';
+import { useMood } from '@/context/MoodContext';
 import { Layers } from 'lucide-react';
 import { getLayoutForMood } from '@/config/home-layout';
 import ContentSection from '@/components/ContentSection';
@@ -28,6 +30,7 @@ const moodToCategories: Record<string, string[]> = {
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const { play } = usePlayer();
+  const { isPlaying } = useAmbience();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
@@ -40,9 +43,21 @@ export default function HomePage() {
   const [allCollections, setAllCollections] = useState<Collection[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // MOOD STATE
-  const [activeMood, setActiveMood] = useState<Mood>('sleep');
+  // MOOD STATE - Using shared context
+  const { activeMood, setActiveMood } = useMood();
   const [greeting, setGreeting] = useState('');
+
+  // SCROLL STATE - Hero visibility
+  const [heroVisible, setHeroVisible] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Fade out hero controller at 50vh (before content appears)
+      setHeroVisible(window.scrollY < window.innerHeight * 0.5);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // 1. CHECK VISITOR STATUS (Hybrid Logic)
   useEffect(() => {
@@ -183,8 +198,19 @@ export default function HomePage() {
           activeMood={activeMood}
           onSelect={handleMoodSelect}
           greeting={greeting}
+          isControllerVisible={heroVisible}
         />
       </div>
+
+      {/* FLOATING MOOD TOGGLE - Always visible on Mobile */}
+      <div className="fixed top-4 left-4 z-50 md:hidden">
+        <MoodToggleButton
+          activeMood={activeMood}
+          onMoodSelect={handleMoodSelect}
+          variant="mobile"
+        />
+      </div>
+      {/* DESKTOP MOOD TOGGLE - Now rendered inside Navbar.tsx */}
 
       {/* 
         2. SCROLLING CONTENT LAYER (Z-10) 
