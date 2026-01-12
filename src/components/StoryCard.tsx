@@ -122,11 +122,11 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
 
         return (
             <div
-                className={`group flex items-center gap-4 p-3 pr-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer ${className}`}
+                className={`group flex items-center gap-4 md:gap-6 p-3 md:p-4 pr-4 md:pr-6 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg hover:shadow-xl hover:bg-white/50 hover:border-white/30 transition-all duration-300 cursor-pointer ${className}`}
                 onClick={handlePlay}
             >
                 {/* Image (Left) */}
-                <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100">
+                <div className="relative w-20 h-20 md:w-32 md:h-32 lg:w-40 lg:h-40 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100">
                     {imageUrl ? (
                         <img src={imageUrl} alt={story.title} className="w-full h-full object-cover" />
                     ) : (
@@ -142,7 +142,7 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
                 </div>
 
                 {/* Info (Right) */}
-                <div className="flex-1 min-w-0 py-1">
+                <div className="flex-1 min-w-0 py-1 md:py-2">
                     <div className="flex items-center gap-2 mb-1.5">
                         <span className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md ${categoryColor}`}>
                             {story.category?.replace(/_/g, ' ') || 'Story'}
@@ -154,13 +154,13 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
                         )}
                     </div>
 
-                    <h3 className={`font-bold text-base md:text-lg leading-tight truncate mb-1 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-800 group-hover:text-indigo-600'}`}>
+                    <h3 className={`font-bold text-base md:text-xl lg:text-2xl leading-tight truncate mb-1 md:mb-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-800 group-hover:text-indigo-600'}`}>
                         {story.title}
                     </h3>
 
-                    <div className="flex items-center gap-3 text-xs font-medium text-slate-400">
+                    <div className="flex items-center gap-3 text-xs md:text-sm font-medium text-slate-400">
                         <span>{formattedDuration}</span>
-                        {isFavorite && <Heart className="w-3 h-3 fill-red-500 text-red-500" />}
+                        {isFavorite && <Heart className="w-3 h-3 md:w-4 md:h-4 fill-red-500 text-red-500" />}
                     </div>
                 </div>
 
