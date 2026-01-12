@@ -120,7 +120,7 @@ export default function LibraryPage() {
                 </Link>
 
                 {/* Header */}
-                <div className="mb-6 mt-20 md:mt-0">{/* mt-20 to account for absolute logo */}
+                <div className="mb-6 mt-16 md:mt-0">{/* mt-16 to account for absolute logo */}
 
                     <h1 className="text-3xl font-bold text-slate-900 mb-4">Library</h1>
 

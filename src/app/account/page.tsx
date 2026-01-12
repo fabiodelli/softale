@@ -57,7 +57,7 @@ export default function AccountPage() {
                     </h1>
                 </Link>
 
-                <div className="flex items-center justify-between mb-6 mt-20 md:mt-0">{/* mt-20 for absolute logo */}
+                <div className="flex items-center justify-between mb-6 mt-16 md:mt-0">{/* mt-16 for absolute logo */}
                     {/* Gear Icon - Top Left */}
                     <button
                         onClick={() => setIsSettingsOpen(true)}
