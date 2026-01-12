@@ -105,7 +105,7 @@ export default function MiniPlayer() {
             >
 
                 {/* Mini Player Content */}
-                <div className="h-[64px] bg-white/90 backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center px-4 relative z-30">
+                <div className="h-[64px] bg-white/80 backdrop-blur-xl border-t border-white/20 shadow-lg flex items-center px-4 relative z-30">
                     <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-4">
 
                         {/* Track Info (Clickable for Loops) */}

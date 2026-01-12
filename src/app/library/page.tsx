@@ -111,15 +111,16 @@ export default function LibraryPage() {
     return (
         <GlassLayout>
             <div className="px-6 md:px-12">
+                {/* Mobile Logo - Scrolls with page, positioned like home */}
+                <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg">
+                    <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+                        Softale
+                    </h1>
+                </Link>
+
                 {/* Header */}
-                <div className="mb-6">
-                    {/* Mobile Logo - Scrolls with page */}
-                    <Link href="/" className="flex md:hidden items-center justify-center gap-2 mb-6 group">
-                        <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
-                            Softale
-                        </h1>
-                    </Link>
+                <div className="mb-6 mt-20 md:mt-0">{/* mt-20 to account for absolute logo */}
 
                     <h1 className="text-3xl font-bold text-slate-900 mb-4">Library</h1>
 
