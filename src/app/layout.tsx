@@ -52,19 +52,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`}>
-        <Providers>
-          {/* Global Mobile Logo - Fixed position across all pages */}
-          <Link
-            href="/"
-            className="fixed top-8 left-1/2 -translate-x-1/2 z-50 md:hidden flex items-center gap-2 group drop-shadow-lg"
-          >
-            <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600 block tracking-tight">
-              Softale
-            </h1>
-          </Link>
-
-          <div className="flex flex-col min-h-screen">
+        <Providers><div className="flex flex-col min-h-screen">
             <Navbar />
             <div className="flex-grow">
               {children}
