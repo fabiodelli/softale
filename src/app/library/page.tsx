@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getStories, getFavorites, getInProgressStories, getCollections, type Story, type StoryWithProgress, type Collection } from '@/lib/supabase';
 import StoryCard from '@/components/StoryCard';
 import CollectionCard from '@/components/CollectionCard';
@@ -13,7 +14,7 @@ import { AnimatePresence } from 'framer-motion';
 import GlassLayout from '@/components/GlassLayout';
 
 // Filter types
-type FilterType = 'all' | 'favorites' | 'continue' | 'sleep' | 'meditation' | 'fantasy' | 'nature' | 'motivation' | 'kids' | 'soundscape' | 'binaural' | 'music_instrumental' | 'work_break';
+type FilterType = 'all' | 'favorites' | 'continue' | 'collections' | 'sleep' | 'meditation' | 'fantasy' | 'nature' | 'motivation' | 'kids' | 'soundscape' | 'binaural' | 'music_instrumental' | 'work_break';
 
 // Category definitions
 const categories: { id: string; label: string; emoji: string }[] = [
@@ -122,12 +123,13 @@ export default function LibraryPage() {
     const isShowAll = activeFilter === 'all';
     const isShowFavorites = activeFilter === 'favorites';
     const isShowContinue = activeFilter === 'continue';
-    const showCategoryFilter = !isShowAll && !isShowFavorites && !isShowContinue;
+    const isShowCollections = activeFilter === 'collections';
+    const showCategoryFilter = !isShowAll && !isShowFavorites && !isShowContinue && !isShowCollections;
 
-    // Get active category stories
     const getFilteredData = () => {
         if (isShowFavorites) return { stories: favorites, collections: [] };
         if (isShowContinue) return { stories: inProgress, collections: [] };
+        if (isShowCollections) return { stories: [], collections: allCollections };
         if (showCategoryFilter) {
             return {
                 stories: getStoriesByCategory(activeFilter),
@@ -197,8 +199,8 @@ export default function LibraryPage() {
                         <button
                             onClick={() => setActiveFilter('favorites')}
                             className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'favorites'
-                                ? 'bg-red-500 text-white'
-                                : 'bg-white text-slate-600 border border-slate-200 hover:border-red-200'
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
                                 }`}
                         >
                             ❤️ Favorites
@@ -208,11 +210,22 @@ export default function LibraryPage() {
                         <button
                             onClick={() => setActiveFilter('continue')}
                             className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'continue'
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-200'
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
                                 }`}
                         >
                             ▶️ Continue
+                        </button>
+                    )}
+                    {allCollections.length > 0 && (
+                        <button
+                            onClick={() => setActiveFilter('collections')}
+                            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'collections'
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                                }`}
+                        >
+                            📚 Collections
                         </button>
                     )}
 
@@ -220,7 +233,7 @@ export default function LibraryPage() {
                     <button
                         onClick={() => setIsFilterOpen(true)}
                         className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1 ${showCategoryFilter
-                            ? 'bg-indigo-600 text-white'
+                            ? 'bg-slate-900 text-white'
                             : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
                             }`}
                     >
@@ -230,16 +243,16 @@ export default function LibraryPage() {
                     </button>
                 </div>
 
-                {/* Filter Drawer Modal */}
-                <AnimatePresence>
-                    {isFilterOpen && (
-                        <>
+                {/* Filter Drawer Modal - Using Portal to escape GlassLayout backdrop-blur stacking context */}
+                {typeof window !== 'undefined' && createPortal(
+                    <AnimatePresence>
+                        {isFilterOpen && (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 onClick={() => setIsFilterOpen(false)}
-                                className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-4"
+                                className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center p-4"
                             >
                                 <motion.div
                                     initial={{ y: "100%" }}
@@ -292,9 +305,10 @@ export default function LibraryPage() {
                                     )}
                                 </motion.div>
                             </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>
+                        )}
+                    </AnimatePresence>,
+                    document.body
+                )}
 
                 {/* Content Sections */}
                 {isShowAll ? (
@@ -401,10 +415,25 @@ export default function LibraryPage() {
                             <h2 className="text-lg font-bold text-slate-900 mb-4">
                                 {isShowFavorites ? 'Your Favorites'
                                     : isShowContinue ? 'Continue Listening'
-                                        : categories.find(c => c.id === activeFilter)?.label || 'Stories'}
+                                        : isShowCollections ? 'All Collections'
+                                            : categories.find(c => c.id === activeFilter)?.label || 'Stories'}
                             </h2>
 
-                            {getFilteredData().stories.length > 0 ? (
+                            {/* Show Collections Grid when isShowCollections */}
+                            {isShowCollections ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                                    {allCollections.map((collection, i) => (
+                                        <motion.div
+                                            key={collection.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.03 * Math.min(i, 10) }}
+                                        >
+                                            <CollectionCard collection={collection} />
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            ) : getFilteredData().stories.length > 0 ? (
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                                     {getFilteredData().stories.map((story, i) => (
                                         <motion.div
