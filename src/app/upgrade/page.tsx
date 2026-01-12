@@ -98,7 +98,7 @@ export default function UpgradePage() {
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mb-12 mt-16 md:mt-0">{/* mt-16 for absolute logo */}
+                            className="mb-12 mt-16 md:mt-0"
                         >
                             <span className="inline-block p-3 rounded-2xl bg-indigo-100 text-indigo-600 mb-4">
                                 <Crown className="w-8 h-8" />
@@ -218,8 +218,8 @@ export default function UpgradePage() {
         <GlassLayout>
             <div className="pt-8 pb-12 px-4 md:px-8">
                 <div className="max-w-4xl mx-auto text-center">
-                    {/* Mobile Logo */}
-                    <Link href="/" className="flex md:hidden items-center justify-center gap-2 mb-6 group">
+                    {/* Mobile Logo - positioned like home */}
+                    <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg">
                         <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
                         <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
                             Softale
@@ -230,7 +230,7 @@ export default function UpgradePage() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-12"
+                        className="mb-12 mt-16"
                     >
                         <span className="inline-block p-3 rounded-2xl bg-indigo-100 text-indigo-600 mb-4">
                             <Sparkles className="w-8 h-8" />
