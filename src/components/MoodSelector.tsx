@@ -71,13 +71,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
     return (
         <div className="relative w-full h-[100dvh] flex items-center justify-center overflow-hidden">
 
-            {/* Mobile Logo - Fixed in Hero (Footer Gradient Match) */}
-            <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 z-50 md:hidden flex items-center gap-2 group drop-shadow-lg">
-                <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600 block tracking-tight">
-                    Softale
-                </h1>
-            </Link>
+            {/* Background Image Layer */}
 
 
 

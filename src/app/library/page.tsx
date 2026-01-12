@@ -113,13 +113,6 @@ export default function LibraryPage() {
             <div className="px-6 md:px-12">
                 {/* Header */}
                 <div className="mb-6">
-                    <Link href="/" className="flex md:hidden items-center justify-center gap-2 mb-6 group">
-                        <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
-                            Softale
-                        </h1>
-                    </Link>
-
                     <h1 className="text-3xl font-bold text-slate-900 mb-4">Library</h1>
 
                     {/* Mobile Search */}
