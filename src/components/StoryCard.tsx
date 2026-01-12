@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Story, toggleFavorite, checkIsFavorite } from '@/lib/supabase';
 import { cleanDescription, formatDuration, isLoopable } from '@/lib/formatters';
 import Link from 'next/link';
-import { Play, Pause, Heart, Infinity } from 'lucide-react';
+import { Play, Pause, Heart, Infinity, Clock } from 'lucide-react';
 
 interface StoryCardProps {
     story: Story;
@@ -122,56 +122,78 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
 
         return (
             <div
-                className={`group flex items-center gap-4 md:gap-6 p-3 md:p-4 pr-4 md:pr-6 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg hover:shadow-xl hover:bg-white/50 hover:border-white/30 transition-all duration-300 cursor-pointer ${className}`}
+                className={`group relative overflow-hidden rounded-3xl cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${className}`}
                 onClick={handlePlay}
             >
-                {/* Image (Left) */}
-                <div className="relative w-20 h-20 md:w-32 md:h-32 lg:w-40 lg:h-40 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100">
+                {/* Background Image - Full Width */}
+                <div className="absolute inset-0">
                     {imageUrl ? (
                         <img src={imageUrl} alt={story.title} className="w-full h-full object-cover" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">🎧</div>
+                        <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-6xl">🎧</div>
                     )}
+                    {/* Gradient Overlay for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent"></div>
+                </div>
 
-                    {/* Play Overlay */}
-                    <div className={`absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px] transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                        <div className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
-                            {isActive ? <Pause className="w-3.5 h-3.5 fill-slate-900 text-slate-900" /> : <Play className="w-3.5 h-3.5 fill-slate-900 text-slate-900 ml-0.5" />}
+                {/* Content Container */}
+                <div className="relative flex items-center gap-4 md:gap-6 p-4 md:p-6 min-h-[120px] md:min-h-[160px] lg:min-h-[200px]">
+                    {/* Thumbnail (Optional - for visual balance) */}
+                    <div className="relative w-20 h-20 md:w-28 md:h-28 lg:w-36 lg:h-36 flex-shrink-0 rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 shadow-lg">
+                        {imageUrl ? (
+                            <img src={imageUrl} alt={story.title} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-3xl">🎧</div>
+                        )}
+
+                        {/* Play Overlay */}
+                        <div className={`absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px] transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/95 flex items-center justify-center shadow-lg">
+                                {isActive ? <Pause className="w-5 h-5 md:w-6 md:h-6 fill-slate-900 text-slate-900" /> : <Play className="w-5 h-5 md:w-6 md:h-6 fill-slate-900 text-slate-900 ml-0.5" />}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Info (Right) */}
-                <div className="flex-1 min-w-0 py-1 md:py-2">
-                    <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md ${categoryColor}`}>
-                            {story.category?.replace(/_/g, ' ') || 'Story'}
-                        </span>
-                        {story.is_premium && (
-                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1">
-                                PREMIUM
+                    {/* Info (Right) */}
+                    <div className="flex-1 min-w-0 py-2">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className={`text-[10px] md:text-xs uppercase tracking-wider font-bold px-2 py-1 rounded-lg ${categoryColor} shadow-sm`}>
+                                {story.category?.replace(/_/g, ' ') || 'Story'}
                             </span>
-                        )}
+                            {story.is_premium && (
+                                <span className="text-[10px] md:text-xs bg-amber-400/90 text-amber-900 px-2 py-1 rounded-lg font-bold flex items-center gap-1 shadow-sm">
+                                    ✨ PREMIUM
+                                </span>
+                            )}
+                        </div>
+
+                        <h3 className={`font-black text-xl md:text-3xl lg:text-4xl leading-tight mb-2 md:mb-3 transition-all text-white drop-shadow-lg ${isActive ? 'text-indigo-300' : 'group-hover:text-indigo-200'}`}>
+                            {story.title}
+                        </h3>
+
+                        <div className="flex items-center gap-4 text-sm md:text-base font-semibold text-white/80">
+                            <span className="flex items-center gap-1.5">
+                                <Clock className="w-4 h-4" />
+                                {formattedDuration}
+                            </span>
+                            {isFavorite && (
+                                <span className="flex items-center gap-1.5">
+                                    <Heart className="w-4 h-4 fill-red-400 text-red-400" />
+                                    Favorite
+                                </span>
+                            )}
+                        </div>
                     </div>
 
-                    <h3 className={`font-bold text-base md:text-xl lg:text-2xl leading-tight truncate mb-1 md:mb-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-800 group-hover:text-indigo-600'}`}>
-                        {story.title}
-                    </h3>
-
-                    <div className="flex items-center gap-3 text-xs md:text-sm font-medium text-slate-400">
-                        <span>{formattedDuration}</span>
-                        {isFavorite && <Heart className="w-3 h-3 md:w-4 md:h-4 fill-red-500 text-red-500" />}
-                    </div>
+                    {/* Desktop Action (Heart) */}
+                    <button
+                        onClick={handleFavoriteClick}
+                        disabled={favoriteLoading}
+                        className={`hidden md:flex p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition shadow-lg ${isFavorite ? 'text-red-400' : 'text-white/60 hover:text-red-400'}`}
+                    >
+                        <Heart className={`w-6 h-6 ${isFavorite ? 'fill-current' : ''}`} />
+                    </button>
                 </div>
-
-                {/* Desktop Action (Optional, e.g. Heart) */}
-                <button
-                    onClick={handleFavoriteClick}
-                    disabled={favoriteLoading}
-                    className={`hidden md:flex p-2 rounded-full hover:bg-slate-50 transition ${isFavorite ? 'text-red-500' : 'text-slate-300 hover:text-red-500'}`}
-                >
-                    <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
-                </button>
             </div>
         );
     }
