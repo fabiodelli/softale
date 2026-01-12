@@ -1,8 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-
-export type Mood = 'sleep' | 'meditation' | 'fantasy' | 'nature' | 'energized';
+import type { Mood } from '@/types';
 
 interface MoodContextType {
     activeMood: Mood;

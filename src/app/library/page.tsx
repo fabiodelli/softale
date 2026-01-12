@@ -12,50 +12,11 @@ import { Heart, Play, Layers, X, Search, Headphones, ChevronRight } from 'lucide
 import Link from 'next/link';
 import { AnimatePresence } from 'framer-motion';
 import GlassLayout from '@/components/GlassLayout';
+import HorizontalSlider from '@/components/HorizontalSlider';
+import { CATEGORIES, ANIMATION, Z_INDEX } from '@/lib/constants';
+import type { FilterType } from '@/types';
 
-// Filter types
-type FilterType = 'all' | 'favorites' | 'continue' | 'collections' | 'sleep' | 'meditation' | 'fantasy' | 'nature' | 'motivation' | 'kids' | 'soundscape' | 'binaural' | 'music_instrumental' | 'work_break';
 
-// Category definitions
-const categories: { id: string; label: string; emoji: string }[] = [
-    { id: 'sleep', label: 'Sleep', emoji: '🌙' },
-    { id: 'meditation', label: 'Meditation', emoji: '🧘' },
-    { id: 'fantasy', label: 'Fantasy', emoji: '🌟' },
-    { id: 'nature', label: 'Nature', emoji: '🌿' },
-    { id: 'soundscape', label: 'Soundscapes', emoji: '🌊' },
-    { id: 'binaural', label: 'Binaural', emoji: '🔮' },
-    { id: 'music_instrumental', label: 'Instrumental', emoji: '🎵' },
-    { id: 'motivation', label: 'Focus', emoji: '⚡' },
-    { id: 'work_break', label: 'Work Break', emoji: '☕' },
-    { id: 'kids', label: 'Kids', emoji: '🧸' },
-];
-
-// Horizontal Slider Component
-function HorizontalSlider({
-    title,
-    emoji,
-    children,
-    className = ''
-}: {
-    title: string;
-    emoji?: string;
-    children: React.ReactNode;
-    className?: string;
-}) {
-    return (
-        <section className={`mb-8 ${className}`}>
-            <div className="flex items-center justify-between mb-4 px-1">
-                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    {emoji && <span className="text-base">{emoji}</span>}
-                    {title}
-                </h2>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-6 md:-mx-12 px-6 md:px-12">
-                {children}
-            </div>
-        </section>
-    );
-}
 
 export default function LibraryPage() {
     const { play } = usePlayer();
@@ -238,7 +199,7 @@ export default function LibraryPage() {
                             }`}
                     >
                         {showCategoryFilter
-                            ? `${categories.find(c => c.id === activeFilter)?.emoji} ${categories.find(c => c.id === activeFilter)?.label}`
+                            ? `${CATEGORIES.find(c => c.id === activeFilter)?.emoji} ${CATEGORIES.find(c => c.id === activeFilter)?.label}`
                             : '🔍 Filter'}
                     </button>
                 </div>
@@ -263,7 +224,7 @@ export default function LibraryPage() {
                                     className="bg-white/95 backdrop-blur-xl border border-white/20 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative"
                                 >
                                     <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-xl font-bold text-slate-900">Browse Categories</h3>
+                                        <h3 className="text-xl font-bold text-slate-900">Browse CATEGORIES</h3>
                                         <button
                                             onClick={() => setIsFilterOpen(false)}
                                             className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition"
@@ -273,7 +234,7 @@ export default function LibraryPage() {
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-3">
-                                        {categories.map((cat) => (
+                                        {CATEGORIES.map((cat) => (
                                             <button
                                                 key={cat.id}
                                                 onClick={() => {
@@ -369,7 +330,7 @@ export default function LibraryPage() {
                         )}
 
                         {/* Category Sliders */}
-                        {categories.map(category => {
+                        {CATEGORIES.map(category => {
                             const stories = getStoriesByCategory(category.id);
                             if (stories.length === 0) return null;
 
@@ -416,7 +377,7 @@ export default function LibraryPage() {
                                 {isShowFavorites ? 'Your Favorites'
                                     : isShowContinue ? 'Continue Listening'
                                         : isShowCollections ? 'All Collections'
-                                            : categories.find(c => c.id === activeFilter)?.label || 'Stories'}
+                                            : CATEGORIES.find(c => c.id === activeFilter)?.label || 'Stories'}
                             </h2>
 
                             {/* Show Collections Grid when isShowCollections */}
