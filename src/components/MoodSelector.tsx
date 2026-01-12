@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { Moon, Brain, Sparkles, Leaf, Waves, Headphones } from 'lucide-react';
 import { useAmbience } from '@/context/AmbienceContext';
@@ -11,6 +11,7 @@ interface MoodSelectorProps {
     onSelect: (mood: Mood) => void;
     activeMood: Mood;
     greeting?: string;
+    isControllerVisible?: boolean;
 }
 
 const moods = [
@@ -61,7 +62,7 @@ const moods = [
     }
 ];
 
-export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSelectorProps) {
+export default function MoodSelector({ onSelect, activeMood, greeting, isControllerVisible = true }: MoodSelectorProps) {
     const { isPlaying, togglePlay, currentTrack } = useAmbience();
 
     // Determine current mood object
@@ -69,41 +70,6 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
 
     return (
         <div className="relative w-full h-[100dvh] flex items-center justify-center overflow-hidden">
-
-            {/* Mobile Ambience Toggle - Top Left */}
-            <div className="absolute top-4 left-4 z-50 md:hidden">
-                {currentTrack && (
-                    <button
-                        onClick={togglePlay}
-                        className={`w-10 h-10 rounded-full backdrop-blur-xl flex items-center justify-center border shadow-lg transition-all duration-500 ${isPlaying
-                            ? 'bg-indigo-500/40 border-indigo-200/50 text-white ring-1 ring-indigo-400/50'
-                            : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
-                            }`}
-                    >
-                        {isPlaying ? (
-                            <div className="flex gap-0.5 items-end h-3">
-                                <motion.div
-                                    animate={{ height: [3, 12, 6, 12, 3] }}
-                                    transition={{ repeat: Infinity, duration: 1.2 }}
-                                    className="w-0.5 bg-white rounded-full"
-                                />
-                                <motion.div
-                                    animate={{ height: [6, 3, 12, 3, 6] }}
-                                    transition={{ repeat: Infinity, duration: 1.2, delay: 0.1 }}
-                                    className="w-0.5 bg-white rounded-full"
-                                />
-                                <motion.div
-                                    animate={{ height: [9, 6, 3, 6, 9] }}
-                                    transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }}
-                                    className="w-0.5 bg-white rounded-full"
-                                />
-                            </div>
-                        ) : (
-                            <Headphones className="w-4 h-4" />
-                        )}
-                    </button>
-                )}
-            </div>
 
             {/* Mobile Logo - Fixed in Hero (Footer Gradient Match) */}
             <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 z-50 md:hidden flex items-center gap-2 group drop-shadow-lg">
@@ -137,78 +103,78 @@ export default function MoodSelector({ onSelect, activeMood, greeting }: MoodSel
                 </motion.div>
             </div>
 
-            {/* Glass Panel Content */}
-            <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center md:items-end justify-between gap-8 md:gap-16">
-
-                {/* Text Section (Left) - On top relative to container */}
-                <div className="flex-1 text-center md:text-left drop-shadow-sm">
-                    <motion.h2
+            {/* Glass Panel Content - Fades out when scrolled */}
+            <AnimatePresence>
+                {isControllerVisible && (
+                    <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-xl md:text-2xl font-medium text-white mb-2 tracking-wide drop-shadow-md [-webkit-text-stroke:0.5px_rgba(0,0,0,0.4)] [paint-order:stroke_fill]"
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.4 }}
+                        className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center md:items-end justify-between gap-8 md:gap-16"
                     >
-                        {greeting}
-                    </motion.h2>
-                    <motion.h1
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-none drop-shadow-2xl [-webkit-text-stroke:1.5px_rgba(0,0,0,0.4)] [paint-order:stroke_fill]"
-                    >
-                        What are you<br />looking for?
-                    </motion.h1>
-                </div>
 
-                {/* Mood Selector (Right - Pastel Circles in Glass Card) */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="flex-shrink-0 bg-white/30 backdrop-blur-xl border border-white/40 p-6 md:p-8 rounded-3xl shadow-2xl"
-                >
-                    <div className="flex gap-4 md:gap-6">
-                        {moods.map((m, i) => {
-                            const isActive = activeMood === m.id;
-                            const Icon = m.icon;
-                            return (
-                                <div key={m.id} className="flex flex-col items-center gap-3 group">
-                                    <motion.button
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => onSelect(m.id as Mood)}
-                                        className={`
-                                            w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300
-                                            ${m.colorClass}
-                                            ${isActive ? m.activeClass : 'bg-white/90 hover:bg-white border-2 border-transparent'} 
-                                            /* Apply color class default opacity if not active? No, user wants colored by default. */
-                                        `}
-                                        style={!isActive ? { backgroundColor: 'var(--mood-color-light)' } : {}} // Dynamic inline styles complex here. 
-                                    // Let's rely on class logic:
-                                    // User want buttons colored by default.
-                                    >
-                                        {/* We need to apply the specific color background even when inactive, just lighter? 
-                                           Or always the same color, but active adds a ring? 
-                                           User: "tasti devono essere colorati da subito"
-                                       */}
-                                        <div className={`
-                                            w-full h-full rounded-full flex items-center justify-center
-                                            ${isActive ? '' : m.colorClass.replace('text-slate-800', 'text-slate-600').replace('bg-', 'bg-opacity-50 bg-')}
-                                            /* Just use the color class always, and active adds ring */
-                                            ${m.colorClass}
-                                            ${isActive ? m.activeClass : 'opacity-90 hover:opacity-100 scale-95 hover:scale-100'}
-                                        `}>
-                                            <Icon className="w-6 h-6 md:w-8 md:h-8" />
+                        {/* Text Section (Left) - On top relative to container */}
+                        <div className="flex-1 text-center md:text-left drop-shadow-sm">
+                            <motion.h2
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-xl md:text-2xl font-medium text-white mb-2 tracking-wide drop-shadow-md [-webkit-text-stroke:0.5px_rgba(0,0,0,0.4)] [paint-order:stroke_fill]"
+                            >
+                                {greeting}
+                            </motion.h2>
+                            <motion.h1
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-none drop-shadow-2xl [-webkit-text-stroke:1.5px_rgba(0,0,0,0.4)] [paint-order:stroke_fill]"
+                            >
+                                What are you<br />looking for?
+                            </motion.h1>
+                        </div>
+
+                        {/* Mood Selector (Right - Pastel Circles in Glass Card) */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="flex-shrink-0 bg-white/30 backdrop-blur-xl border border-white/40 p-6 md:p-8 rounded-3xl shadow-2xl"
+                        >
+                            <div className="flex gap-4 md:gap-6">
+                                {moods.map((m, i) => {
+                                    const isActive = activeMood === m.id;
+                                    const Icon = m.icon;
+                                    return (
+                                        <div key={m.id} className="flex flex-col items-center gap-3 group">
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => onSelect(m.id as Mood)}
+                                                className={`
+                                                    w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300
+                                                    ${m.colorClass}
+                                                    ${isActive ? m.activeClass : 'bg-white/90 hover:bg-white border-2 border-transparent'} 
+                                                `}
+                                            >
+                                                <div className={`
+                                                    w-full h-full rounded-full flex items-center justify-center
+                                                    ${m.colorClass}
+                                                    ${isActive ? m.activeClass : 'opacity-90 hover:opacity-100 scale-95 hover:scale-100'}
+                                                `}>
+                                                    <Icon className="w-6 h-6 md:w-8 md:h-8" />
+                                                </div>
+                                            </motion.button>
+                                            <span className={`text-[10px] md:text-xs font-bold uppercase tracking-widest transition-colors duration-300 ${isActive ? 'text-slate-900 underline decoration-2 underline-offset-4' : 'text-slate-600'}`}>
+                                                {m.label}
+                                            </span>
                                         </div>
-                                    </motion.button>
-                                    <span className={`text-[10px] md:text-xs font-bold uppercase tracking-widest transition-colors duration-300 ${isActive ? 'text-slate-900 underline decoration-2 underline-offset-4' : 'text-slate-600'}`}>
-                                        {m.label}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </motion.div>
-            </div>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

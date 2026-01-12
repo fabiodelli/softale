@@ -5,7 +5,7 @@ import { Headphones } from 'lucide-react';
 
 export default function Footer() {
     return (
-        <footer className="bg-white border-t border-slate-200 py-12 pb-32 md:pb-12 text-slate-600">
+        <footer className="bg-white/80 backdrop-blur-md border-t border-slate-200/60 py-12 pb-32 md:pb-12 text-slate-600">
             <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-5 gap-8">
 
                 <div className="col-span-1 md:col-span-2">

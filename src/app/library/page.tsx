@@ -7,11 +7,54 @@ import StoryCard from '@/components/StoryCard';
 import CollectionCard from '@/components/CollectionCard';
 import { usePlayer } from '@/lib/PlayerContext';
 import { useAuth } from '@/lib/AuthProvider';
-import { Heart, Play, Layers, X, Search } from 'lucide-react';
+import { Heart, Play, Layers, X, Search, Headphones, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import { AnimatePresence } from 'framer-motion';
+import GlassLayout from '@/components/GlassLayout';
 
-// Filter types - add new loopable categories
+// Filter types
 type FilterType = 'all' | 'favorites' | 'continue' | 'sleep' | 'meditation' | 'fantasy' | 'nature' | 'motivation' | 'kids' | 'soundscape' | 'binaural' | 'music_instrumental' | 'work_break';
+
+// Category definitions
+const categories: { id: string; label: string; emoji: string }[] = [
+    { id: 'sleep', label: 'Sleep', emoji: '🌙' },
+    { id: 'meditation', label: 'Meditation', emoji: '🧘' },
+    { id: 'fantasy', label: 'Fantasy', emoji: '🌟' },
+    { id: 'nature', label: 'Nature', emoji: '🌿' },
+    { id: 'soundscape', label: 'Soundscapes', emoji: '🌊' },
+    { id: 'binaural', label: 'Binaural', emoji: '🔮' },
+    { id: 'music_instrumental', label: 'Instrumental', emoji: '🎵' },
+    { id: 'motivation', label: 'Focus', emoji: '⚡' },
+    { id: 'work_break', label: 'Work Break', emoji: '☕' },
+    { id: 'kids', label: 'Kids', emoji: '🧸' },
+];
+
+// Horizontal Slider Component
+function HorizontalSlider({
+    title,
+    emoji,
+    children,
+    className = ''
+}: {
+    title: string;
+    emoji?: string;
+    children: React.ReactNode;
+    className?: string;
+}) {
+    return (
+        <section className={`mb-8 ${className}`}>
+            <div className="flex items-center justify-between mb-4 px-1">
+                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    {emoji && <span className="text-base">{emoji}</span>}
+                    {title}
+                </h2>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-6 md:-mx-12 px-6 md:px-12">
+                {children}
+            </div>
+        </section>
+    );
+}
 
 export default function LibraryPage() {
     const { play } = usePlayer();
@@ -23,10 +66,10 @@ export default function LibraryPage() {
     const [inProgress, setInProgress] = useState<StoryWithProgress[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-    // Data Fetching - Stories and Collections
+    // Data Fetching
     useEffect(() => {
         async function fetchData() {
             const [stories, collections] = await Promise.all([
@@ -40,7 +83,7 @@ export default function LibraryPage() {
         fetchData();
     }, []);
 
-    // Fetch favorites and in-progress when user is logged in
+    // Fetch user-specific data
     useEffect(() => {
         async function fetchUserData() {
             if (user) {
@@ -58,91 +101,41 @@ export default function LibraryPage() {
         fetchUserData();
     }, [user]);
 
-    // Restore Filter from SessionStorage
-    useEffect(() => {
-        const savedFilter = sessionStorage.getItem('reverie_library_active_filter');
-        if (savedFilter) {
-            setActiveFilter(savedFilter as FilterType);
-        }
-    }, []);
-
-    // Filter Handler with Persistence
-    const handleFilterSelect = (filter: FilterType) => {
-        setActiveFilter(filter);
-        if (filter !== 'all') {
-            sessionStorage.setItem('reverie_library_active_filter', filter);
-        } else {
-            sessionStorage.removeItem('reverie_library_active_filter');
-        }
-    };
-
-    // Get displayed stories based on active filter
-    const getDisplayedStories = (): (Story | StoryWithProgress)[] => {
-        let stories = activeFilter === 'all'
-            ? allStories
-            : activeFilter === 'favorites'
-                ? favorites
-                : activeFilter === 'continue'
-                    ? inProgress
-                    : allStories.filter(story => story.category === activeFilter);
-
+    // Get stories by category
+    const getStoriesByCategory = (category: string) => {
+        let stories = allStories.filter(s => s.category === category);
         if (searchQuery) {
-            stories = stories.filter(story =>
-                story.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                story.description.toLowerCase().includes(searchQuery.toLowerCase())
+            stories = stories.filter(s =>
+                s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                s.description.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
         return stories;
     };
 
-    // Get displayed collections based on active filter
-    const getDisplayedCollections = (): Collection[] => {
-        let collections: Collection[] = [];
-
-        if (activeFilter === 'favorites' || activeFilter === 'continue') {
-            collections = [];
-        } else if (activeFilter === 'all') {
-            collections = allCollections;
-        } else {
-            collections = allCollections.filter(col => col.category === activeFilter);
-        }
-
-        if (searchQuery) {
-            collections = collections.filter(col =>
-                col.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (col.description && col.description.toLowerCase().includes(searchQuery.toLowerCase()))
-            );
-        }
-
-        return collections;
+    // Get collections by category
+    const getCollectionsByCategory = (category: string) => {
+        return allCollections.filter(c => c.category === category);
     };
 
-    const displayedStories = getDisplayedStories();
-    const displayedCollections = getDisplayedCollections();
+    // Filter logic for specific filter selection
+    const isShowAll = activeFilter === 'all';
+    const isShowFavorites = activeFilter === 'favorites';
+    const isShowContinue = activeFilter === 'continue';
+    const showCategoryFilter = !isShowAll && !isShowFavorites && !isShowContinue;
 
-    // Special filters (navigation)
-    const specialFilters: { id: FilterType; label: string; emoji: string; show: boolean }[] = [
-        { id: 'all', label: 'All', emoji: '✨', show: true },
-        { id: 'favorites', label: 'Favorites', emoji: '❤️', show: !!user && favorites.length > 0 },
-        { id: 'continue', label: 'Continue', emoji: '▶️', show: !!user && inProgress.length > 0 },
-    ];
-
-    // Category filters
-    const categoryFilters: { id: FilterType; label: string; emoji: string }[] = [
-        { id: 'sleep', label: 'Sleep', emoji: '🌙' },
-        { id: 'meditation', label: 'Meditation', emoji: '🧘' },
-        { id: 'fantasy', label: 'Fantasy', emoji: '🌟' },
-        { id: 'nature', label: 'Nature', emoji: '🌿' },
-        { id: 'soundscape', label: 'Soundscapes', emoji: '🌊' },
-        { id: 'binaural', label: 'Binaural', emoji: '🔮' },
-        { id: 'music_instrumental', label: 'Instrumental', emoji: '🎵' },
-        { id: 'motivation', label: 'Focus', emoji: '⚡' },
-        { id: 'work_break', label: 'Work Break', emoji: '☕' },
-        { id: 'kids', label: 'Kids', emoji: '🧸' },
-    ];
-
-    // Check if active filter is a category
-    const isSpecialFilter = ['all', 'favorites', 'continue'].includes(activeFilter);
+    // Get active category stories
+    const getFilteredData = () => {
+        if (isShowFavorites) return { stories: favorites, collections: [] };
+        if (isShowContinue) return { stories: inProgress, collections: [] };
+        if (showCategoryFilter) {
+            return {
+                stories: getStoriesByCategory(activeFilter),
+                collections: getCollectionsByCategory(activeFilter)
+            };
+        }
+        return { stories: allStories, collections: allCollections };
+    };
 
     if (loading) {
         return (
@@ -153,17 +146,20 @@ export default function LibraryPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 pt-16 pb-24">
-            <div className="max-w-[100vw] overflow-hidden px-6 md:px-12">
+        <GlassLayout>
+            <div className="px-6 md:px-12">
+                {/* Header */}
+                <div className="mb-6">
+                    <Link href="/" className="flex md:hidden items-center justify-center gap-2 mb-6 group">
+                        <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
+                        <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+                            Softale
+                        </h1>
+                    </Link>
 
+                    <h1 className="text-3xl font-bold text-slate-900 mb-4">Library</h1>
 
-
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-slate-900 mb-6 flex items-center justify-between">
-                        Library
-                    </h1>
-
-                    {/* Mobile Search Input - Visible only on mobile */}
+                    {/* Mobile Search */}
                     <div className="relative group md:hidden mb-4">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Search className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
@@ -172,7 +168,7 @@ export default function LibraryPage() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl py-3.5 pl-12 pr-4 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all"
+                            className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl py-3 pl-12 pr-4 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all"
                             placeholder="Search stories..."
                         />
                         {searchQuery && (
@@ -186,55 +182,58 @@ export default function LibraryPage() {
                     </div>
                 </div>
 
-                {/* Filters - Two Row Layout */}
-                <div className="mb-6 space-y-3">
-                    {/* Row 1: Special Filters + Category Pills */}
-                    <div className="flex items-center gap-3">
-                        {/* Special Filters - Fixed */}
+                {/* Quick Filters */}
+                <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0">
+                    <button
+                        onClick={() => setActiveFilter('all')}
+                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'all'
+                            ? 'bg-slate-900 text-white'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                            }`}
+                    >
+                        ✨ All
+                    </button>
+                    {user && favorites.length > 0 && (
+                        <button
+                            onClick={() => setActiveFilter('favorites')}
+                            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'favorites'
+                                ? 'bg-red-500 text-white'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:border-red-200'
+                                }`}
+                        >
+                            ❤️ Favorites
+                        </button>
+                    )}
+                    {user && inProgress.length > 0 && (
+                        <button
+                            onClick={() => setActiveFilter('continue')}
+                            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'continue'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-200'
+                                }`}
+                        >
+                            ▶️ Continue
+                        </button>
+                    )}
 
-
-                        {/* Category Pills - Scrollable */}
-                        <div className="flex gap-1.5 flex-shrink-0">
-                            {specialFilters.filter(f => f.show).map((filter) => (
-                                <button
-                                    key={filter.id}
-                                    onClick={() => handleFilterSelect(filter.id)}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${activeFilter === filter.id
-                                        ? 'bg-slate-900 text-white shadow-sm'
-                                        : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
-                                        }`}
-                                >
-                                    <span className="text-xs">{filter.emoji}</span>
-                                    <span className="hidden sm:inline">{filter.label}</span>
-                                    {filter.id === 'favorites' && user && (
-                                        <span className="text-xs opacity-70">{favorites.length}</span>
-                                    )}
-                                    {filter.id === 'continue' && user && (
-                                        <span className="text-xs opacity-70">{inProgress.length}</span>
-                                    )}
-                                </button>
-                            ))}
-
-                            {/* Filter Trigger Button */}
-                            <button
-                                onClick={() => setIsFilterOpen(true)}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${!isSpecialFilter
-                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
-                                    }`}
-                            >
-                                <span className="text-xs">{!isSpecialFilter ? categoryFilters.find(f => f.id === activeFilter)?.emoji || '🔍' : '🔍'}</span>
-                                <span>{!isSpecialFilter ? categoryFilters.find(f => f.id === activeFilter)?.label || 'Filter' : 'Filter'}</span>
-                            </button>
-                        </div>
-                    </div>
+                    {/* Filter Button */}
+                    <button
+                        onClick={() => setIsFilterOpen(true)}
+                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1 ${showCategoryFilter
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                            }`}
+                    >
+                        {showCategoryFilter
+                            ? `${categories.find(c => c.id === activeFilter)?.emoji} ${categories.find(c => c.id === activeFilter)?.label}`
+                            : '🔍 Filter'}
+                    </button>
                 </div>
 
-                {/* Filter Drawer / Modal */}
+                {/* Filter Drawer Modal */}
                 <AnimatePresence>
                     {isFilterOpen && (
                         <>
-                            {/* Backdrop */}
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -242,14 +241,13 @@ export default function LibraryPage() {
                                 onClick={() => setIsFilterOpen(false)}
                                 className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-4"
                             >
-                                {/* Drawer Content */}
                                 <motion.div
                                     initial={{ y: "100%" }}
                                     animate={{ y: 0 }}
                                     exit={{ y: "100%" }}
                                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="bg-white/90 backdrop-blur-xl border border-white/20 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative"
+                                    className="bg-white/95 backdrop-blur-xl border border-white/20 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative"
                                 >
                                     <div className="flex items-center justify-between mb-6">
                                         <h3 className="text-xl font-bold text-slate-900">Browse Categories</h3>
@@ -262,29 +260,29 @@ export default function LibraryPage() {
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-3">
-                                        {categoryFilters.map((filter) => (
+                                        {categories.map((cat) => (
                                             <button
-                                                key={filter.id}
+                                                key={cat.id}
                                                 onClick={() => {
-                                                    handleFilterSelect(filter.id);
+                                                    setActiveFilter(cat.id as FilterType);
                                                     setIsFilterOpen(false);
                                                 }}
-                                                className={`flex flex-col items-center justify-center p-4 rounded-2xl gap-2 transition-all border ${activeFilter === filter.id
+                                                className={`flex flex-col items-center justify-center p-4 rounded-2xl gap-2 transition-all border ${activeFilter === cat.id
                                                     ? 'bg-slate-900 text-white border-slate-900 shadow-lg scale-[1.02]'
                                                     : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
                                                     }`}
                                             >
-                                                <span className="text-3xl filter drop-shadow-sm">{filter.emoji}</span>
-                                                <span className="text-xs font-semibold">{filter.label}</span>
+                                                <span className="text-3xl filter drop-shadow-sm">{cat.emoji}</span>
+                                                <span className="text-xs font-semibold">{cat.label}</span>
                                             </button>
                                         ))}
                                     </div>
 
-                                    {/* Clear Filter Option */}
-                                    {!isSpecialFilter && (
+                                    {/* Clear Filter */}
+                                    {showCategoryFilter && (
                                         <button
                                             onClick={() => {
-                                                handleFilterSelect('all');
+                                                setActiveFilter('all');
                                                 setIsFilterOpen(false);
                                             }}
                                             className="w-full mt-6 py-3 rounded-xl border border-slate-200 text-slate-500 text-sm font-medium hover:bg-slate-50 transition"
@@ -298,48 +296,117 @@ export default function LibraryPage() {
                     )}
                 </AnimatePresence>
 
+                {/* Content Sections */}
+                {isShowAll ? (
+                    <>
+                        {/* Continue Listening */}
+                        {user && inProgress.length > 0 && (
+                            <HorizontalSlider title="Continue Listening" emoji="▶️">
+                                {inProgress.map((story, i) => (
+                                    <motion.div
+                                        key={story.id}
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.03 * i }}
+                                        className="flex-shrink-0 w-36 md:w-44"
+                                    >
+                                        <StoryCard
+                                            story={story}
+                                            aspectRatio="square"
+                                            progress={story.progress_percent}
+                                        />
+                                    </motion.div>
+                                ))}
+                            </HorizontalSlider>
+                        )}
 
-                {/* Collections Row - If any collections match the filter */}
-                {
-                    displayedCollections.length > 0 && (
-                        <div className="mb-8">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Layers className="w-4 h-4 text-indigo-600" />
-                                <h3 className="text-lg font-bold text-slate-900">Collections</h3>
-                                <span className="text-sm text-slate-400">({displayedCollections.length})</span>
-                            </div>
-                            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-6 md:-mx-12 px-6 md:px-12">
-                                {displayedCollections.map((collection, i) => (
+                        {/* Favorites */}
+                        {user && favorites.length > 0 && (
+                            <HorizontalSlider title="Your Favorites" emoji="❤️">
+                                {favorites.map((story, i) => (
+                                    <motion.div
+                                        key={story.id}
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.03 * i }}
+                                        className="flex-shrink-0 w-36 md:w-44"
+                                    >
+                                        <StoryCard story={story} aspectRatio="square" />
+                                    </motion.div>
+                                ))}
+                            </HorizontalSlider>
+                        )}
+
+                        {/* Collections */}
+                        {allCollections.length > 0 && (
+                            <HorizontalSlider title="Collections" emoji="📚">
+                                {allCollections.map((collection, i) => (
                                     <motion.div
                                         key={collection.id}
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.05 * i }}
+                                        transition={{ delay: 0.03 * i }}
                                         className="flex-shrink-0 w-40 md:w-48"
                                     >
                                         <CollectionCard collection={collection} />
                                     </motion.div>
                                 ))}
-                            </div>
-                        </div>
-                    )
-                }
+                            </HorizontalSlider>
+                        )}
 
-                {/* Stories Section */}
-                {
-                    (displayedStories.length > 0 || displayedCollections.length === 0) && (
-                        <>
-                            {displayedCollections.length > 0 && (
-                                <div className="flex items-center gap-2 mb-4">
-                                    <h3 className="text-lg font-bold text-slate-900">Stories</h3>
-                                    <span className="text-sm text-slate-400">({displayedStories.length})</span>
-                                </div>
-                            )}
+                        {/* Category Sliders */}
+                        {categories.map(category => {
+                            const stories = getStoriesByCategory(category.id);
+                            if (stories.length === 0) return null;
 
-                            {/* Story Grid */}
-                            {displayedStories.length > 0 ? (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
-                                    {displayedStories.map((story, i) => (
+                            return (
+                                <HorizontalSlider key={category.id} title={category.label} emoji={category.emoji}>
+                                    {stories.slice(0, 10).map((story, i) => (
+                                        <motion.div
+                                            key={story.id}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.03 * i }}
+                                            className="flex-shrink-0 w-36 md:w-44"
+                                        >
+                                            <StoryCard story={story} aspectRatio="square" />
+                                        </motion.div>
+                                    ))}
+                                </HorizontalSlider>
+                            );
+                        })}
+                    </>
+                ) : (
+                    /* Filtered View (Single Category/Favorites/Continue) */
+                    <>
+                        {/* Collections for category */}
+                        {showCategoryFilter && getCollectionsByCategory(activeFilter).length > 0 && (
+                            <HorizontalSlider title="Collections" emoji="📚">
+                                {getCollectionsByCategory(activeFilter).map((collection, i) => (
+                                    <motion.div
+                                        key={collection.id}
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.03 * i }}
+                                        className="flex-shrink-0 w-40 md:w-48"
+                                    >
+                                        <CollectionCard collection={collection} />
+                                    </motion.div>
+                                ))}
+                            </HorizontalSlider>
+                        )}
+
+                        {/* Stories Grid for filtered view */}
+                        <section>
+                            <h2 className="text-lg font-bold text-slate-900 mb-4">
+                                {isShowFavorites ? 'Your Favorites'
+                                    : isShowContinue ? 'Continue Listening'
+                                        : categories.find(c => c.id === activeFilter)?.label || 'Stories'}
+                            </h2>
+
+                            {getFilteredData().stories.length > 0 ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                                    {getFilteredData().stories.map((story, i) => (
                                         <motion.div
                                             key={story.id}
                                             initial={{ opacity: 0, y: 20 }}
@@ -350,29 +417,24 @@ export default function LibraryPage() {
                                                 story={story}
                                                 aspectRatio="square"
                                                 progress={(story as StoryWithProgress).progress_percent}
-                                                className="hover:shadow-xl hover:-translate-y-1"
                                             />
                                         </motion.div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="py-20 text-center">
+                                <div className="py-16 text-center">
                                     <div className="text-4xl mb-4">
-                                        {activeFilter === 'favorites' ? '❤️' : activeFilter === 'continue' ? '▶️' : '📚'}
+                                        {isShowFavorites ? '❤️' : isShowContinue ? '▶️' : '📚'}
                                     </div>
                                     <h3 className="text-lg font-medium text-slate-900">
-                                        {activeFilter === 'favorites'
-                                            ? 'No favorites yet'
-                                            : activeFilter === 'continue'
-                                                ? 'No stories in progress'
-                                                : 'No content in this category'}
+                                        {isShowFavorites ? 'No favorites yet'
+                                            : isShowContinue ? 'Nothing in progress'
+                                                : 'No stories in this category'}
                                     </h3>
                                     <p className="text-slate-500 mt-2 max-w-xs mx-auto">
-                                        {activeFilter === 'favorites'
-                                            ? 'Tap the heart on any story to save it here.'
-                                            : activeFilter === 'continue'
-                                                ? 'Start listening to a story and it will appear here.'
-                                                : 'Try selecting a different category.'}
+                                        {isShowFavorites ? 'Tap the heart on any story to save it here.'
+                                            : isShowContinue ? 'Start listening to something!'
+                                                : 'Check back later for new content.'}
                                     </p>
                                     <button
                                         onClick={() => setActiveFilter('all')}
@@ -382,10 +444,10 @@ export default function LibraryPage() {
                                     </button>
                                 </div>
                             )}
-                        </>
-                    )
-                }
-            </div >
-        </div >
+                        </section>
+                    </>
+                )}
+            </div>
+        </GlassLayout>
     );
 }

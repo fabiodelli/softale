@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { getCollectionBySlug, getCollectionById, type Collection, type Story } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Play, Pause, ArrowLeft, Clock, Layers, Shuffle } from 'lucide-react';
+import { Play, Pause, ArrowLeft, Clock, Layers, Shuffle, Headphones } from 'lucide-react';
 
 import { usePlayer } from '@/lib/PlayerContext';
+import GlassLayout from '@/components/GlassLayout';
 
 // Loopable categories
 const LOOPABLE_CATEGORIES = ['soundscape', 'binaural', 'music_instrumental'];
@@ -74,11 +75,17 @@ export default function CollectionPage() {
     const isStoryPlaying = (storyId: string) => currentStory?.id === storyId;
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 text-slate-900 pb-24">
-
+        <GlassLayout>
             {/* Hero Section - Side by Side Layout */}
-            <div className="pt-20 pb-8 px-6 md:px-12">
+            <div className="pt-8 pb-8 px-6 md:px-12">
                 <div className="max-w-4xl mx-auto">
+                    {/* Mobile Logo */}
+                    <Link href="/" className="flex md:hidden items-center justify-center gap-2 mb-6 group">
+                        <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
+                        <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+                            Softale
+                        </h1>
+                    </Link>
 
                     {/* Back Button */}
                     <button
@@ -251,6 +258,6 @@ export default function CollectionPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </GlassLayout>
     );
 }

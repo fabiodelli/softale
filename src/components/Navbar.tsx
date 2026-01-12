@@ -6,9 +6,14 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/AuthProvider';
 import { Search, User, Headphones, Library } from 'lucide-react';
 import AmbienceSelector from './AmbienceSelector';
+import MoodToggleButton from './MoodToggleButton';
+import { useMood } from '@/context/MoodContext';
+import { useAmbience } from '@/context/AmbienceContext';
 
 export default function Navbar() {
     const { user, profile } = useAuth();
+    const { activeMood, setActiveMood } = useMood();
+    const { isPlaying } = useAmbience();
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -22,6 +27,11 @@ export default function Navbar() {
     // Detect Scroll for Glass Effect
     useEffect(() => {
         const handleScroll = () => {
+            // On non-home pages, always show scrolled style
+            if (pathname !== '/') {
+                setIsScrolled(true);
+                return;
+            }
             // Trigger switch slightly before content hits header
             const threshold = window.innerHeight * 0.9;
             setIsScrolled(window.scrollY > threshold);
@@ -36,7 +46,7 @@ export default function Navbar() {
             window.removeEventListener('scroll', handleScroll);
             window.removeEventListener('resize', handleScroll);
         };
-    }, []);
+    }, [pathname]);
 
     // ... (Keep existing search useEffects) ...
     // Sync search text with URL when on home page
@@ -77,20 +87,14 @@ export default function Navbar() {
     const textMuted = isScrolled ? 'text-slate-500' : 'text-white drop-shadow-md font-medium';
     const textHover = isScrolled ? 'hover:text-indigo-600' : 'hover:text-indigo-200';
     const glassClass = isScrolled
-        ? 'bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm py-3'
-        : 'bg-transparent border-transparent py-3'; // Fully transparent, consistant height
+        ? 'bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm py-3'  // Scrolled: glassmorphic
+        : 'bg-transparent border-transparent py-3'; // Hero visible (home only): transparent
 
     return (
-        <header className={`${pathname === '/' ? 'hidden md:block' : ''} fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-in-out ${glassClass}`}>
+        <header className={`hidden md:block fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-in-out ${glassClass}`}>
             <div className="w-full px-4 md:px-8 flex items-center justify-between relative">
 
-                {/* Mobile: Logo Centers Absolute with Margin */}
-                <Link href="/" className={`${pathname === '/' ? 'hidden' : 'flex'} md:hidden absolute left-1/2 top-8 -translate-x-1/2 items-center gap-2 group text-slate-900`}>
-                    <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent block tracking-tight">
-                        Softale
-                    </h1>
-                </Link>
+                {/* Mobile logo removed - causes positioning issues */}
 
                 {/* Desktop: Logo Left */}
                 <Link href="/" className={`hidden md:flex items-center gap-2 group ${textBase}`}>
@@ -133,9 +137,13 @@ export default function Navbar() {
                         </button>
                     </div>
 
+                    {/* MoodToggleButton - Always visible in desktop */}
                     <div className="hidden md:block">
-                        <AmbienceSelector />
-                        {/* Note: AmbienceSelector might need its own props for color adaptation, but assuming it uses icons relative to current text color? Verified: AmbienceSelector has its own structure. Check later if it looks odd. */}
+                        <MoodToggleButton
+                            activeMood={activeMood}
+                            onMoodSelect={setActiveMood}
+                            variant="desktop"
+                        />
                     </div>
 
                     <div className={`w-px h-6 mx-1 hidden md:block transition-colors ${isScrolled ? 'bg-slate-200' : 'bg-white/20'}`}></div>

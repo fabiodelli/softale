@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Settings } from 'lucide-react';
+import { Settings, Headphones } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthProvider';
 import { useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ import DashboardTab from '@/components/account/DashboardTab';
 import LibraryTab from '@/components/account/LibraryTab';
 import HistoryTab from '@/components/account/HistoryTab';
 import ReflectionsTab from '@/components/account/ReflectionsTab';
+import GlassLayout from '@/components/GlassLayout';
 
 type Tab = 'dashboard' | 'library' | 'history' | 'reflections';
 
@@ -45,9 +47,16 @@ export default function AccountPage() {
     ];
 
     return (
-        <div className="min-h-screen pb-24 bg-slate-50">
-            {/* Header - Integrated into page flow (static) */}
-            <div className="pt-12 pb-4 px-6 max-w-xl mx-auto">
+        <GlassLayout>
+            <div className="pt-8 pb-4 px-6 max-w-xl mx-auto">
+                {/* Mobile Logo - Scrolls with page */}
+                <Link href="/" className="flex md:hidden items-center justify-center gap-2 mb-6 group">
+                    <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+                        Softale
+                    </h1>
+                </Link>
+
                 <div className="flex items-center justify-between mb-6">
                     {/* Gear Icon - Top Left */}
                     <button
@@ -56,7 +65,6 @@ export default function AccountPage() {
                     >
                         <Settings className="w-6 h-6" />
                     </button>
-                    {/* Empty spacer or User Name could go here if requested, currently empty to remove 'Profile' */}
                     <div />
                 </div>
 
@@ -96,6 +104,6 @@ export default function AccountPage() {
 
             {/* Settings Overlay */}
             <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-        </div>
+        </GlassLayout>
     );
 }

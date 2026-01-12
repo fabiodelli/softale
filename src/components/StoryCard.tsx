@@ -182,7 +182,7 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
             <div className={`relative rounded-xl overflow-hidden transition-all duration-500 border border-slate-100 
                 ${aspectClasses[aspectRatio]}
                 ${isActive
-                    ? 'animate-pulse scale-[0.98] shadow-none'
+                    ? 'ring-2 ring-indigo-500 ring-offset-2 shadow-lg'
                     : 'shadow-md hover:shadow-xl hover:-translate-y-0.5'
                 }
             `}>
