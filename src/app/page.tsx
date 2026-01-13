@@ -47,15 +47,37 @@ export default function HomePage() {
   const { activeMood, setActiveMood } = useMood();
   const [greeting, setGreeting] = useState('');
 
-  // SCROLL STATE - Hero visibility
+  // SCROLL STATE
   const [heroVisible, setHeroVisible] = useState(true);
+  const [maskSize, setMaskSize] = useState('25vh');
 
   useEffect(() => {
     const handleScroll = () => {
-      // Fade out hero controller at 50vh (before content appears)
-      setHeroVisible(window.scrollY < window.innerHeight * 0.5);
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+
+      // Hero visibility controller
+      setHeroVisible(scrollY < windowHeight * 0.5);
+
+      // Dynamic Background & Mask Calculation
+      // Start changing ONLY when hero starts fading (at 0.5 screen height)
+      const transitionStart = windowHeight * 0.5;
+      const transitionEnd = windowHeight * 0.85; // Finish before content fully covers
+      const transitionDistance = transitionEnd - transitionStart;
+
+      let progress = 0;
+      if (scrollY > transitionStart) {
+        progress = Math.min((scrollY - transitionStart) / transitionDistance, 1);
+      }
+
+      // Mask: 25vh -> 0vh (fading out the blur effect)
+      // As we scroll, the top "fade" shrinks until it becomes a solid edge
+      const newMaskSize = Math.max(25 - (25 * progress), 0);
+      setMaskSize(`${newMaskSize}vh`);
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Init
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -216,7 +238,13 @@ export default function HomePage() {
         2. SCROLLING CONTENT LAYER (Z-10) 
         Starts overlapping hero. CSS Mask creates seamless fade-in.
       */}
-      <div className="relative z-10 mt-[85vh] md:mt-[70vh] bg-slate-50/60 backdrop-blur-2xl min-h-screen pb-20 md:pb-12 shadow-none [mask-image:linear-gradient(to_bottom,transparent,black_25vh)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_25vh)]">
+      <div
+        className="relative z-10 mt-[85vh] md:mt-[70vh] bg-slate-50/60 backdrop-blur-2xl min-h-screen pb-20 md:pb-12 shadow-none transition-all duration-75 ease-out"
+        style={{
+          maskImage: `linear-gradient(to bottom, transparent, black ${maskSize})`,
+          WebkitMaskImage: `linear-gradient(to bottom, transparent, black ${maskSize})`
+        }}
+      >
 
         <div className="max-w-[1600px] mx-auto px-6 md:px-12 pt-[15vh]">
 
@@ -224,7 +252,7 @@ export default function HomePage() {
           {searchQuery ? (
             <div className="mb-20">
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-slate-800">Results for "{searchQuery}"</h2>
+                <h2 className="text-2xl font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]">Results for "{searchQuery}"</h2>
               </div>
               {displayedStories.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">

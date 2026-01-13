@@ -122,7 +122,7 @@ export default function LibraryPage() {
                 {/* Header */}
                 <div className="mb-6 mt-16 md:mt-0">{/* mt-16 to account for absolute logo */}
 
-                    <h1 className="text-3xl font-bold text-slate-900 mb-4">Library</h1>
+                    <h1 className="text-3xl font-bold text-white [text-shadow:_0_1px_4px_rgb(0_0_0_/_90%)] mb-4">Library</h1>
 
                     {/* Mobile Search */}
                     <div className="relative group md:hidden mb-4">
@@ -226,7 +226,7 @@ export default function LibraryPage() {
                                     className="bg-white/95 backdrop-blur-xl border border-white/20 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative"
                                 >
                                     <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-xl font-bold text-slate-900">Browse CATEGORIES</h3>
+                                        <h3 className="text-xl font-bold text-slate-900">Browse Categories</h3>
                                         <button
                                             onClick={() => setIsFilterOpen(false)}
                                             className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition"
@@ -375,7 +375,7 @@ export default function LibraryPage() {
 
                         {/* Stories Grid for filtered view */}
                         <section>
-                            <h2 className="text-lg font-bold text-slate-900 mb-4">
+                            <h2 className="text-lg font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)] mb-4">
                                 {isShowFavorites ? 'Your Favorites'
                                     : isShowContinue ? 'Continue Listening'
                                         : isShowCollections ? 'All Collections'
@@ -418,7 +418,7 @@ export default function LibraryPage() {
                                     <div className="text-4xl mb-4">
                                         {isShowFavorites ? '❤️' : isShowContinue ? '▶️' : '📚'}
                                     </div>
-                                    <h3 className="text-lg font-medium text-slate-900">
+                                    <h3 className="text-lg font-medium text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]">
                                         {isShowFavorites ? 'No favorites yet'
                                             : isShowContinue ? 'Nothing in progress'
                                                 : 'No stories in this category'}

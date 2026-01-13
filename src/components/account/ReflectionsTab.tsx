@@ -9,7 +9,7 @@ export default function ReflectionsTab() {
                 <BookHeart className="w-10 h-10 text-indigo-400" />
             </div>
 
-            <h2 className="text-xl font-bold text-slate-800 mb-2">Reflections Journey</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Reflections Journey</h2>
             <p className="text-slate-500 max-w-xs mb-8">
                 Track your moods, gratitude, and thoughts. This personal space is being crafted just for you.
             </p>

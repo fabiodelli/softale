@@ -1,39 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Cookie, X } from 'lucide-react';
+import { Cookie as CookieIcon, X } from 'lucide-react';
+import { useCookie } from '@/context/CookieContext';
 
 export default function CookieConsent() {
-    const [isVisible, setIsVisible] = useState(false);
-
-    useEffect(() => {
-        // Check if user has already made a choice
-        const consent = localStorage.getItem('softale-cookie-consent');
-        if (!consent) {
-            // Show banner after a short delay for better UX
-            const timer = setTimeout(() => setIsVisible(true), 1500);
-            return () => clearTimeout(timer);
-        }
-    }, []);
-
-    const handleAccept = () => {
-        localStorage.setItem('softale-cookie-consent', 'accepted');
-        setIsVisible(false);
-        // Here you would initialize Analytics (e.g., PostHog/Google)
-        // initializeAnalytics(); 
-    };
-
-    const handleDecline = () => {
-        localStorage.setItem('softale-cookie-consent', 'declined');
-        setIsVisible(false);
-        // Ensure Analytics strictly adheres to this
-    };
+    const { isBannerOpen, acceptAll, declineAll, closeBanner } = useCookie();
 
     return (
         <AnimatePresence>
-            {isVisible && (
+            {isBannerOpen && (
                 <motion.div
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -44,26 +21,26 @@ export default function CookieConsent() {
                     <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-6 rounded-2xl shadow-2xl shadow-slate-200/50">
                         <div className="flex items-start gap-4">
                             <div className="p-3 bg-indigo-100 rounded-xl flex-shrink-0">
-                                <Cookie className="w-6 h-6 text-indigo-600" />
+                                <CookieIcon className="w-6 h-6 text-indigo-600" />
                             </div>
                             <div className="flex-1">
                                 <h3 className="font-semibold text-slate-900 mb-1">Cookies & Data</h3>
                                 <p className="text-sm text-slate-600 mb-4 leading-relaxed">
                                     We use data to personalize your experience (like remembering your favorite mood) and analyze app usage to improve Softale.
                                     <br />
-                                    <Link href="/privacy" className="text-indigo-600 hover:underline mt-1 inline-block text-xs font-medium">
-                                        Read Privacy Policy
+                                    <Link href="/cookie" className="text-indigo-600 hover:underline mt-1 inline-block text-xs font-medium">
+                                        Read Cookie Policy
                                     </Link>
                                 </p>
                                 <div className="flex gap-3">
                                     <button
-                                        onClick={handleAccept}
+                                        onClick={acceptAll}
                                         className="flex-1 px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition shadow-lg shadow-slate-900/10"
                                     >
                                         Accept All
                                     </button>
                                     <button
-                                        onClick={handleDecline}
+                                        onClick={declineAll}
                                         className="px-4 py-2 bg-slate-100 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-200 transition"
                                     >
                                         Essential Only
@@ -71,7 +48,7 @@ export default function CookieConsent() {
                                 </div>
                             </div>
                             <button
-                                onClick={() => setIsVisible(false)}
+                                onClick={closeBanner}
                                 className="text-slate-400 hover:text-slate-600 transition"
                             >
                                 <X className="w-5 h-5" />

@@ -47,7 +47,7 @@ export default function AccountPage() {
     ];
 
     return (
-        <GlassLayout>
+        <GlassLayout variant="functional">
             <div className="pt-8 pb-4 px-6 max-w-xl mx-auto">
                 {/* Mobile Logo - Scrolls with page, positioned like home */}
                 <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg">
@@ -77,7 +77,7 @@ export default function AccountPage() {
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`
                                     relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex-1 sm:flex-none whitespace-nowrap flex justify-center items-center
-                                    ${activeTab === tab.id ? 'text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}
+                                    ${activeTab === tab.id ? 'text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-800'}
                                 `}
                             >
                                 {activeTab === tab.id && (

@@ -3,6 +3,7 @@
 import { AuthProvider } from '@/lib/AuthProvider';
 import { PlayerProvider } from '@/lib/PlayerContext';
 import { AmbienceProvider } from '@/context/AmbienceContext';
+import { CookieProvider } from '@/context/CookieContext';
 import { MoodProvider } from '@/context/MoodContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -11,7 +12,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <MoodProvider>
                 <AmbienceProvider>
                     <PlayerProvider>
-                        {children}
+                        <CookieProvider>
+                            {children}
+                        </CookieProvider>
                     </PlayerProvider>
                 </AmbienceProvider>
             </MoodProvider>

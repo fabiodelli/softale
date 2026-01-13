@@ -33,7 +33,9 @@ export default function Navbar() {
                 return;
             }
             // Trigger switch slightly before content hits header
-            const threshold = window.innerHeight * 0.9;
+            // content starts at 70vh (desktop) / 85vh (mobile)
+            // we want header to appear "one scroll before", around 65% of viewport
+            const threshold = window.innerHeight * 0.65;
             setIsScrolled(window.scrollY > threshold);
         };
 

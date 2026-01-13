@@ -9,9 +9,10 @@ import type { Mood } from '@/types';
 
 interface GlassLayoutProps {
     children: React.ReactNode;
+    variant?: 'immersive' | 'functional';
 }
 
-export default function GlassLayout({ children }: GlassLayoutProps) {
+export default function GlassLayout({ children, variant = 'immersive' }: GlassLayoutProps) {
     const { activeMood, setActiveMood } = useMood();
     const { isPlaying } = useAmbience();
     const currentImages = MOOD_IMAGES[activeMood];
@@ -49,7 +50,10 @@ export default function GlassLayout({ children }: GlassLayoutProps) {
 
             {/* SCROLLING GLASS CONTENT */}
             <div className="relative min-h-screen" style={{ zIndex: Z_INDEX.content }}>
-                <div className="bg-slate-50/80 backdrop-blur-2xl min-h-screen pt-20 md:pt-24 pb-24 md:pb-16">
+                <div className={`min-h-screen pt-20 md:pt-24 pb-24 md:pb-16 ${variant === 'immersive'
+                        ? 'bg-slate-50/60 backdrop-blur-2xl'
+                        : 'bg-white/95 backdrop-blur-xl'
+                    }`}>
                     {children}
                 </div>
             </div>

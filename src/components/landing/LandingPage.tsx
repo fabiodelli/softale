@@ -7,9 +7,10 @@ import Link from 'next/link';
 
 interface LandingPageProps {
     onEnterApp: () => void;
+    showNav?: boolean;
 }
 
-export default function LandingPage({ onEnterApp }: LandingPageProps) {
+export default function LandingPage({ onEnterApp, showNav = true }: LandingPageProps) {
     const containerRef = useRef(null);
     const { scrollYProgress } = useScroll({
         target: containerRef,
@@ -41,23 +42,25 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
                 </motion.div>
 
                 {/* Navbar (Absolute) */}
-                <nav className="absolute top-0 left-0 right-0 z-50 p-6 flex items-center justify-between max-w-7xl mx-auto w-full text-white">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center text-white font-bold border border-white/20">S</div>
-                        <span className="text-xl font-bold tracking-tight">Softale</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Link href="/login" className="px-5 py-2 text-sm font-medium text-white/80 hover:text-white transition">
-                            Log In
-                        </Link>
-                        <button
-                            onClick={onEnterApp}
-                            className="px-5 py-2 text-sm font-bold bg-white text-slate-900 rounded-full hover:bg-slate-200 transition shadow-lg shadow-white/10"
-                        >
-                            Start App
-                        </button>
-                    </div>
-                </nav>
+                {showNav && (
+                    <nav className="absolute top-0 left-0 right-0 z-50 p-6 flex items-center justify-between max-w-7xl mx-auto w-full text-white">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center text-white font-bold border border-white/20">S</div>
+                            <span className="text-xl font-bold tracking-tight">Softale</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <Link href="/login" className="px-5 py-2 text-sm font-medium text-white/80 hover:text-white transition">
+                                Log In
+                            </Link>
+                            <button
+                                onClick={onEnterApp}
+                                className="px-5 py-2 text-sm font-bold bg-white text-slate-900 rounded-full hover:bg-slate-200 transition shadow-lg shadow-white/10"
+                            >
+                                Start App
+                            </button>
+                        </div>
+                    </nav>
+                )}
 
                 {/* Content */}
                 <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">

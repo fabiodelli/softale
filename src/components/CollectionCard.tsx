@@ -48,8 +48,7 @@ export default function CollectionCard({ collection, className = '' }: Props) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
 
                 {/* Collection Badge */}
-                <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-slate-700">
-                    <Layers className="w-3 h-3" />
+                <div className="absolute top-3 left-3 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-lg text-xs font-bold text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_90%)]">
                     {stories.length} tracks
                 </div>
 
@@ -69,11 +68,11 @@ export default function CollectionCard({ collection, className = '' }: Props) {
 
                 {/* Title on Card */}
                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h3 className="text-lg font-bold text-white truncate drop-shadow-md">
+                    <h3 className="text-lg font-bold text-white truncate [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]">
                         {collection.title}
                     </h3>
                     {collection.description && (
-                        <p className="text-sm text-white/80 truncate drop-shadow-sm">
+                        <p className="text-sm text-white/80 truncate [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]">
                             {collection.description}
                         </p>
                     )}

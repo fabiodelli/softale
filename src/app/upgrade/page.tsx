@@ -83,7 +83,7 @@ export default function UpgradePage() {
     // Premium User View - Thank You
     if (isPremium) {
         return (
-            <GlassLayout>
+            <GlassLayout variant="functional">
                 <div className="pt-8 pb-12 px-4 md:px-8">
                     <div className="max-w-4xl mx-auto text-center">
                         {/* Mobile Logo - positioned like home */}

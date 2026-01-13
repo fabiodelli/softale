@@ -30,7 +30,7 @@ export default function DashboardTab({ username }: DashboardTabProps) {
 
             {/* Greeting */}
             <div>
-                <h2 className="text-2xl font-bold text-slate-800">
+                <h2 className="text-2xl font-bold text-slate-900">
                     Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'},<br />
                     <span className="text-indigo-600">{username || 'Traveler'}</span>
                 </h2>
@@ -65,7 +65,7 @@ export default function DashboardTab({ username }: DashboardTabProps) {
                         <Clock className="w-5 h-5" />
                     </div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800">{stats.totalMinutes}</div>
+                        <div className="text-2xl font-bold text-slate-900">{stats.totalMinutes}</div>
                         <div className="text-xs text-slate-500 font-medium">Minutes Listened</div>
                     </div>
                 </div>
@@ -74,7 +74,7 @@ export default function DashboardTab({ username }: DashboardTabProps) {
                         <Calendar className="w-5 h-5" />
                     </div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800">{stats.sessions}</div>
+                        <div className="text-2xl font-bold text-slate-900">{stats.sessions}</div>
                         <div className="text-xs text-slate-500 font-medium">Sessions Completed</div>
                     </div>
                 </div>

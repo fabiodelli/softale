@@ -171,11 +171,8 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
                             {story.title}
                         </h3>
 
-                        <div className="flex items-center gap-4 text-sm md:text-base font-semibold text-white/80">
-                            <span className="flex items-center gap-1.5">
-                                <Clock className="w-4 h-4" />
-                                {formattedDuration}
-                            </span>
+                        <div className="flex items-center gap-2 text-xs font-medium text-white/80 [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]">
+                            <span>{formattedDuration}</span>
                             {isFavorite && (
                                 <span className="flex items-center gap-1.5">
                                     <Heart className="w-4 h-4 fill-red-400 text-red-400" />
@@ -281,7 +278,7 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
 
             {/* Info Container (Outside) */}
             <div>
-                <h3 className={`font-bold text-base leading-tight mb-1.5 line-clamp-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-900 group-hover:text-indigo-600'}`}>
+                <h3 className={`font-bold text-base leading-tight mb-1.5 line-clamp-2 transition-colors [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)] ${isActive ? 'text-indigo-300' : 'text-white group-hover:text-indigo-200'}`}>
                     {story.title}
                 </h3>
 
@@ -297,7 +294,7 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
                         )}
                     </div>
                     {/* Author Name */}
-                    <span className="text-xs font-medium text-slate-500 truncate">
+                    <span className="text-xs font-medium text-white/90 truncate [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]">
                         {story.author || 'Softale'}
                     </span>
                     {/* Optional: Dot + Duration if space */}

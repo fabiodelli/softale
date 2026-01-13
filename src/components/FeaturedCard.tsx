@@ -68,56 +68,113 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full relative mb-6 group"
         >
-            {/* 
-              Responsive Container:
-              - Mobile: Transparent stack.
-              - Desktop: Glassmorphic Box, Compact Height (to match standard cards).
-            */}
-            <div className={`relative flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 transition-all duration-500
-                md:rounded-2xl md:border md:p-4
-                ${active
-                    ? 'md:bg-white/80 md:backdrop-blur-2xl md:border-indigo-100 md:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.2)]'
-                    : 'md:bg-white/60 md:backdrop-blur-xl md:border-slate-100 md:shadow-lg md:hover:shadow-xl md:hover:bg-white/70'
-                }`}
-            >
-                {/* Image Container - Fixed Height on Desktop (Visual Alignment) */}
+            {/* MOBILE: Simple transparent layout (as before) */}
+            <div className="md:hidden flex flex-col gap-3">
+                {/* Image */}
                 <div
-                    className={`relative w-full md:w-auto md:h-48 lg:h-56 aspect-video rounded-xl overflow-hidden cursor-pointer transition-all duration-700
-                    ${active
-                            ? 'animate-pulse scale-[0.98] shadow-inner'
-                            : 'shadow-md hover:shadow-lg hover:-translate-y-0.5'
-                        }`}
+                    className="relative w-full aspect-video rounded-xl overflow-hidden cursor-pointer shadow-md hover:shadow-lg transition-all"
                     onClick={handlePlayToggle}
                 >
-                    {/* Background Image */}
                     <img
                         src={imgSrc}
                         onError={handleImageError}
                         alt={story.title}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                        className="w-full h-full object-cover"
                     />
-
-                    {/* Gradient for Depth */}
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 md:h-1/3 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
+                    {/* Gradient for text readability */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
                 </div>
 
-                {/* Info Container */}
-                <div className="flex-1 flex flex-col justify-center items-start gap-1 md:gap-2 px-1 md:px-0 w-full">
-                    {/* Title */}
-                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-[1.1] tracking-tight line-clamp-2">
+                {/* Info */}
+                <div className="px-1">
+                    <h2 className="text-2xl font-extrabold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)] leading-tight line-clamp-2 mb-2">
                         {story.title}
                     </h2>
-
-                    {/* Author Info */}
-                    <div className="flex items-center gap-2 mt-1">
-                        <div className="w-5 h-5 md:w-6 md:h-6 rounded-full overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
                             {story.author_image_url ? (
                                 <img src={story.author_image_url} alt={story.author} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-[9px] text-indigo-600 font-bold">S</div>
                             )}
                         </div>
-                        <span className="text-sm font-semibold text-slate-500">{story.author || 'Softale Production'}</span>
+                        <span className="text-sm font-semibold text-white/90 [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]">{story.author || 'Softale Production'}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* DESKTOP: Premium gradient overlay design */}
+            <div
+                className="hidden md:block relative overflow-hidden rounded-3xl transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl cursor-pointer"
+                onClick={handlePlayToggle}
+            >
+                {/* Background Image - Full Width */}
+                <div className="absolute inset-0">
+                    <img
+                        src={imgSrc}
+                        onError={handleImageError}
+                        alt={story.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    {/* Light Transparent Overlay for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/20 to-black/10"></div>
+                </div>
+
+                {/* Content Container */}
+                <div className="relative flex items-center gap-6 p-8 min-h-[240px]">
+                    {/* Thumbnail */}
+                    <div className="relative w-40 lg:w-48 h-40 lg:h-48 flex-shrink-0 rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm border-2 border-white/20 shadow-2xl">
+                        <img
+                            src={imgSrc}
+                            onError={handleImageError}
+                            alt={story.title}
+                            className="w-full h-full object-cover"
+                        />
+
+                        {/* Play/Pause Overlay */}
+                        <div className={`absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px] transition-opacity ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                            <div className="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl">
+                                {active ? (
+                                    <Pause className="w-8 h-8 fill-slate-900 text-slate-900" />
+                                ) : (
+                                    <Play className="w-8 h-8 fill-slate-900 text-slate-900 ml-1" />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Info Container */}
+                    <div className="flex-1 flex flex-col justify-center items-start gap-3">
+                        {/* Category Badge */}
+                        {story.category && (
+                            <span className="text-sm uppercase tracking-wider font-bold px-3 py-1.5 rounded-lg bg-indigo-500/90 text-white shadow-lg">
+                                {story.category.replace(/_/g, ' ')}
+                            </span>
+                        )}
+
+                        {/* Title */}
+                        <h2 className={`text-4xl lg:text-5xl font-black leading-[1.1] tracking-tight line-clamp-2 transition-all drop-shadow-2xl ${active ? 'text-indigo-200' : 'text-white group-hover:text-indigo-100'}`}>
+                            {story.title}
+                        </h2>
+
+                        {/* Author Info */}
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
+                                {story.author_image_url ? (
+                                    <img src={story.author_image_url} alt={story.author} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-indigo-400 text-xs text-white font-bold">S</div>
+                                )}
+                            </div>
+                            <span className="text-base font-semibold text-white/90 drop-shadow-lg">{story.author || 'Softale Production'}</span>
+                        </div>
+
+                        {/* Premium Badge */}
+                        {story.is_premium && (
+                            <span className="text-sm bg-amber-400/90 text-amber-900 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 shadow-lg">
+                                ✨ PREMIUM
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>

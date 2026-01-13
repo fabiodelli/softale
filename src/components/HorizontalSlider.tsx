@@ -20,7 +20,7 @@ export default function HorizontalSlider({
     return (
         <section className={`mb-8 ${className}`}>
             <div className="flex items-center justify-between mb-4 px-1">
-                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)] flex items-center gap-2">
                     {emoji && <span className="text-base">{emoji}</span>}
                     {title}
                 </h2>

@@ -90,7 +90,7 @@ export default function CollectionPage() {
                     {/* Back Button */}
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition mb-8"
+                        className="flex items-center gap-2 text-white/80 hover:text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)] transition mb-8"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         <span className="text-sm font-medium">Back</span>
@@ -137,7 +137,7 @@ export default function CollectionPage() {
                                 )}
                             </div>
 
-                            <h1 className="text-3xl md:text-5xl font-bold mb-4 text-slate-900 leading-tight">
+                            <h1 className="text-3xl md:text-5xl font-bold mb-4 text-white [text-shadow:_0_1px_4px_rgb(0_0_0_/_90%)] leading-tight">
                                 {collection.title}
                             </h1>
 
@@ -236,7 +236,7 @@ export default function CollectionPage() {
 
                                 {/* Track Info */}
                                 <div className="flex-1 min-w-0">
-                                    <div className={`font-medium truncate transition ${isCurrentlyPlaying ? 'text-indigo-600' : 'text-slate-900 group-hover:text-indigo-600'
+                                    <div className={`font-medium truncate transition [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)] ${isCurrentlyPlaying ? 'text-indigo-300' : 'text-white group-hover:text-indigo-200'
                                         }`}>
                                         {story.title}
                                     </div>

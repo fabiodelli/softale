@@ -20,7 +20,8 @@ const moods = [
         label: 'Relaxed',
         icon: Moon,
         colorClass: 'bg-indigo-100 text-slate-800',
-        activeClass: 'ring-[3px] ring-indigo-300 scale-105 bg-indigo-200',
+        borderClass: 'border-indigo-200',
+        activeClass: 'bg-indigo-200 border-indigo-400 ring-[3px] ring-indigo-300 shadow-indigo-300/50',
         image: '/images/moods/starry_night.png',
         mobileImage: '/images/moods/mobile/starry_night.jpg'
     },
@@ -29,7 +30,8 @@ const moods = [
         label: 'Peaceful',
         icon: Leaf,
         colorClass: 'bg-emerald-100 text-slate-800',
-        activeClass: 'ring-[3px] ring-emerald-300 scale-105 bg-emerald-200',
+        borderClass: 'border-emerald-200',
+        activeClass: 'bg-emerald-200 border-emerald-400 ring-[3px] ring-emerald-300 shadow-emerald-300/50',
         image: '/images/moods/forest.png',
         mobileImage: '/images/moods/mobile/forest.jpg'
     },
@@ -38,7 +40,8 @@ const moods = [
         label: 'Dreamy',
         icon: Sparkles,
         colorClass: 'bg-rose-100 text-slate-800',
-        activeClass: 'ring-[3px] ring-rose-300 scale-105 bg-rose-200',
+        borderClass: 'border-rose-200',
+        activeClass: 'bg-rose-200 border-rose-400 ring-[3px] ring-rose-300 shadow-rose-300/50',
         image: '/images/moods/sunset.png',
         mobileImage: '/images/moods/mobile/sunset.jpg'
     },
@@ -46,8 +49,9 @@ const moods = [
         id: 'meditation',
         label: 'Focused',
         icon: Brain,
-        colorClass: 'bg-sky-100 text-slate-800', // Swapped to Sky (Cool Blue for Focus)
-        activeClass: 'ring-[3px] ring-sky-300 scale-105 bg-sky-200',
+        colorClass: 'bg-sky-100 text-slate-800',
+        borderClass: 'border-sky-200',
+        activeClass: 'bg-sky-200 border-sky-400 ring-[3px] ring-sky-300 shadow-sky-300/50',
         image: '/images/moods/zen_stones.png',
         mobileImage: '/images/moods/mobile/zen_stones.jpg'
     },
@@ -55,8 +59,9 @@ const moods = [
         id: 'energized',
         label: 'Energized',
         icon: Waves,
-        colorClass: 'bg-amber-100 text-slate-800', // Swapped to Amber (Warm Energy)
-        activeClass: 'ring-[3px] ring-amber-300 scale-105 bg-amber-200',
+        colorClass: 'bg-amber-100 text-slate-800',
+        borderClass: 'border-amber-200',
+        activeClass: 'bg-amber-200 border-amber-400 ring-[3px] ring-amber-300 shadow-amber-300/50',
         image: '/images/moods/ocean-vibrant.jpg',
         mobileImage: '/images/moods/mobile/ocean-vibrant.jpg'
     }
@@ -153,20 +158,25 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                                                 whileTap={{ scale: 0.95 }}
                                                 onClick={() => onSelect(m.id as Mood)}
                                                 className={`
-                                                    w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300
-                                                    ${m.colorClass}
-                                                    ${isActive ? m.activeClass : 'bg-white/90 hover:bg-white border-2 border-transparent'} 
+                                                    w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border-2
+                                                    ${isActive
+                                                        ? `${m.activeClass} scale-110 shadow-xl`
+                                                        : `${m.colorClass} ${m.borderClass} opacity-90 hover:opacity-100`
+                                                    }
                                                 `}
                                             >
                                                 <div className={`
                                                     w-full h-full rounded-full flex items-center justify-center
-                                                    ${m.colorClass}
-                                                    ${isActive ? m.activeClass : 'opacity-90 hover:opacity-100 scale-95 hover:scale-100'}
+                                                    ${isActive ? '' : 'hover:scale-105 transition-transform'}
                                                 `}>
-                                                    <Icon className="w-6 h-6 md:w-8 md:h-8" />
+                                                    <Icon className="w-6 h-6 md:w-7 md:h-7" />
                                                 </div>
                                             </motion.button>
-                                            <span className={`text-[10px] md:text-xs font-bold uppercase tracking-widest transition-colors duration-300 ${isActive ? 'text-slate-900 underline decoration-2 underline-offset-4' : 'text-slate-600'}`}>
+                                            <span className={`
+                                                text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all duration-300 mt-2
+                                                text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]
+                                                ${isActive ? 'scale-110 opacity-100' : 'opacity-80 hover:opacity-100'}
+                                            `}>
                                                 {m.label}
                                             </span>
                                         </div>

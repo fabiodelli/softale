@@ -58,14 +58,14 @@ export default function FavoritesPage() {
         <div className="min-h-screen bg-slate-50 pt-24 pb-20">
             <div className="max-w-2xl mx-auto px-4">
                 <div className="mb-8 flex items-center gap-4">
-                    <Link href="/account" className="text-slate-500 hover:text-slate-900 transition">← Back</Link>
-                    <h1 className="text-3xl font-bold text-slate-900">Your Favorites</h1>
+                    <Link href="/account" className="text-white/80 hover:text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)] transition">← Back</Link>
+                    <h1 className="text-3xl font-bold text-white [text-shadow:_0_1px_4px_rgb(0_0_0_/_90%)]">Your Favorites</h1>
                 </div>
 
                 {favorites.length === 0 ? (
                     <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm">
                         <span className="text-4xl block mb-4">💔</span>
-                        <h3 className="text-xl font-medium text-slate-900 mb-2">No favorites yet</h3>
+                        <h3 className="text-xl font-medium text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)] mb-2">No favorites yet</h3>
                         <p className="text-slate-500 mb-6">Start exploring stories and tap the heart icon!</p>
                         <Link href="/" className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition font-medium inline-block">
                             Browse Library
@@ -98,7 +98,7 @@ export default function FavoritesPage() {
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-slate-900 truncate group-hover:text-indigo-600 transition">{story.title}</h3>
+                                    <h3 className="font-semibold text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)] truncate group-hover:text-indigo-200 transition">{story.title}</h3>
                                     <p className="text-sm text-slate-500 truncate">{story.author || 'Softale'}</p>
                                 </div>
 

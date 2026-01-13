@@ -46,6 +46,10 @@ export function AmbienceProvider({ children }: { children: React.ReactNode }) {
     // Track if ambience was playing before being interrupted by story playback
     const wasPlayingBeforeInterrupt = useRef(false);
 
+    // SIMPLIFIED: Only track if user manually disabled ambience
+    // When true, automatic resume is BLOCKED
+    const manuallyDisabled = useRef(false);
+
     // Initial setup or hydration could go here (load saved preference)
 
     useEffect(() => {
@@ -70,10 +74,13 @@ export function AmbienceProvider({ children }: { children: React.ReactNode }) {
         } else {
             const newState = !isPlaying;
             setIsPlaying(newState);
-            // CRITICAL FIX: If user manually toggles, update the 'restore' intention.
-            // This ensures that if they turn it OFF while a story is playing,
-            // it won't auto-resume when the story ends.
-            wasPlayingBeforeInterrupt.current = newState;
+            // If turning OFF manually, set the flag
+            if (!newState) {
+                manuallyDisabled.current = true;
+            } else {
+                // If turning ON manually, clear the flag
+                manuallyDisabled.current = false;
+            }
         }
     };
 
@@ -85,30 +92,31 @@ export function AmbienceProvider({ children }: { children: React.ReactNode }) {
             } else {
                 setCurrentTrack(track);
                 setIsPlaying(true);
-                // User manually started a track, so we should restore to this if interrupted
-                wasPlayingBeforeInterrupt.current = true;
+                // User selected a track, clear manual disable flag
+                manuallyDisabled.current = false;
             }
         }
     };
 
     // Coordination methods for PlayerContext integration
     const pause = useCallback(() => {
-        // Remember if we were playing before being interrupted
-        wasPlayingBeforeInterrupt.current = isPlaying;
-        if (isPlaying && audioRef.current) {
-            // Directly pause the audio element and update state
+        // Check audio element directly instead of state (avoids stale closure issues)
+        if (audioRef.current && !audioRef.current.paused) {
+            wasPlayingBeforeInterrupt.current = true;
             audioRef.current.pause();
             setIsPlaying(false);
         }
-    }, [isPlaying]);
+    }, []); // No dependencies - always uses current refs
 
     const resumeIfWasPlaying = useCallback(() => {
-        // Only resume if we were playing before the interruption
-        if (wasPlayingBeforeInterrupt.current && currentTrack && audioRef.current) {
+        // Only resume if:
+        // 1. Was playing before interruption
+        // 2. User hasn't manually disabled it
+        if (wasPlayingBeforeInterrupt.current && !manuallyDisabled.current && currentTrack && audioRef.current) {
             audioRef.current.play().catch(e => console.log("Resume prevented:", e));
             setIsPlaying(true);
         }
-        // Reset the flag
+        // Always reset the flag after checking
         wasPlayingBeforeInterrupt.current = false;
     }, [currentTrack]);
 

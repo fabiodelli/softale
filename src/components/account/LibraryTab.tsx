@@ -32,7 +32,7 @@ export default function LibraryTab() {
                 <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-4">
                     <Heart className="w-8 h-8 text-rose-300" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-800">Your collection is empty</h3>
+                <h3 className="text-lg font-bold text-slate-900">Your collection is empty</h3>
                 <p className="text-slate-500 text-sm max-w-xs mt-2 mb-6">
                     Save your favorite stories to find them easily here.
                 </p>
