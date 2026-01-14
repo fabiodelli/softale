@@ -15,12 +15,18 @@
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
+import ffmpegPath from 'ffmpeg-static';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execPromise = promisify(exec);
 import { createClient } from '@supabase/supabase-js';
 import { CATALOG_ITEMS } from './catalog-config.js';
 import { ConceptEngine, StoryConcept } from './ConceptEngine.js';
 import { voiceService } from './VoiceService.js';
 
-dotenv.config();
+const factoryEnv = path.resolve(process.cwd(), 'tools/audio-factory/.env');
+dotenv.config({ path: fs.existsSync(factoryEnv) ? factoryEnv : undefined });
 
 // =====================================================
 // Environment & Initialization
@@ -65,13 +71,17 @@ export interface GeneratedScript {
     musicPrompt: string;
     audioPhases?: AudioPhase[];
     voiceIdOverride?: string;
-    mixLevel?: number;
+    mixLevel?: string;
     voiceStyle?: string;
     musicFile?: string;
     backingCategory?: string;
     backingTitle?: string;
     backingCoverPrompt?: string;
     createdAt: string;
+    // V5 Fields
+    ambiencePrompt?: string;
+    pacingMode?: 'continuous' | 'immersive' | 'breathwork';
+    warmupDuration?: number;
 }
 
 export interface AudioPhase {
@@ -116,7 +126,9 @@ interface AssetDesign {
     musicPrompt: string;
     backingCategory?: string;
     backingTitle?: string;
+    backingTitle?: string;
     backingCoverPrompt?: string;
+    ambiencePrompt?: string; // New V5 Auto-Ambience
 }
 
 interface AudioDirection {
@@ -422,6 +434,8 @@ async function generatePhase1_StoryDesign(brief: StoryBrief): Promise<StoryDesig
 Design a high-level story structure. Be creative but stay within the category's purpose.`;
 
     const userPrompt = `Design a ${brief.duration}-minute ${brief.category} story.
+${brief.title ? `Title Idea: "${brief.title}"` : ''}
+${brief.description ? `Premise/Context: ${brief.description}` : ''}
 ${brief.theme ? `Theme: ${brief.theme}` : ''}
 Target word count: ${targetWords} words
 
@@ -569,7 +583,8 @@ Return JSON only:
     "musicPrompt": "ID: [uuid]" if reusing stock OR "NEW: [Stable Audio prompt]",
     "backingCategory": "soundscape|binaural|music_instrumental" (only if NEW),
     "backingTitle": "Descriptive name for the asset" (only if NEW),
-    "backingCoverPrompt": "DALL-E prompt for the backing audio artwork" (only if NEW)
+    "backingCoverPrompt": "DALL-E prompt for the backing audio artwork" (only if NEW),
+    "ambiencePrompt": "Detailed prompt for Stable Audio background ambience (e.g. 'Nature sounds, rain on tent')"
 }`;
 
     const response = await callClaude(systemPrompt, userPrompt, 1000);
@@ -684,6 +699,10 @@ export async function generateScript(brief: StoryBrief, conceptOverride?: StoryC
         backingTitle: assetDesign.backingTitle,
         backingCoverPrompt: assetDesign.backingCoverPrompt,
         createdAt: new Date().toISOString(),
+        // V5 Fields
+        ambiencePrompt: conceptOverride?.audioIdentity?.ambienceLayer || assetDesign.ambiencePrompt,
+        pacingMode: conceptOverride?.pacingMode,
+        warmupDuration: conceptOverride?.warmupDuration,
     };
 }
 
@@ -930,6 +949,63 @@ export async function generateOrFetchLoop(script: GeneratedScript): Promise<stri
 }
 
 // =====================================================
+// Ambience Generation (V5 Layer)
+// =====================================================
+
+export async function generateOrFetchAmbience(script: GeneratedScript): Promise<string> {
+    const prompt = script.ambiencePrompt;
+    if (!prompt) return '';
+
+    console.log(`🌧️ Processing ambience layer...`);
+    console.log(`      Prompt: "${prompt}"`);
+
+    // Reuse Logic (Simplified)
+    const idMatch = prompt.match(/ID:\s*([a-f0-9-]+)/i);
+    if (idMatch) {
+        // ...implement reuse if needed, for now skip to generation
+    }
+
+    // Generate
+    const stableAudioKey = process.env.STABILITY_API_KEY || process.env.STABLE_AUDIO_API_KEY;
+    if (!stableAudioKey) return '';
+
+    const url = 'https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio';
+    const formData = new FormData();
+    formData.append('prompt', prompt.replace(/^NEW:\s*/i, '').trim());
+    formData.append('duration', '180');
+    formData.append('model', 'stable-audio-2.5');
+    // FIX: Add negative_prompt for safety and API consistency
+    formData.append('negative_prompt', 'Music, melody, rhythm, drums, percussion, vocals, speech, glitch, low quality');
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${stableAudioKey}`,
+                'Accept': 'audio/*'
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            console.log(`   ⚠️ Ambience gen failed: ${response.status} ${response.statusText}`);
+            const errText = await response.text();
+            console.log(`      Details: ${errText.substring(0, 200)}`);
+            return '';
+        }
+
+        const outputPath = path.join(OUTPUT_DIR, `${script.title.replace(/\s+/g, '_')}_ambience.mp3`);
+        fs.writeFileSync(outputPath, Buffer.from(await response.arrayBuffer()));
+        console.log(`   ✅ Ambience layer generated: ${outputPath}`);
+        return outputPath;
+    } catch (e: any) {
+        console.error('Ambience error:', e.message);
+        return '';
+    }
+}
+
+
+// =====================================================
 // Legacy Wrapper for Backwards Compatibility
 // =====================================================
 
@@ -1022,46 +1098,192 @@ export async function generateAssetPack(script: GeneratedScript): Promise<AssetP
 
 
 // =====================================================
-// Audio Mixing (FFmpeg placeholder)
+// Audio Mixing Engine (V5)
 // =====================================================
 
-export async function mixAudio(voicePath: string, loopPath: string, script: GeneratedScript): Promise<string> {
-    console.log('🎛️ Mixing audio with FFmpeg...');
+export async function mixAudio(voicePath: string, loopPath: string, script: GeneratedScript, ambiencePath?: string): Promise<string> {
+    console.log('🎛️ Mixing Audio Layers (Smart V5)...');
 
-    if (!voicePath && loopPath) return loopPath;
-    if (voicePath && !loopPath) return voicePath;
-    if (!voicePath && !loopPath) return '';
+    const outputFilename = `mixed_${Date.now()}.mp3`;
+    const outputPath = path.join(OUTPUT_DIR, outputFilename);
 
-    const outputPath = path.join(OUTPUT_DIR, `${script.title.replace(/\s+/g, '_')}_mixed.mp3`);
+    /* 
+       V5 Dynamic Mixing Logic:
+       - Inputs can be: [Voice, Loop, Ambience] OR [Loop, Ambience] OR [Voice, Loop] etc.
+       - "Warmup" logic uses adelay on Voice.
+       - Smart Pacing (Intro/Outro) should handle volume automation.
+    */
 
-    // Basic mix: Loop at -10dB, Voice at normal volume. Loop loops effectively.
-    // ffmpeg -stream_loop -1 -i loop.mp3 -i voice.mp3 -filter_complex "[0:a]volume=0.3[a0];[1:a]volume=1.0[a1];[a0][a1]amix=inputs=2:duration=shortest" -y out.mp3
-
-    // Check if ffmpeg exists
-    try {
-        const { execSync } = require('child_process');
-        // Simple check
-        execSync('ffmpeg -version');
-    } catch (e) {
-        console.warn('⚠️ FFmpeg not found in PATH. Skipping mix. Returning voice only.');
+    // Check for ffmpeg (Static)
+    const ffmpegCmd = ffmpegPath;
+    if (!ffmpegCmd) {
+        console.warn('⚠️ FFmpeg static binary not found. Skipping mix.');
         return voicePath;
     }
 
-    const mixVol = script.mixLevel || 0.25;
-    const command = `ffmpeg -stream_loop -1 -i "${loopPath}" -i "${voicePath}" -filter_complex "[0:a]volume=${mixVol}[bg];[1:a]volume=1.0[vc];[bg][vc]amix=inputs=2:duration=shortest" -y "${outputPath}"`;
+    // const { exec } = require('child_process');
+    // const util = require('util');
+    // const execPromise = util.promisify(exec);
+    // Use global execPromise imported/defined at top
+
+    const inputs: string[] = [];
+    let filterComplex = '';
+    let inputStreamCount = 0;
+
+    // 1. Voice Layer (Input 0 if present)
+    const hasVoice = voicePath && fs.existsSync(voicePath);
+    if (hasVoice) {
+        inputs.push('-i', voicePath);
+        inputStreamCount++;
+    }
+
+    // 2. Music Layer (Input 0/1)
+    const hasLoop = loopPath && fs.existsSync(loopPath);
+    if (hasLoop) {
+        // Note: standard ffmpeg usage calls for -stream_loop BEFORE -i if looping is needed.
+        // But our `generateOrFetchLoop` often returns a pre-looped file or long file.
+        // If not, we should loop it. Let's assume pre-looped for now or use -stream_loop -1
+        inputs.push('-stream_loop', '-1', '-i', loopPath);
+        inputStreamCount++;
+    }
+
+    // 3. Ambience Layer (Input 1/2)
+    const hasAmbience = ambiencePath && fs.existsSync(ambiencePath);
+    if (hasAmbience) {
+        inputs.push('-stream_loop', '-1', '-i', ambiencePath);
+        inputStreamCount++;
+    }
+
+    if (inputStreamCount === 0) {
+        throw new Error("No audio inputs available for mixing!");
+    }
+
+    const duration = script.duration * 60; // seconds
+    const fadeOutDuration = 10;
+    const warmupMs = (script.warmupDuration || 0) * 1000;
+
+    const voiceDelay = warmupMs;
+
+    // Build Filtergraph
+    // Goals:
+    // - Voice: Delay by warmupMs, limit duration
+    // - Music: Loop (if needed), Trim to duration, Fade Out
+    // - Ambience: Loop (if needed), Trim to duration, Lower volume, Fade Out
+    // - Mix: Amix inputs
+
+    const filters: string[] = [];
+    let mixInputs = 0;
+
+    // --- Voice Processing ---
+    // Mix Profiles
+    const mixLevel = script.mixLevel || 'balanced';
+    let voiceVol = 1.9;
+    let musicVol = 0.5;
+    let ambVol = 0.5;
+
+    switch (mixLevel) {
+        case 'voice_focus':
+            voiceVol = 2.5;
+            musicVol = 0.3;
+            ambVol = 0.3;
+            break;
+        case 'high_immersion':
+            voiceVol = 1.5;
+            musicVol = 0.8;
+            ambVol = 0.8;
+            break;
+        case 'background_only':
+            voiceVol = 0;
+            musicVol = 1.0;
+            ambVol = 1.0;
+            break;
+        case 'balanced':
+        default:
+            voiceVol = 1.9;
+            musicVol = 0.5;
+            ambVol = 0.5;
+            break;
+    }
+
+    console.log(`   🎚️  Mixing Profile: ${mixLevel} (Voice:${voiceVol}, Music:${musicVol}, Amb:${ambVol})`);
+
+    // Override voice if background only
+    const actualHasVoice = hasVoice && mixLevel !== 'background_only';
+
+    if (actualHasVoice) {
+        // [0:a] -> adelay -> volume -> [voice_proc]
+        filters.push(`[0:a]adelay=${voiceDelay}|${voiceDelay},volume=${voiceVol}[voice_proc]`);
+        mixInputs++;
+    }
+
+    // --- Music Processing ---
+    const musicIdx = hasVoice ? 1 : 0;
+    if (hasLoop) {
+        filters.push(`[${musicIdx}:a]volume=${musicVol},afade=t=out:st=${duration - fadeOutDuration}:d=${fadeOutDuration}[music_proc]`);
+        mixInputs++;
+    }
+
+    // --- Ambience Processing ---
+    const ambIdx = (hasVoice ? 1 : 0) + (hasLoop ? 1 : 0);
+    if (hasAmbience) {
+        filters.push(`[${ambIdx}:a]volume=${ambVol},afade=t=out:st=${duration - fadeOutDuration}:d=${fadeOutDuration}[amb_proc]`);
+        mixInputs++;
+    }
+
+    // --- Mixing ---
+    let cmd = `"${ffmpegCmd}" -y `;
+    cmd += inputs.join(' ') + ' ';
+
+    if (mixInputs > 1) {
+        // Inputs to amix:
+        let amixInputs = '';
+        if (actualHasVoice) amixInputs += '[voice_proc]';
+        if (hasLoop) amixInputs += '[music_proc]';
+        if (hasAmbience) amixInputs += '[amb_proc]';
+
+        const filterComplex = `${filters.join(';')};${amixInputs}amix=inputs=${mixInputs}:duration=longest[out]`;
+        cmd += `-filter_complex "${filterComplex}" -map "[out]" `;
+    } else if (mixInputs === 1) {
+        // Single input processing... logic below
+        // But wait, if mixInputs is 1, identifiers might vary. 
+        // If only music: [music_proc] needs to be mapped to out?
+        // The original code handled mixInputs=1 separately via simple afade. 
+        // BUT here I pushed named filters like [music_proc].
+        // I need to ensure map matches.
+
+        let singleInputLabel = '';
+        if (actualHasVoice) singleInputLabel = '[voice_proc]';
+        else if (hasLoop) singleInputLabel = '[music_proc]';
+        else if (hasAmbience) singleInputLabel = '[amb_proc]';
+
+        // Construct simple chain that terminates in [out]
+        // Actually, the previous 'mixInputs === 1' block reused `cmd += -filter_complex`.
+        // Let's standardise on using the named filters I just instituted.
+
+        const filterComplex = `${filters.join(';')};${singleInputLabel}anull[out]`;
+        cmd += `-filter_complex "${filterComplex}" -map "[out]" `;
+    }
+
+    // Duration Limit
+    cmd += `-t ${duration + 2} `;
+    cmd += `"${outputPath}"`;
+
+    console.log('   ffmpeg cmd:', cmd);
 
     try {
-        const { exec } = require('child_process');
-        const util = require('util');
-        const execPromise = util.promisify(exec);
-
-        console.log(`   Running: ${command}`);
-        await execPromise(command);
-        console.log(`   ✅ Mixed audio saved: ${outputPath}`);
-        return outputPath;
+        const { stdout, stderr } = await execPromise(cmd);
+        // Validation
+        if (fs.existsSync(outputPath)) {
+            const stats = fs.statSync(outputPath);
+            console.log(`   ✅ Mixed Audio Created: ${outputFilename} (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
+            return outputPath;
+        } else {
+            throw new Error('Mixing failed, output not found');
+        }
     } catch (e: any) {
-        console.error(`   ❌ Mixing failed: ${e.message}`);
-        return voicePath; // Fallback to just voice
+        console.error(`   ❌ Mixing Error: ${e.message}`);
+        // Fallback: return voice if available, else loop
+        return voicePath || loopPath;
     }
 }
 
@@ -1193,11 +1415,22 @@ async function generateStory(brief: any): Promise<string> {
     fs.writeFileSync(scriptPath, JSON.stringify(script, null, 2));
     console.log(`   📄 Script saved: ${scriptPath}`);
 
-    const voicePath = await generateVoice(script);
+    // Determine if voice is needed
+    const NO_VOICE_CATEGORIES = ['music_instrumental', 'soundscape', 'binaural'];
+    const isInstrumental = NO_VOICE_CATEGORIES.includes(script.category.toLowerCase()) || script.category.toLowerCase().includes('instrumental');
+
+    let voicePath = '';
+    if (!isInstrumental) {
+        voicePath = await generateVoice(script);
+    } else {
+        console.log(`   🚫 Skipping Voice Generation for category: ${script.category} (Instrumental/Ambient)`);
+    }
+
     const loopPath = await generateOrFetchLoop(script);
+    const ambiencePath = await generateOrFetchAmbience(script);
     const assetPack = await generateAssetPack(script);
 
-    const mixedPath = await mixAudio(voicePath, loopPath, script);
+    const mixedPath = await mixAudio(voicePath, loopPath, script, ambiencePath);
 
     const storyId = await uploadStory(script, mixedPath, assetPack, voicePath);
     console.log(`   ✅ Story Complete! ID: ${storyId}`);
@@ -1230,6 +1463,75 @@ async function backfillAssets(storyIdOrScriptFile: string) {
     await uploadStory(script, '', assets);
 }
 
+
+// =====================================================
+// CLI Main Function
+// =====================================================
+
+// =====================================================
+// Build Logic (Reusable)
+// =====================================================
+
+export async function buildStoryFromConcept(rawConcept: any): Promise<string> {
+    console.log(`🏗️ Building from Concept: "${rawConcept.title}"`);
+
+    // ----------------------------------------
+    // SAFETY ADAPTER: Normalize Concept Data
+    // ----------------------------------------
+    const concept: StoryConcept = {
+        ...rawConcept,
+        audioIdentity: {
+            matchStyle: 'neutral',
+            voiceStyle: 'soft_female',
+            // ...defaults
+            ...rawConcept.audioIdentity
+        }
+    };
+
+    // Fallback for missing voice style, explicit check
+    if (!concept.audioIdentity?.voiceStyle) {
+        console.warn('⚠️ Missing voiceStyle in concept, defaulting to soft_female');
+        concept.audioIdentity = { ...concept.audioIdentity, voiceStyle: 'soft_female' };
+    }
+
+    const brief: StoryBrief = {
+        category: concept.category || 'sleep',
+        duration: concept.intendedDuration || 10,
+        theme: concept.theme || 'Relaxation',
+        mood: concept.mood || 'Calm',
+        voiceStyle: concept.audioIdentity?.voiceStyle as any
+    };
+
+    // Generate with Override
+    const script = await generateScript(brief, concept);
+    script.mixLevel = concept.mixLevel || 'balanced';
+    script.voiceStyle = brief.voiceStyle;
+
+    // Continue standard pipeline
+    const safeTitle = script.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    const scriptPath = path.join(OUTPUT_DIR, `${safeTitle}.json`);
+    fs.writeFileSync(scriptPath, JSON.stringify(script, null, 2));
+
+    // Determine if voice is needed
+    const NO_VOICE_CATEGORIES = ['music_instrumental', 'soundscape', 'binaural'];
+    const isInstrumental = NO_VOICE_CATEGORIES.includes(script.category.toLowerCase()) || script.category.toLowerCase().includes('instrumental');
+
+    let voicePath = '';
+    if (!isInstrumental) {
+        voicePath = await generateVoice(script);
+    } else {
+        console.log(`   🚫 Skipping Voice Generation for category: ${script.category} (Instrumental/Ambient)`);
+    }
+
+    const loopPath = await generateOrFetchLoop(script);
+    const ambiencePath = await generateOrFetchAmbience(script);
+    const assetPack = await generateAssetPack(script);
+    const mixedPath = await mixAudio(voicePath, loopPath, script, ambiencePath);
+    const storyId = await uploadStory(script, mixedPath, assetPack, voicePath);
+    console.log(`✅ Build Complete! ID: ${storyId}`);
+
+    return storyId;
+}
 
 // =====================================================
 // CLI Main Function
@@ -1275,14 +1577,36 @@ Commands:
             }
 
             case 'concept': {
+                // Usage: concept <category> <idea> <base64Options OR duration> [mixLevel]
                 const category = args[1];
                 const idea = args[2];
-                const duration = parseInt(args[3]) || 10;
-                const mixLevel = parseFloat(args[4]) || 0.25;
+                const arg3 = args[3];
 
-                if (!category || !idea) throw new Error('Usage: concept <category> <"idea string"> [duration] [mixLevel]');
+                if (!category || !idea) throw new Error('Usage: concept <category> <"idea string"> [optionsBase64 or duration] [mixLevel]');
 
-                const concept = await ConceptEngine.generate(idea, category, duration, mixLevel);
+                let options: any = {};
+
+                // Attempt to parse arg3 as Base64 JSON
+                try {
+                    const jsonStr = Buffer.from(arg3 || '', 'base64').toString('utf-8');
+                    // Simple check if it looks like JSON
+                    if (jsonStr.startsWith('{')) {
+                        options = JSON.parse(jsonStr);
+                        console.log('   🔧 Using V5 Enhanced Options:', Object.keys(options).join(', '));
+                    } else {
+                        throw new Error('Not JSON');
+                    }
+                } catch (e) {
+                    // Fallback to positional: duration, mixLevel
+                    options.duration = parseInt(arg3) || 10;
+                    options.mixLevel = args[4] || 'balanced';
+                }
+
+                // Map old signature to new options if needed
+                if (!options.duration) options.duration = 10;
+                if (!options.mixLevel) options.mixLevel = 'balanced';
+
+                const concept = await ConceptEngine.generate(idea, category, options);
                 const safeSlug = concept.title.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
                 const outputPath = path.join(OUTPUT_DIR, `concept_${safeSlug}.json`);
                 fs.writeFileSync(outputPath, JSON.stringify(concept, null, 2));
@@ -1299,51 +1623,7 @@ Commands:
                 if (!fs.existsSync(conceptPath)) throw new Error(`File not found: ${conceptPath}`);
 
                 const rawConcept = JSON.parse(fs.readFileSync(conceptPath, 'utf-8'));
-                console.log(`🏗️ Building from Concept: "${rawConcept.title}"`);
-
-                // ----------------------------------------
-                // SAFETY ADAPTER: Normalize Concept Data
-                // ----------------------------------------
-                const concept: StoryConcept = {
-                    ...rawConcept,
-                    audioIdentity: {
-                        matchStyle: 'neutral',
-                        voiceStyle: 'soft_female',
-                        // ...defaults
-                        ...rawConcept.audioIdentity
-                    }
-                };
-
-                // Fallback for missing voice style, explicit check
-                if (!concept.audioIdentity?.voiceStyle) {
-                    console.warn('⚠️ Missing voiceStyle in concept, defaulting to soft_female');
-                    concept.audioIdentity = { ...concept.audioIdentity, voiceStyle: 'soft_female' };
-                }
-
-                const brief: StoryBrief = {
-                    category: concept.category || 'sleep',
-                    duration: concept.intendedDuration || 10,
-                    theme: concept.theme || 'Relaxation',
-                    mood: concept.mood || 'Calm',
-                    voiceStyle: concept.audioIdentity?.voiceStyle as any
-                };
-
-                // Generate with Override
-                const script = await generateScript(brief, concept);
-                script.mixLevel = concept.mixLevel || 0.25;
-                script.voiceStyle = brief.voiceStyle;
-
-                // Continue standard pipeline
-                const safeTitle = script.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-                const scriptPath = path.join(OUTPUT_DIR, `${safeTitle}.json`);
-                fs.writeFileSync(scriptPath, JSON.stringify(script, null, 2));
-
-                const voicePath = await generateVoice(script);
-                const loopPath = await generateOrFetchLoop(script);
-                const assetPack = await generateAssetPack(script);
-                const mixedPath = await mixAudio(voicePath, loopPath, script);
-                const storyId = await uploadStory(script, mixedPath, assetPack, voicePath);
-                console.log(`✅ Build Complete! ID: ${storyId}`);
+                await buildStoryFromConcept(rawConcept);
                 break;
             }
 

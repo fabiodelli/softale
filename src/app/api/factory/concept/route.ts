@@ -22,16 +22,27 @@ export async function POST(req: NextRequest) {
 
         const toolsDir = path.resolve(process.cwd(), 'tools/audio-factory');
 
-        // Sanitize inputs for CLI
+        // Sanitize Clean Category (for safe ARG, though redundant if we use options, kept for CLI usage clarity)
         const cleanCategory = body.category.replace(/[^a-zA-Z0-9_]/g, '');
-        const cleanIdea = body.idea.replace(/"/g, '\\"'); // Escape quotes
-        const duration = body.duration || 10;
-        const mixLevel = body.mixLevel || 0.25;
+        const cleanIdea = body.idea.replace(/"/g, '\\"'); // Escape quotes for shell arg
 
-        console.log(`🧠 Generating Concept: "${body.idea}" [${cleanCategory}, ${duration}min, mix=${mixLevel}]`);
+        // Bundle V5 Options
+        const options = {
+            duration: body.duration || 10,
+            mixLevel: body.mixLevel || 0.25,
+            title: body.title, // V5
+            pacingMode: body.pacingMode, // V5
+            warmupDuration: body.warmupDuration, // V5
+            ambiencePrompt: body.ambiencePrompt // V5
+        };
 
-        // Execute CLI: npx tsx src/index.ts concept <category> <idea> <duration> <mixLevel>
-        const command = `npx tsx src/index.ts concept ${cleanCategory} "${cleanIdea}" ${duration} ${mixLevel}`;
+        // Base64 Encode Options safely for CLI
+        const optionsBase64 = Buffer.from(JSON.stringify(options)).toString('base64');
+
+        console.log(`🧠 Generating Concept: "${body.idea}" [${cleanCategory}, V5 Options Encoded]`);
+
+        // Execute CLI: npx tsx src/index.ts concept <category> <idea> <base64Options>
+        const command = `npx tsx src/index.ts concept ${cleanCategory} "${cleanIdea}" ${optionsBase64}`;
 
         const { stdout, stderr } = await execPromise(command, {
             cwd: toolsDir,

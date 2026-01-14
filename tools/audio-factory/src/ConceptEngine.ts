@@ -8,8 +8,10 @@ export interface StoryConcept {
     theme?: string;
     mood?: string;
     targetAudience?: string;
+    pacingMode?: 'continuous' | 'immersive' | 'breathwork'; // V5: Controls pause density
+    warmupDuration?: number; // V5: Seconds of intro music before voice
     intendedDuration?: number; // User preference for build length (minutes)
-    mixLevel?: number; // Background music volume (0.1 - 0.5)
+    mixLevel?: string; // balanced, voice_focus, high_immersion, background_only
 
     protagonist?: {
         name?: string;
@@ -34,6 +36,7 @@ export interface StoryConcept {
         voiceStyle?: 'soft_female' | 'soft_male' | 'neutral';
         voicePacing?: string;
         musicStyle?: string;
+        ambienceLayer?: string; // V5: Dedicated background texture (Rain, Wind, Drone)
         keySoundEffects?: string[];
         tempo?: string;
     };
@@ -44,9 +47,19 @@ export interface StoryConcept {
     };
 }
 
+export interface ConceptOptions {
+    duration?: number;
+    mixLevel?: string;
+    title?: string;
+    pacingMode?: string;
+    warmupDuration?: number;
+    ambiencePrompt?: string;
+}
+
 export class ConceptEngine {
 
-    static async generate(idea: string, category: string, duration: number = 10, mixLevel: number = 0.25): Promise<StoryConcept> {
+    static async generate(idea: string, category: string, options: ConceptOptions = {}): Promise<StoryConcept> {
+        const { duration = 10, mixLevel = 'balanced' } = options;
         console.log(`🧠 Concept Engine: Dreaming up "${idea}" (${category}, ${duration}min, mix=${mixLevel})...`);
 
         const systemPrompt = `You are the LEAD SHOWRUNNER for Softale, a premium audio storytelling studio.
@@ -57,20 +70,34 @@ Focus on:
 1. **Character Depth**: Give the protagonist a soul, a desire, and a flaw.
 2. **World Building**: Specific sensory details (not generic).
 3. **Emotional Arc**: A clear beginning, middle, and end.
-4. **Audio Identity**: Specific instructions for sound designers.
+4. **Audio Identity (V5)**: Design a 3-layer soundscape: Voice, Music, and Ambience.
+   - **Ambience**: Constant texture (rain, wind, hum).
+   - **Music**: Emotional underscore.
+   - **Pacing**: Decide if the story needs frequent pauses (Immersive) or steady flow (Continuous).
 
 CATEGORY GUIDELINES:
-- **Sleep**: Low conflict, hypnotic, cozy, safe.
-- **Kids**: Wondrous, safe, clear moral or emotional lesson.
-- **Sci-Fi/Fantasy**: Vivid, imaginative, coherent lore.`;
+- **Sleep**: Low conflict, hypnotic, cozy. Use 'immersive' pacing with long pauses.
+- **Kids**: Wondrous, safe, clear moral. Use 'continuous' pacing.
+- **Sci-Fi/Fantasy**: Vivid lore. Use 'continuous' pacing usually.
+- **Meditation**: Use 'breathwork' or 'immersive' pacing.`;
+
+        // Build Mandates
+        let mandate = '';
+        if (options.title) mandate += `MANDATORY TITLE: "${options.title}" (Do not change this).\n`;
+        if (options.pacingMode) mandate += `MANDATORY PACING MODE: "${options.pacingMode}" (Force this value).\n`;
+        if (options.warmupDuration !== undefined) mandate += `MANDATORY WARMUP DURATION: ${options.warmupDuration} seconds.\n`;
+        if (options.ambiencePrompt) mandate += `MANDATORY AMBIENCE LAYER: "${options.ambiencePrompt}" (Use exactly this for the ambience description).\n`;
 
         const userPrompt = `Develop a "${category}" series concept from this idea: "${idea}"
 
+${mandate ? `STRICT REQUIREMENTS:\n${mandate}\n` : ''}
 RETURN JSON OBJECT EXACTLY LIKE THIS:
 {
     "title": "Title",
     "logline": "One sentence summary",
     "category": "${category}",
+    "pacingMode": "continuous" OR "immersive" OR "breathwork",
+    "warmupDuration": 8,
     "theme": "Core theme",
     "mood": "Emotional atmosphere",
     "targetAudience": "e.g. Kids 5-8",
@@ -96,7 +123,8 @@ RETURN JSON OBJECT EXACTLY LIKE THIS:
     "audioIdentity": {
         "voiceStyle": "soft_female" (OR "soft_male" OR "neutral"),
         "voicePacing": "Adjectives",
-        "musicStyle": "Genre/Instruments",
+        "musicStyle": "Musical Genre/Instruments (Emotional Layer)",
+        "ambienceLayer": "Constant background texture description (e.g. Heavy Rain on Roof, Spaceship Hum, Forest Wind)",
         "keySoundEffects": ["SFX1", "SFX2"],
         "tempo": "e.g. 60 BPM"
     },
@@ -117,9 +145,14 @@ RETURN JSON OBJECT EXACTLY LIKE THIS:
 
         try {
             const concept = JSON.parse(jsonMatch[0]) as StoryConcept;
-            // Inject user preference
+            // Inject user preference logic (Safety Override)
             concept.intendedDuration = duration;
             concept.mixLevel = mixLevel;
+
+            if (options.title) concept.title = options.title;
+            if (options.pacingMode) concept.pacingMode = options.pacingMode as any;
+            if (options.warmupDuration !== undefined) concept.warmupDuration = options.warmupDuration;
+            if (options.ambiencePrompt) concept.audioIdentity = { ...concept.audioIdentity, ambienceLayer: options.ambiencePrompt };
 
             console.log(`   ✨ Concept Born: "${concept.title}"`);
             return concept;

@@ -1,15 +1,8 @@
 
-import { generateStory } from './src/index.js';
-import { CATALOG_ITEMS } from './src/catalog-config.js';
+import { execSync } from 'child_process';
+import { CATALOG_ITEMS } from './src/catalog-config.ts';
 
 // MVP Selection: The 15 items we want for launch
-// Based on MVP_CONTENT_PLAN.md categories:
-// - Sleep (3)
-// - Soundscapes (3)
-// - Binaural (3)
-// - Meditation (3)
-// - Instrumental (3)
-
 const MVP_TITLES = [
     // Sleep
     "The Velvet Locomotive",
@@ -37,6 +30,8 @@ const MVP_TITLES = [
     "Acoustic Morning"
 ];
 
+const CLI_PATH = 'tools/audio-factory/src/index.ts';
+
 async function batchRun() {
     console.log(`🚀 STARTING MVP BATCH GENERATION (${MVP_TITLES.length} items)`);
     console.log("==================================================");
@@ -56,32 +51,43 @@ async function batchRun() {
         console.log(`\n▶️ [${index + 1}/${queue.length}] Processing: "${item.title}"`);
 
         try {
-            await generateStory({
-                category: item.category,
+            // 1. Prepare Concept Options
+            const options = {
+                title: item.title,
                 duration: item.duration,
-                title: item.title, // Pass title to force this specific story logic if supported, 
-                // or mostly likely generateStory uses it to guide the prompt if modified.
-                // NOTE: index.ts generateStory takes a 'brief'.
-                // We need to ensure generateScript uses this specific title/premise.
-                // Current generateScript (via ConceptEngine usually) generates FROM scratch unless guided.
-                // Let's look at index.ts again. It takes 'brief'.
-                // If brief has 'title', does it use it?
-                // Let's assume we pass extra context or modify index.ts if needed.
-                // Looking at index.ts: generateScript(brief) -> ConceptEngine? No.
-                // generateScript uses brief.category etc.
-                // We might need to pass the 'description' as the 'idea' or 'premise'.
-                topic: item.description, // Passing description as topic/idea
+                mixLevel: 'balanced', // Default, logic in Factory handles overrides
                 voiceStyle: item.voiceStyle
-            });
+                // Auto-ambience is handled by Factory logic now
+            };
+
+            const optionsBase64 = Buffer.from(JSON.stringify(options)).toString('base64');
+            const safeIdea = item.description.replace(/"/g, '\\"'); // Escape quotes for shell
+
+            // 2. Run 'concept' command
+            console.log(`   🧠 Generating Concept...`);
+            // npx tsx src/index.ts concept <category> <idea> <base64Options>
+            execSync(`npx tsx ${CLI_PATH} concept "${item.category}" "${safeIdea}" "${optionsBase64}"`, { stdio: 'inherit' });
+
+            // 3. Determine Concept Filename
+            // The CLI saves it as `concept_<slug>.json`
+            const safeSlug = item.title.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            const conceptFile = `output/concept_${safeSlug}.json`;
+
+            // 4. Run 'build' command
+            console.log(`   🏗️ Building Story...`);
+            // npx tsx src/index.ts build <conceptFile>
+            execSync(`npx tsx ${CLI_PATH} build "${conceptFile}"`, { stdio: 'inherit' });
 
             console.log(`✅ Completed: "${item.title}"`);
 
-            // Safety cool-down between generations
-            await new Promise(r => setTimeout(r, 5000));
+            // Safety cool-down between generations (10s)
+            console.log("   ⏳ Cooling down (10s)...");
+            await new Promise(r => setTimeout(r, 10000));
 
         } catch (e: any) {
-            console.error(`❌ FAILED: "${item.title}"`, e.message);
-            // Continue to next item? Yes.
+            console.error(`❌ FAILED: "${item.title}"`);
+            console.error(e.message);
+            // Continue to next item
         }
     }
 

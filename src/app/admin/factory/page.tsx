@@ -10,11 +10,18 @@ export default function FactoryStudio() {
     const [status, setStatus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Concept State
+    // Concept State (V5)
+    const [title, setTitle] = useState('');
     const [idea, setIdea] = useState('');
     const [category, setCategory] = useState('sleep');
     const [duration, setDuration] = useState(10);
-    const [mixLevel, setMixLevel] = useState(0.25);
+    const [mixLevel, setMixLevel] = useState('balanced');
+
+    // V5 Feature Controls
+    const [pacingMode, setPacingMode] = useState('immersive'); // standard, immersive, breathwork
+    const [warmupDuration, setWarmupDuration] = useState(0); // seconds
+    const [ambiencePrompt, setAmbiencePrompt] = useState('');
+
     const [generatedConcept, setGeneratedConcept] = useState<any>(null);
     const [conceptPath, setConceptPath] = useState('');
 
@@ -32,7 +39,16 @@ export default function FactoryStudio() {
             const res = await fetch('/api/factory/concept', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idea, category, duration, mixLevel })
+                body: JSON.stringify({
+                    title,
+                    idea,
+                    category,
+                    duration,
+                    mixLevel,
+                    pacingMode,
+                    warmupDuration,
+                    ambiencePrompt
+                })
             });
 
             const data = await res.json();
@@ -63,18 +79,24 @@ export default function FactoryStudio() {
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
+            if (!res.ok) {
+                if (data.logs) setProductionLogs(data.logs);
+                throw new Error(data.error);
+            }
 
             setBuiltStoryId(data.storyId);
             setProductionLogs(data.logs); // Full logs
             setStatus('✅ Build Complete!');
         } catch (e: any) {
             setStatus(`❌ Build Failed: ${e.message}`);
+            // Logs usually streamed or returned on error too
             if (e.logs) setProductionLogs(e.logs);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const CATEGORIES = ['sleep', 'meditation', 'nature', 'fantasy', 'soundscape', 'binaural', 'music_instrumental', 'motivation', 'work_break', 'kids'];
 
     return (
         <AdminGuard>
@@ -104,8 +126,8 @@ export default function FactoryStudio() {
                         <div className="col-span-12 lg:col-span-4 sticky top-24 space-y-6">
 
                             {/* 1. INPUT CARD */}
-                            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 shadow-2xl">
-                                <div className="flex justify-between items-center mb-6">
+                            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 shadow-2xl space-y-4">
+                                <div className="flex justify-between items-center mb-2">
                                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                                         <span className="w-2 h-8 bg-indigo-500 rounded-full" />
                                         1. The Spark
@@ -113,30 +135,64 @@ export default function FactoryStudio() {
                                     <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Input</div>
                                 </div>
 
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Core Concept</label>
-                                <textarea
-                                    value={idea}
-                                    onChange={(e) => setIdea(e.target.value)}
-                                    placeholder="Describe the mood, story, or feeling..."
-                                    className="w-full bg-slate-950 border border-white/10 rounded-xl p-4 text-white h-32 focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition text-sm mb-6"
-                                />
-
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Genre</label>
-                                <div className="grid grid-cols-2 gap-2 mb-6">
-                                    {['sleep', 'meditation', 'nature', 'fantasy', 'soundscape', 'binaural'].map(cat => (
-                                        <button
-                                            key={cat}
-                                            onClick={() => setCategory(cat)}
-                                            className={`px-3 py-2 rounded-lg text-xs font-medium transition border text-left ${category === cat
-                                                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                                                : 'bg-slate-950 border-white/5 text-gray-500 hover:border-white/20 hover:text-gray-400'}`}
-                                        >
-                                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                                        </button>
-                                    ))}
+                                {/* Title Input */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Title (Optional)</label>
+                                    <input
+                                        type="text"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        placeholder="E.g. Nordic Piano"
+                                        className="w-full bg-slate-950 border border-white/10 rounded-lg p-3 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                {/* Core Concept */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Core Concept / Premise</label>
+                                    <textarea
+                                        value={idea}
+                                        onChange={(e) => setIdea(e.target.value)}
+                                        placeholder="Describe the mood, story, or feeling..."
+                                        className="w-full bg-slate-950 border border-white/10 rounded-xl p-4 text-white h-24 focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition text-sm"
+                                    />
+                                </div>
+
+                                {/* Ambience Prompt (Optional) */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Ambience Layer (Optional)</label>
+                                    <input
+                                        type="text"
+                                        value={ambiencePrompt}
+                                        onChange={(e) => setAmbiencePrompt(e.target.value)}
+                                        placeholder="E.g. Distant rain, crackling fire..."
+                                        className="w-full bg-slate-950 border border-white/10 rounded-lg p-3 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    />
+                                </div>
+
+                                {/* Genre Selector */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Genre</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {CATEGORIES.map(cat => (
+                                            <button
+                                                key={cat}
+                                                onClick={() => setCategory(cat)}
+                                                className={`px-3 py-2 rounded-lg text-xs font-medium transition border text-left ${category === cat
+                                                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
+                                                    : 'bg-slate-950 border-white/5 text-gray-500 hover:border-white/20 hover:text-gray-400'}`}
+                                            >
+                                                {cat === 'music_instrumental' ? '🎵 Instrumental' :
+                                                    cat === 'work_break' ? '☕ Work Break' :
+                                                        cat === 'kids' ? '🧒 Kids' :
+                                                            cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* V5 Controls: Duration, Mix, Warmup */}
+                                <div className="grid grid-cols-2 gap-4 pt-2">
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Duration</label>
                                         <div className="bg-slate-950 p-3 rounded-lg border border-white/5">
@@ -149,15 +205,43 @@ export default function FactoryStudio() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Mix</label>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Mix Level</label>
+                                        <select
+                                            value={mixLevel}
+                                            onChange={(e) => setMixLevel(e.target.value)}
+                                            className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-white text-xs h-[52px] focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        >
+                                            <option value="balanced">Balanced (Default)</option>
+                                            <option value="voice_focus">Voice Focus</option>
+                                            <option value="high_immersion">High Immersion</option>
+                                            <option value="background_only">Background Only (No Voice)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Warm-up</label>
                                         <div className="bg-slate-950 p-3 rounded-lg border border-white/5">
-                                            <div className="flex justify-between text-emerald-400 font-bold text-sm mb-2">{Math.round(mixLevel * 100)}%</div>
+                                            <div className="flex justify-between text-amber-400 font-bold text-sm mb-2">{warmupDuration}s</div>
                                             <input
-                                                type="range" min="0.1" max="0.5" step="0.05"
-                                                value={mixLevel} onChange={(e) => setMixLevel(parseFloat(e.target.value))}
-                                                className="w-full h-1 bg-slate-800 rounded-full appearance-none accent-emerald-500"
+                                                type="range" min="0" max="60" step="5"
+                                                value={warmupDuration} onChange={(e) => setWarmupDuration(parseInt(e.target.value))}
+                                                className="w-full h-1 bg-slate-800 rounded-full appearance-none accent-amber-500"
                                             />
                                         </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Pacing</label>
+                                        <select
+                                            value={pacingMode}
+                                            onChange={(e) => setPacingMode(e.target.value)}
+                                            className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-white text-xs h-[52px] focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        >
+                                            <option value="standard">Standard</option>
+                                            <option value="immersive">Immersive (V5)</option>
+                                            <option value="breathwork">Breathwork</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -171,7 +255,7 @@ export default function FactoryStudio() {
                                 {isLoading ? (
                                     <span className="animate-pulse">Processing...</span>
                                 ) : (
-                                    <><span>✨</span> Generate Concept</>
+                                    <><span>✨</span> Generate V5 Concept</>
                                 )}
                             </button>
                         </div>
@@ -206,7 +290,7 @@ export default function FactoryStudio() {
                                         {!generatedConcept ? (
                                             <div className="h-[500px] border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center text-gray-600">
                                                 <div className="text-6xl mb-4 opacity-20">🧪</div>
-                                                <p>Waiting for input...</p>
+                                                <p>Waiting for V5 input...</p>
                                             </div>
                                         ) : (
                                             <div className="bg-slate-900 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
@@ -250,14 +334,16 @@ export default function FactoryStudio() {
                                                                     <span className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-lg">🎵</span>
                                                                     <div>
                                                                         <div className="font-bold text-white">Music Style</div>
-                                                                        <div className="text-xs text-gray-500">{generatedConcept.audioIdentity?.musicStyle}</div>
+                                                                        <div className="text-xs text-gray-500">{generatedConcept.audioIdentity?.musicStyle || 'Ambient'}</div>
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex items-center gap-3 text-sm text-gray-300">
                                                                     <span className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-lg">🎙️</span>
                                                                     <div>
                                                                         <div className="font-bold text-white">Voice Direction</div>
-                                                                        <div className="text-xs text-gray-500">{generatedConcept.audioIdentity?.voiceStyle} • {generatedConcept.audioIdentity?.voicePacing}</div>
+                                                                        <div className="text-xs text-gray-500">
+                                                                            {generatedConcept.audioIdentity?.voiceStyle || 'None'} • {pacingMode}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -285,7 +371,7 @@ export default function FactoryStudio() {
                                                 <div className="w-3 h-3 rounded-full bg-red-500" />
                                                 <div className="w-3 h-3 rounded-full bg-yellow-500" />
                                                 <div className="w-3 h-3 rounded-full bg-green-500" />
-                                                <span className="ml-2 font-mono text-xs text-gray-500">FACTORY_TERMINAL_V1</span>
+                                                <span className="ml-2 font-mono text-xs text-gray-500">FACTORY_TERMINAL_V5</span>
                                             </div>
                                             {!builtStoryId && (
                                                 <button
@@ -298,7 +384,7 @@ export default function FactoryStudio() {
                                             )}
                                         </div>
 
-                                        <div className="flex-1 bg-black/50 p-6 font-mono text-xs text-green-500/80 overflow-y-auto leading-relaxed">
+                                        <div className="flex-1 bg-black/50 p-6 font-mono text-xs text-green-500/80 overflow-y-auto leading-relaxed whitespace-pre-wrap">
                                             {productionLogs || "// SYSTEM READY..."}
                                             {isLoading && <span className="animate-pulse">_</span>}
                                         </div>

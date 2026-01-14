@@ -1,235 +1,170 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import AdminGuard from '@/components/admin/AdminGuard';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { createClient } from '@supabase/supabase-js';
+import { AdminLayout, AdminButton } from '@/components/admin';
+import { AdminCard } from '@/components/admin';
 
-// Initialize Supabase client
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const navItems = [
+    {
+        title: 'Factory Studio',
+        description: 'Generate AI audio content with the V5 engine',
+        href: '/admin/factory',
+        icon: (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+        ),
+        color: 'from-violet-600 to-purple-600',
+        glow: 'violet'
+    },
+    {
+        title: 'Stories Manager',
+        description: 'Manage all published audio stories and tracks',
+        href: '/admin/stories',
+        icon: (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+        ),
+        color: 'from-emerald-600 to-teal-600',
+        glow: 'emerald'
+    },
+    {
+        title: 'Collections',
+        description: 'Organize stories into curated collections',
+        href: '/admin/collections',
+        icon: (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+        ),
+        color: 'from-amber-600 to-orange-600',
+        glow: 'amber'
+    },
+    {
+        title: 'Users',
+        description: 'Manage user accounts and permissions',
+        href: '/admin/users',
+        icon: (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+        ),
+        color: 'from-sky-600 to-cyan-600',
+        glow: 'sky'
+    },
+    {
+        title: 'Social Studio',
+        description: 'Generate social media content and campaigns',
+        href: '/admin/social',
+        icon: (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+            </svg>
+        ),
+        color: 'from-pink-600 to-rose-600',
+        glow: 'pink'
+    }
+];
 
 export default function AdminDashboard() {
-    const [stats, setStats] = useState({
-        totalStories: 0,
-        published: 0,
-        premium: 0,
-        drafts: 0
-    });
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const { count: total, error: err1 } = await supabase.from('stories').select('*', { count: 'exact', head: true });
-                const { count: pub, error: err2 } = await supabase.from('stories').select('*', { count: 'exact', head: true }).eq('is_published', true);
-                const { count: prem, error: err3 } = await supabase.from('stories').select('*', { count: 'exact', head: true }).eq('is_premium', true);
-
-                if (!err1 && !err2 && !err3) {
-                    setStats({
-                        totalStories: total || 0,
-                        published: pub || 0,
-                        premium: prem || 0,
-                        drafts: (total || 0) - (pub || 0)
-                    });
-                }
-            } catch (e) {
-                console.error("Failed to fetch stats", e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStats();
-    }, []);
-
-    const groups = {
-        story: {
-            title: 'Story Universe',
-            items: [
-                {
-                    title: 'Factory Console',
-                    desc: 'AI Content Generation',
-                    icon: '🏭',
-                    href: '/admin/factory',
-                    color: 'bg-indigo-600',
-                    large: true
-                },
-                {
-                    title: 'Story Manager',
-                    desc: 'Edit & Publish',
-                    icon: '📚',
-                    href: '/admin/stories',
-                    color: 'bg-blue-600',
-                    large: true
-                },
-                {
-                    title: 'Collections',
-                    desc: 'Playlists & Curation',
-                    icon: '📂',
-                    href: '/admin/collections',
-                    color: 'bg-cyan-600',
-                    large: false
-                }
-            ]
-        },
-        user: {
-            title: 'User Management',
-            items: [
-                {
-                    title: 'User Base',
-                    desc: 'Access Control & CRM',
-                    icon: '👥',
-                    href: '/admin/users',
-                    color: 'bg-slate-700',
-                    large: true
-                }
-            ]
-        },
-        social: {
-            title: 'Social Reach',
-            items: [
-                {
-                    title: 'Social Studio',
-                    desc: 'Reels & Marketing',
-                    icon: '🎬',
-                    href: '/admin/social',
-                    color: 'bg-purple-600',
-                    large: true
-                }
-            ]
-        }
-    };
-
     return (
-        <AdminGuard>
-            <div className="min-h-screen bg-slate-950 pb-20 text-white font-sans">
-                {/* Header */}
-                <header className="bg-slate-900/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-40">
-                    <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-lg">🛡️</div>
-                            <h1 className="text-xl font-bold tracking-tight">Command Center</h1>
-                        </div>
-                        <Link href="/" className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-medium transition flex items-center gap-2">
-                            <span>Open App</span>
-                            <span>→</span>
-                        </Link>
-                    </div>
-                </header>
-
-                <main className="max-w-[1600px] mx-auto px-6 py-8 space-y-12">
-
-                    {/* Realtime Stats */}
-                    <section>
-                        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Live Metrics</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {[
-                                { label: 'Total Stories', val: loading ? '-' : stats.totalStories, color: 'text-white' },
-                                { label: 'Published', val: loading ? '-' : stats.published, color: 'text-emerald-400' },
-                                { label: 'Premium Locked', val: loading ? '-' : stats.premium, color: 'text-amber-400' },
-                                { label: 'Drafts Pending', val: loading ? '-' : stats.drafts, color: 'text-indigo-400' },
-                            ].map((s, i) => (
-                                <div key={i} className="bg-slate-900 border border-white/5 p-6 rounded-2xl">
-                                    <div className="text-3xl font-bold mb-1 font-mono">{s.val}</div>
-                                    <div className={`text-xs font-medium uppercase tracking-wider opacity-70 ${s.color}`}>{s.label}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    {/* Main Actions Grid - 3 Columns */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-                        {/* 1. STORY SECTION (Larger share) */}
-                        <div className="lg:col-span-6 space-y-6">
-                            <h2 className="text-lg font-bold flex items-center gap-2 text-indigo-400">
-                                <span className="text-xl">📖</span> {groups.story.title}
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {groups.story.items.map((item) => (
-                                    <Link key={item.title} href={item.href} className={`group ${item.large ? 'md:col-span-1' : 'md:col-span-2'}`}>
-                                        <div className={`h-full p-6 rounded-2xl border border-white/10 bg-slate-900 hover:border-white/20 transition relative overflow-hidden ${item.large ? 'aspect-square flex flex-col justify-between' : 'flex items-center gap-4'}`}>
-                                            <div className={`absolute top-0 right-0 p-24 opacity-5 bg-gradient-to-br ${item.color} rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:opacity-15 transition`} />
-
-                                            {item.large ? (
-                                                <>
-                                                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform">
-                                                        {item.icon}
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-xl font-bold mb-1 group-hover:text-indigo-300 transition">{item.title}</h3>
-                                                        <p className="text-gray-400 text-sm">{item.desc}</p>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-lg shadow-lg">
-                                                        {item.icon}
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-bold text-gray-200 group-hover:text-white transition">{item.title}</h3>
-                                                        <p className="text-xs text-gray-500">{item.desc}</p>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* 2. USER SECTION */}
-                        <div className="lg:col-span-3 space-y-6">
-                            <h2 className="text-lg font-bold flex items-center gap-2 text-slate-400">
-                                <span className="text-xl">👤</span> {groups.user.title}
-                            </h2>
-                            <div className="space-y-4">
-                                {groups.user.items.map((item) => (
-                                    <Link key={item.title} href={item.href} className="group block h-full">
-                                        <div className="h-full p-6 rounded-2xl border border-white/10 bg-slate-900 hover:border-white/20 transition relative overflow-hidden flex flex-col justify-between min-h-[200px]">
-                                            <div className="absolute top-0 right-0 p-24 opacity-5 bg-slate-500 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition" />
-                                            <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl mb-4 shadow-lg">
-                                                {item.icon}
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl font-bold mb-1 group-hover:text-slate-300 transition">{item.title}</h3>
-                                                <p className="text-gray-400 text-sm">{item.desc}</p>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* 3. SOCIAL SECTION */}
-                        <div className="lg:col-span-3 space-y-6">
-                            <h2 className="text-lg font-bold flex items-center gap-2 text-purple-400">
-                                <span className="text-xl">📢</span> {groups.social.title}
-                            </h2>
-                            <div className="space-y-4">
-                                {groups.social.items.map((item) => (
-                                    <Link key={item.title} href={item.href} className="group block h-full">
-                                        <div className="h-full p-6 rounded-2xl border border-white/10 bg-slate-900 hover:border-white/20 transition relative overflow-hidden flex flex-col justify-between min-h-[200px]">
-                                            <div className="absolute top-0 right-0 p-24 opacity-5 bg-purple-500 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition" />
-                                            <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl mb-4 shadow-lg">
-                                                {item.icon}
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl font-bold mb-1 group-hover:text-purple-300 transition">{item.title}</h3>
-                                                <p className="text-gray-400 text-sm">{item.desc}</p>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-
-                    </div>
-                </main>
+        <AdminLayout
+            title="Reverie Admin"
+            subtitle="Content Management System"
+            actions={
+                <Link href="/" target="_blank">
+                    <AdminButton variant="ghost" size="sm">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        View Site
+                    </AdminButton>
+                </Link>
+            }
+        >
+            {/* Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                {[
+                    { label: 'Total Stories', value: '—', icon: '📚' },
+                    { label: 'Active Users', value: '—', icon: '👥' },
+                    { label: 'Collections', value: '—', icon: '📁' },
+                    { label: 'Generations', value: '—', icon: '🎧' }
+                ].map((stat) => (
+                    <AdminCard key={stat.label} padding="md" className="text-center">
+                        <div className="text-2xl mb-1">{stat.icon}</div>
+                        <div className="text-2xl font-bold text-zinc-50">{stat.value}</div>
+                        <div className="text-sm text-zinc-400">{stat.label}</div>
+                    </AdminCard>
+                ))}
             </div>
-        </AdminGuard>
+
+            {/* Navigation Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {navItems.map((item) => (
+                    <Link key={item.href} href={item.href}>
+                        <AdminCard
+                            hover
+                            gradient
+                            padding="lg"
+                            className="group h-full"
+                        >
+                            <div className={`
+                inline-flex p-3 rounded-xl mb-4
+                bg-gradient-to-br ${item.color}
+                shadow-lg shadow-${item.glow}-500/25
+                group-hover:shadow-xl group-hover:shadow-${item.glow}-500/30
+                transition-all duration-300
+              `}>
+                                {item.icon}
+                            </div>
+                            <h3 className="text-lg font-semibold text-zinc-50 mb-2 group-hover:text-white transition-colors">
+                                {item.title}
+                            </h3>
+                            <p className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                                {item.description}
+                            </p>
+                            <div className="mt-4 flex items-center text-sm text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span>Open</span>
+                                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                        </AdminCard>
+                    </Link>
+                ))}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="mt-8 pt-8 border-t border-zinc-800">
+                <h2 className="text-lg font-semibold text-zinc-50 mb-4">Quick Actions</h2>
+                <div className="flex flex-wrap gap-3">
+                    <Link href="/admin/factory">
+                        <AdminButton variant="primary">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Generate New Story
+                        </AdminButton>
+                    </Link>
+                    <Link href="/admin/stories/editor">
+                        <AdminButton variant="secondary">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Create Story Manually
+                        </AdminButton>
+                    </Link>
+                    <Link href="/admin/collections">
+                        <AdminButton variant="secondary">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            New Collection
+                        </AdminButton>
+                    </Link>
+                </div>
+            </div>
+        </AdminLayout>
     );
 }

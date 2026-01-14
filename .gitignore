@@ -43,3 +43,4 @@ next-env.d.ts
 # audio-factory generated files
 tools/audio-factory/node_modules/
 tools/audio-factory/output/
+output/
