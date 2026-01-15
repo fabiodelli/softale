@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
+// We need checking for existsSync (sync) but usage of promises for mkdir/readFile
+import { promises as fsPromises } from 'fs';
 import { createWriteStream } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -67,7 +69,7 @@ async function main() {
 
     // 3. Prepare Assets
     const workDir = path.join(OUTPUT_DIR, storyId);
-    await fs.mkdir(workDir, { recursive: true });
+    await fsPromises.mkdir(workDir, { recursive: true });
 
     const imagePath = path.join(workDir, 'image.png');
     const audioPath = path.join(workDir, 'audio.mp3');
@@ -76,7 +78,7 @@ async function main() {
     // Download Helper
     const download = async (url: string, dest: string) => {
         try {
-            await fs.access(dest);
+            await fsPromises.access(dest);
             console.log(`   Skipping download (exists): ${path.basename(dest)}`);
             return;
         } catch {
@@ -129,7 +131,7 @@ async function main() {
     console.log('   Uploading to storage...');
     // 5. Upload Reel to Supabase
     console.log('   Uploading to storage...');
-    const videoContent = await fs.readFile(videoPath);
+    const videoContent = await fsPromises.readFile(videoPath);
 
     // Determine Folder Path from Story Data
     // We need slug and created_at to match the Factory structure
