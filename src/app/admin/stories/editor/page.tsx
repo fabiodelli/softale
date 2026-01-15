@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AdminGuard from '@/components/admin/AdminGuard';
 import { AdminLayout, AdminButton } from '@/components/admin/AdminLayout'; // Import unified layout
 import Link from 'next/link';
+import { Download } from 'lucide-react';
 import { supabase, type Story } from '@/lib/supabase';
 
 // Categories available for stories
@@ -435,8 +436,22 @@ export default function StoryEditor() {
                                             src={coverFile ? URL.createObjectURL(coverFile) : existingCoverUrl || 'https://via.placeholder.com/400?text=No+Cover'}
                                             className="w-full h-full object-cover"
                                         />
-                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm">
-                                            <span className="text-white text-xs font-bold uppercase tracking-widest border border-white/50 px-4 py-2 rounded-full hover:bg-white hover:text-black transition">Change Image</span>
+                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm gap-2">
+                                            <span className="text-white text-xs font-bold uppercase tracking-widest border border-white/50 px-4 py-2 rounded-full hover:bg-white hover:text-black transition">Change</span>
+                                            {existingCoverUrl && (
+                                                <div onClick={(e) => e.stopPropagation()}>
+                                                    <a
+                                                        href={existingCoverUrl}
+                                                        download={`cover_square_${storyId || 'new'}.png`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-black hover:bg-violet-400 border border-white/50"
+                                                        title="Download"
+                                                    >
+                                                        <Download size={14} />
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -456,8 +471,22 @@ export default function StoryEditor() {
                                                 src={wideFile ? URL.createObjectURL(wideFile) : existingWideUrl || 'https://via.placeholder.com/400x225?text=No+Wide'}
                                                 className="w-full h-full object-cover"
                                             />
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm">
+                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm gap-2">
                                                 <span className="text-xs text-white font-bold border border-white/30 px-2 py-1 rounded">Edit</span>
+                                                {existingWideUrl && (
+                                                    <div onClick={(e) => e.stopPropagation()}>
+                                                        <a
+                                                            href={existingWideUrl}
+                                                            download={`cover_wide_${storyId || 'new'}.png`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black hover:bg-violet-400 border border-white/50"
+                                                            title="Download"
+                                                        >
+                                                            <Download size={12} />
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -474,8 +503,22 @@ export default function StoryEditor() {
                                                 src={tallFile ? URL.createObjectURL(tallFile) : existingTallUrl || 'https://via.placeholder.com/225x400?text=No+Tall'}
                                                 className="w-full h-full object-cover"
                                             />
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm">
+                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm gap-2">
                                                 <span className="text-xs text-white font-bold border border-white/30 px-2 py-1 rounded">Edit</span>
+                                                {existingTallUrl && (
+                                                    <div onClick={(e) => e.stopPropagation()}>
+                                                        <a
+                                                            href={existingTallUrl}
+                                                            download={`cover_tall_${storyId || 'new'}.png`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black hover:bg-violet-400 border border-white/50"
+                                                            title="Download"
+                                                        >
+                                                            <Download size={12} />
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

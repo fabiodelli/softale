@@ -5,7 +5,7 @@ import AdminGuard from '@/components/admin/AdminGuard';
 import { AdminLayout, AdminButton } from '@/components/admin/AdminLayout';
 import Link from 'next/link';
 import { getStories, supabase, type Story } from '@/lib/supabase';
-import { Trash2, Globe, CheckSquare, Square, RefreshCw, Play, Pause, Plus } from 'lucide-react';
+import { Trash2, Globe, CheckSquare, Square, RefreshCw, Play, Pause, Plus, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayer } from '@/lib/PlayerContext';
 
@@ -382,6 +382,18 @@ export default function StoriesManager() {
                                                 </td>
                                                 <td className="p-4 text-right pr-6">
                                                     <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                        {story.cover_url && (
+                                                            <a
+                                                                href={story.cover_url}
+                                                                download={`cover-${story.id}.png`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-2 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition"
+                                                                title="Download Cover for Veo"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                            </a>
+                                                        )}
                                                         <button
                                                             onClick={() => handleGenerateSocial(story)}
                                                             disabled={generatingIds.has(story.id)}
@@ -391,7 +403,7 @@ export default function StoriesManager() {
                                                                     ? 'text-green-500 hover:bg-green-500/10'
                                                                     : 'text-zinc-500 hover:text-violet-400 hover:bg-violet-500/10'
                                                                 }`}
-                                                            title={story.social_reel_url ? "Regenerate Reel" : "Generate Social Reel"}
+                                                            title={story.social_reel_url ? "Regenerate Reel (Zoom)" : "Generate Social Reel (Zoom)"}
                                                         >
                                                             {generatingIds.has(story.id) ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
                                                         </button>

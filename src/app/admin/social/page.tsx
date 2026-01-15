@@ -5,7 +5,8 @@ import AdminGuard from '@/components/admin/AdminGuard';
 import { AdminLayout, AdminButton, AdminBadge } from '@/components/admin/AdminLayout';
 import Link from 'next/link';
 import { supabase, Story } from '@/lib/supabase';
-import { Download, Trash2, Check, Video } from 'lucide-react';
+import { Download, Trash2, Check, Video, Copy, MessageSquare, X } from 'lucide-react';
+import { generateCaption } from '@/lib/social-caption';
 
 // Extended Story type with social fields
 interface SocialStory extends Story {
@@ -13,9 +14,16 @@ interface SocialStory extends Story {
     social_status?: 'draft' | 'generated' | 'approved' | 'posted';
 }
 
+interface CaptionModalData {
+    story: SocialStory;
+    captions: ReturnType<typeof generateCaption>;
+}
+
 export default function SocialDashboard() {
     const [stories, setStories] = useState<SocialStory[]>([]);
     const [loading, setLoading] = useState(true);
+    const [captionModal, setCaptionModal] = useState<CaptionModalData | null>(null);
+    const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
 
     useEffect(() => {
         loadStories();
@@ -76,9 +84,17 @@ export default function SocialDashboard() {
                 subtitle="Manage and export generated social media reels"
                 backLink={{ href: '/admin', label: 'Dashboard' }}
                 actions={
-                    <div className="text-sm font-medium px-3 py-1 bg-white/5 rounded-full border border-white/5 text-gray-300 flex items-center gap-2">
-                        <Video size={14} className="text-indigo-400" />
-                        {stories.length} Reels Ready
+                    <div className="flex items-center gap-3">
+                        <Link href="/admin/social/mixer">
+                            <AdminButton variant="primary" className="flex items-center gap-2">
+                                <Video size={14} />
+                                Manual Mixer
+                            </AdminButton>
+                        </Link>
+                        <div className="text-sm font-medium px-3 py-1 bg-white/5 rounded-full border border-white/5 text-gray-300 flex items-center gap-2">
+                            <Video size={14} className="text-indigo-400" />
+                            {stories.length} Reels Ready
+                        </div>
                     </div>
                 }
             >
@@ -141,6 +157,23 @@ export default function SocialDashboard() {
                                             </div>
                                         )}
 
+                                        <button
+                                            onClick={() => {
+                                                const captions = generateCaption({
+                                                    id: story.id,
+                                                    title: story.title,
+                                                    description: story.description,
+                                                    category: story.category,
+                                                    duration: story.duration
+                                                });
+                                                setCaptionModal({ story, captions });
+                                            }}
+                                            className="p-2 bg-zinc-800 hover:bg-violet-500/10 hover:border-violet-500/20 text-zinc-400 hover:text-violet-400 rounded-lg border border-zinc-700 transition flex items-center justify-center w-10 h-10"
+                                            title="Generate Caption"
+                                        >
+                                            <MessageSquare size={16} />
+                                        </button>
+
                                         <a
                                             href={story.social_reel_url}
                                             download
@@ -161,6 +194,54 @@ export default function SocialDashboard() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {/* Caption Modal */}
+                {captionModal && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                            <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+                                <h3 className="text-lg font-bold text-white">📝 Captions for "{captionModal.story.title}"</h3>
+                                <button
+                                    onClick={() => { setCaptionModal(null); setCopiedPlatform(null); }}
+                                    className="p-2 hover:bg-zinc-800 rounded-lg transition"
+                                >
+                                    <X size={20} className="text-zinc-400" />
+                                </button>
+                            </div>
+                            <div className="p-5 space-y-6 overflow-y-auto max-h-[70vh]">
+                                {[
+                                    { key: 'instagram', label: 'Instagram Reels', emoji: '📸', content: captionModal.captions.instagram },
+                                    { key: 'tiktok', label: 'TikTok', emoji: '🎵', content: captionModal.captions.tiktok },
+                                    { key: 'youtube', label: 'YouTube Shorts', emoji: '📺', content: captionModal.captions.youtube }
+                                ].map(platform => (
+                                    <div key={platform.key} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="font-semibold text-zinc-200">{platform.emoji} {platform.label}</span>
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(platform.content);
+                                                    setCopiedPlatform(platform.key);
+                                                    setTimeout(() => setCopiedPlatform(null), 2000);
+                                                }}
+                                                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition ${copiedPlatform === platform.key
+                                                        ? 'bg-green-500/20 text-green-400'
+                                                        : 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30'
+                                                    }`}
+                                            >
+                                                {copiedPlatform === platform.key ? (
+                                                    <><Check size={14} /> Copied!</>
+                                                ) : (
+                                                    <><Copy size={14} /> Copy</>
+                                                )}
+                                            </button>
+                                        </div>
+                                        <pre className="text-sm text-zinc-400 whitespace-pre-wrap font-mono leading-relaxed">{platform.content}</pre>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
             </AdminLayout>
