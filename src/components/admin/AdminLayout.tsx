@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 interface AdminLayoutProps {
     children: ReactNode;
-    title: string;
+    title: string | ReactNode;
     subtitle?: string;
     backLink?: { href: string; label: string };
     actions?: ReactNode;
@@ -21,7 +21,7 @@ export function AdminLayout({
     return (
         <div className="min-h-screen bg-zinc-950">
             {/* Header */}
-            <header className="sticky top-0 z-10 backdrop-blur-md bg-zinc-950/80 border-b border-zinc-800">
+            <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-zinc-950/80 border-b border-zinc-800">
                 <div className="max-w-7xl mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -37,7 +37,7 @@ export function AdminLayout({
                                 </Link>
                             )}
                             <div>
-                                <h1 className="text-2xl font-bold text-zinc-50">{title}</h1>
+                                <h1 className="text-2xl font-bold text-zinc-50 flex items-center gap-3">{title}</h1>
                                 {subtitle && <p className="text-sm text-zinc-400 mt-0.5">{subtitle}</p>}
                             </div>
                         </div>
@@ -46,8 +46,8 @@ export function AdminLayout({
                 </div>
             </header>
 
-            {/* Content */}
-            <main className="max-w-7xl mx-auto px-6 py-8">
+            {/* Content - Added pt-32 to clear the fixed header */}
+            <main className="max-w-7xl mx-auto px-6 pt-32 pb-12">
                 {children}
             </main>
         </div>

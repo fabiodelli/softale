@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
                         .update({
                             subscription_status: subscription.status,
                             is_premium: subscription.status === 'active',
-                            subscription_end_date: subscription.current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : null,
-                        })
+                            subscription_end_date: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : null,
+                        } as any)
                         .eq('id', profile.id);
                 }
                 break;

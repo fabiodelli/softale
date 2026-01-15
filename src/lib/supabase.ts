@@ -98,6 +98,10 @@ export interface UserProfile {
     username: string | null;
     avatar_url: string | null;
     is_premium: boolean;
+    stripe_customer_id?: string;
+    subscription_id?: string;
+    subscription_status?: string;
+    subscription_end_date?: string | null;
     role?: 'user' | 'admin';
     created_at: string;
 }

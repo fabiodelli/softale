@@ -1,6 +1,6 @@
 
 import { execSync } from 'child_process';
-import { CATALOG_ITEMS } from './src/catalog-config.ts';
+import { CATALOG_ITEMS } from './src/catalog-config';
 
 // MVP Selection: The 15 items we want for launch
 const MVP_TITLES = [

@@ -1,5 +1,5 @@
-import 'dotenv/config';
-import fs from 'fs/promises';
+import dotenv from 'dotenv';
+import fs from 'fs';
 import { createWriteStream } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,6 +15,26 @@ import fetch from 'node-fetch';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.join(__dirname, '..', 'output');
+
+// LOAD CENTRALIZED ENVIRONMENT
+// We assume execution from project root or tool root, but we seek the centralized .env.local
+const findRootEnv = () => {
+    // Try current CWD
+    let p = path.resolve(process.cwd(), '.env.local');
+    if (fs.existsSync(p)) return p;
+    // Try up 2 levels (if running from tools/social-bot)
+    p = path.resolve(__dirname, '../../../.env.local');
+    if (fs.existsSync(p)) return p;
+    return null;
+};
+
+const envPath = findRootEnv();
+if (envPath) {
+    console.log(`🔧 Social Bot loaded env from: ${envPath}`);
+    dotenv.config({ path: envPath });
+} else {
+    dotenv.config(); // Fallback to default
+}
 
 async function main() {
     const args = process.argv.slice(2);
@@ -77,22 +97,26 @@ async function main() {
         download(story.audio_url, audioPath)
     ]);
 
-    // 4. Generate Video with FFmpeg
-    console.log('   Rendering 30s Reel (this may take a moment)...');
+    // 4. Generate Video with FFmpeg (Dynamic Ken Burns Zoom)
+    console.log('   Rendering 60s Reel with Ken Burns Effect...');
+
+    // Zoom in slowly from 1.0 to 1.1 over 1800 frames (60s @ 30fps)
+    // Scale ensures we stay at 720x1280
+    // x/y ensure center zoom
+    const zoomFilter = `zoompan=z='min(zoom+0.0005,1.2)':d=1800:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=720x1280`;
 
     await new Promise<void>((resolve, reject) => {
         ffmpeg()
             .input(imagePath)
-            .loop(30) // 30 seconds loop
+            .inputOptions(['-loop 1']) // Loop image input indefinitely
             .input(audioPath)
             .audioCodec('aac')
             .videoCodec('libx264')
-            .size('720x1280') // 9:16 HD
             .outputOptions([
-                '-t 30',          // Duration 30s
+                '-t 60',          // Duration 60s
                 '-pix_fmt yuv420p', // Compatibility
-                '-shortest',       // End when shortest input ends
-                '-vf scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280' // Ensure fills screen
+                '-vf', `${zoomFilter},format=yuv420p`, // Apply Zoom + Format
+                '-shortest'       // End if audio is shorter than 60s
             ])
             .save(videoPath)
             .on('end', () => resolve())

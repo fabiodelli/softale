@@ -67,104 +67,108 @@ const navItems = [
     }
 ];
 
+import AdminGuard from '@/components/admin/AdminGuard';
+
 export default function AdminDashboard() {
     return (
-        <AdminLayout
-            title="Reverie Admin"
-            subtitle="Content Management System"
-            actions={
-                <Link href="/" target="_blank">
-                    <AdminButton variant="ghost" size="sm">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        View Site
-                    </AdminButton>
-                </Link>
-            }
-        >
-            {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                {[
-                    { label: 'Total Stories', value: '—', icon: '📚' },
-                    { label: 'Active Users', value: '—', icon: '👥' },
-                    { label: 'Collections', value: '—', icon: '📁' },
-                    { label: 'Generations', value: '—', icon: '🎧' }
-                ].map((stat) => (
-                    <AdminCard key={stat.label} padding="md" className="text-center">
-                        <div className="text-2xl mb-1">{stat.icon}</div>
-                        <div className="text-2xl font-bold text-zinc-50">{stat.value}</div>
-                        <div className="text-sm text-zinc-400">{stat.label}</div>
-                    </AdminCard>
-                ))}
-            </div>
+        <AdminGuard>
+            <AdminLayout
+                title="Reverie Admin"
+                subtitle="Content Management System"
+                actions={
+                    <Link href="/" target="_blank">
+                        <AdminButton variant="ghost" size="sm">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            View Site
+                        </AdminButton>
+                    </Link>
+                }
+            >
+                {/* Stats Row */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    {[
+                        { label: 'Total Stories', value: '—', icon: '📚' },
+                        { label: 'Active Users', value: '—', icon: '👥' },
+                        { label: 'Collections', value: '—', icon: '📁' },
+                        { label: 'Generations', value: '—', icon: '🎧' }
+                    ].map((stat) => (
+                        <AdminCard key={stat.label} padding="md" className="text-center">
+                            <div className="text-2xl mb-1">{stat.icon}</div>
+                            <div className="text-2xl font-bold text-zinc-50">{stat.value}</div>
+                            <div className="text-sm text-zinc-400">{stat.label}</div>
+                        </AdminCard>
+                    ))}
+                </div>
 
-            {/* Navigation Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {navItems.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                        <AdminCard
-                            hover
-                            gradient
-                            padding="lg"
-                            className="group h-full"
-                        >
-                            <div className={`
+                {/* Navigation Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {navItems.map((item) => (
+                        <Link key={item.href} href={item.href}>
+                            <AdminCard
+                                hover
+                                gradient
+                                padding="lg"
+                                className="group h-full"
+                            >
+                                <div className={`
                 inline-flex p-3 rounded-xl mb-4
                 bg-gradient-to-br ${item.color}
                 shadow-lg shadow-${item.glow}-500/25
                 group-hover:shadow-xl group-hover:shadow-${item.glow}-500/30
                 transition-all duration-300
               `}>
-                                {item.icon}
-                            </div>
-                            <h3 className="text-lg font-semibold text-zinc-50 mb-2 group-hover:text-white transition-colors">
-                                {item.title}
-                            </h3>
-                            <p className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                                {item.description}
-                            </p>
-                            <div className="mt-4 flex items-center text-sm text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span>Open</span>
-                                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </div>
-                        </AdminCard>
-                    </Link>
-                ))}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="mt-8 pt-8 border-t border-zinc-800">
-                <h2 className="text-lg font-semibold text-zinc-50 mb-4">Quick Actions</h2>
-                <div className="flex flex-wrap gap-3">
-                    <Link href="/admin/factory">
-                        <AdminButton variant="primary">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Generate New Story
-                        </AdminButton>
-                    </Link>
-                    <Link href="/admin/stories/editor">
-                        <AdminButton variant="secondary">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Create Story Manually
-                        </AdminButton>
-                    </Link>
-                    <Link href="/admin/collections">
-                        <AdminButton variant="secondary">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                            New Collection
-                        </AdminButton>
-                    </Link>
+                                    {item.icon}
+                                </div>
+                                <h3 className="text-lg font-semibold text-zinc-50 mb-2 group-hover:text-white transition-colors">
+                                    {item.title}
+                                </h3>
+                                <p className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                                    {item.description}
+                                </p>
+                                <div className="mt-4 flex items-center text-sm text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span>Open</span>
+                                    <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+                            </AdminCard>
+                        </Link>
+                    ))}
                 </div>
-            </div>
-        </AdminLayout>
+
+                {/* Quick Actions */}
+                <div className="mt-8 pt-8 border-t border-zinc-800">
+                    <h2 className="text-lg font-semibold text-zinc-50 mb-4">Quick Actions</h2>
+                    <div className="flex flex-wrap gap-3">
+                        <Link href="/admin/factory">
+                            <AdminButton variant="primary">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Generate New Story
+                            </AdminButton>
+                        </Link>
+                        <Link href="/admin/stories/editor">
+                            <AdminButton variant="secondary">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Create Story Manually
+                            </AdminButton>
+                        </Link>
+                        <Link href="/admin/collections">
+                            <AdminButton variant="secondary">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                New Collection
+                            </AdminButton>
+                        </Link>
+                    </div>
+                </div>
+            </AdminLayout>
+        </AdminGuard>
     );
 }

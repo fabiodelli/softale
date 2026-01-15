@@ -25,8 +25,20 @@ import { CATALOG_ITEMS } from './catalog-config.js';
 import { ConceptEngine, StoryConcept } from './ConceptEngine.js';
 import { voiceService } from './VoiceService.js';
 
-const factoryEnv = path.resolve(process.cwd(), 'tools/audio-factory/.env');
-dotenv.config({ path: fs.existsSync(factoryEnv) ? factoryEnv : undefined });
+// ENIVORNMENT CONFIGURATION - CENTRALIZED
+const rootEnvLocal = path.resolve(process.cwd(), '.env.local');
+const rootEnv = path.resolve(process.cwd(), '.env');
+
+// Prioritize .env.local, fallback to .env
+if (fs.existsSync(rootEnvLocal)) {
+    console.log(`🔧 Loading environment from: .env.local`);
+    dotenv.config({ path: rootEnvLocal });
+} else if (fs.existsSync(rootEnv)) {
+    console.log(`🔧 Loading environment from: .env`);
+    dotenv.config({ path: rootEnv });
+} else {
+    console.warn('⚠️  No .env.local or .env found in project root!');
+}
 
 // =====================================================
 // Environment & Initialization
@@ -125,7 +137,6 @@ interface AssetDesign {
     coverPrompt: string;
     musicPrompt: string;
     backingCategory?: string;
-    backingTitle?: string;
     backingTitle?: string;
     backingCoverPrompt?: string;
     ambiencePrompt?: string; // New V5 Auto-Ambience
@@ -758,19 +769,30 @@ export async function generateVoice(script: GeneratedScript): Promise<string> {
     }
     const outputPath = path.join(OUTPUT_DIR, `${script.title.replace(/\s+/g, '_')}_voice.mp3`);
 
+    // Helper: Clean text for pure narration
+    // 1. Remove [breathe] markers if requested or if they cause noise (User feedback: "Clean narration")
+    // 2. Remove any (parentheticals) or *asterisks* acting as stage directions
+    const cleanScript = script.script
+        .replace(/\[breathe.*?\]/gi, " ... ") // Replace breaths with simple pauses
+        .replace(/\[.*?\]/g, (match) => match.toLowerCase().includes('pause') ? " ... " : "") // Keep pause as ellipsis, remove others
+        .replace(/\(.*?\)/g, "") // Remove (notes)
+        .replace(/\*.*?\*/g, "") // Remove *actions*
+        .replace(/\s+/g, " ")
+        .trim();
+
     // Helper: Split text into chunks < 4000 chars
     const chunks: string[] = [];
     const maxChunkSize = 4000;
 
-    // Initial text with pauses
-    const fullText = "[pause] [pause] " + script.script;
+    // Initial text with silent leader
+    const fullText = "... " + cleanScript;
 
     if (fullText.length <= maxChunkSize) {
         chunks.push(fullText);
     } else {
         console.log(`   ✂️ Script length (${fullText.length}) exceeds limits. Splitting...`);
         // Split by paragraphs first
-        const paragraphs = fullText.split(/\n\n/);
+        const paragraphs = fullText.split(/(?:\r\n|\r|\n)/);
         let currentChunk = '';
 
         for (const p of paragraphs) {
@@ -801,11 +823,11 @@ export async function generateVoice(script: GeneratedScript): Promise<string> {
             },
             body: JSON.stringify({
                 text: chunk,
-                model_id: 'eleven_v3',
+                model_id: 'eleven_turbo_v2_5', // Fallback to Turbo 2.5 for stability/speed if V3 is hallucinating
                 voice_settings: {
-                    stability: 0.5,
-                    similarity_boost: 0.75,
-                    style: 0.5,
+                    stability: 0.65, // Higher stability = less emotion/noise
+                    similarity_boost: 0.8, // High fidelity to voice
+                    style: 0.1, // VERY LOW style to prevent "acting" out the environment (hallucinated background noise)
                     use_speaker_boost: true,
                 },
             }),
@@ -878,7 +900,8 @@ export async function generateOrFetchLoop(script: GeneratedScript): Promise<stri
     // Construct Multipart Form Data
     const formData = new FormData();
     formData.append('prompt', newPrompt);
-    formData.append('duration', '180'); // 3 minutes
+    const loopDuration = Math.min((script.duration || 3) * 60, 180); // Cap at 180s (Stable Audio Limit)
+    formData.append('duration', loopDuration.toString());
     formData.append('model', 'stable-audio-2.5');
     formData.append('negative_prompt', 'Drums, percussion, vocals, speech, noisy, distorted, low quality, glitch, rhythmic beats');
 
@@ -1024,6 +1047,9 @@ interface AssetPack {
     cover_url: string;           // Square (1:1)
     cover_landscape_url: string; // Wide (16:9)
     cover_portrait_url: string;  // Tall (9:16)
+    backing_cover_url?: string;
+    backing_cover_landscape_url?: string;
+    backing_cover_portrait_url?: string;
 }
 
 export async function generateAssetPack(script: GeneratedScript): Promise<AssetPack> {
@@ -1038,15 +1064,16 @@ export async function generateAssetPack(script: GeneratedScript): Promise<AssetP
     const basePrompt = script.coverPrompt || `Dreamy, ethereal artwork for "${script.title}" - ${script.category} audio experience`;
 
     // Helper to generate one variant
-    const generateVariant = async (aspect: string, size: string, suffix: string): Promise<string> => {
-        const outputPath = path.join(OUTPUT_DIR, `${script.title.replace(/\s+/g, '_')}_${suffix}.png`);
+    const generateVariant = async (prompt: string, aspect: string, size: string, suffix: string): Promise<string> => {
+        const safeTitle = script.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        const outputPath = path.join(OUTPUT_DIR, `${safeTitle}_${suffix}.png`);
 
         if (fs.existsSync(outputPath)) {
             console.log(`      ⏩ Exists, skipping generation: ${outputPath}`);
             return outputPath;
         }
 
-        console.log(`   🎨 Generating ${aspect} variant (${size})...`);
+        console.log(`   🎨 Generating ${suffix} (${aspect})...`); // prompt: ${prompt.substring(0, 20)}...
         try {
             const response = await fetch('https://api.openai.com/v1/images/generations', {
                 method: 'POST',
@@ -1056,7 +1083,7 @@ export async function generateAssetPack(script: GeneratedScript): Promise<AssetP
                 },
                 body: JSON.stringify({
                     model: 'dall-e-3',
-                    prompt: basePrompt + ` --ar ${aspect}`,
+                    prompt: prompt + ` --ar ${aspect}`,
                     n: 1,
                     size: size as "1024x1024" | "1024x1792" | "1792x1024",
                     quality: 'hd',
@@ -1070,7 +1097,6 @@ export async function generateAssetPack(script: GeneratedScript): Promise<AssetP
             if (!imageUrl) throw new Error("No image URL returned");
 
             // Download
-            const outputPath = path.join(OUTPUT_DIR, `${script.title.replace(/\s+/g, '_')}_${suffix}.png`);
             const imageResponse = await fetch(imageUrl);
             const buffer = Buffer.from(await imageResponse.arrayBuffer());
             fs.writeFileSync(outputPath, buffer);
@@ -1078,21 +1104,39 @@ export async function generateAssetPack(script: GeneratedScript): Promise<AssetP
             return outputPath;
 
         } catch (error: any) {
-            console.log(`      ⚠️ Failed ${aspect}: ${error.message || error}`);
+            console.log(`      ⚠️ Failed ${suffix}: ${error.message || error}`);
             return '';
         }
     };
 
+    // 1. Main Story Assets
     const [squarePath, widePath, tallPath] = await Promise.all([
-        generateVariant('1:1', '1024x1024', 'cover'),
-        generateVariant('16:9', '1792x1024', 'wide'),
-        generateVariant('9:16', '1024x1792', 'tall')
+        generateVariant(basePrompt, '1:1', '1024x1024', 'cover'),
+        generateVariant(basePrompt, '16:9', '1792x1024', 'wide'),
+        generateVariant(basePrompt, '9:16', '1024x1792', 'tall')
     ]);
+
+    // 2. Backing Track Assets (If explicit prompt exists)
+    let backingAssets = {};
+    if (script.backingCoverPrompt) {
+        console.log('   🎹 Detected Backing Cover Prompt - Generating assets for Soundscape extraction...');
+        const [bSquare, bWide, bTall] = await Promise.all([
+            generateVariant(script.backingCoverPrompt, '1:1', '1024x1024', 'backing_cover'),
+            generateVariant(script.backingCoverPrompt, '16:9', '1792x1024', 'backing_wide'),
+            generateVariant(script.backingCoverPrompt, '9:16', '1024x1792', 'backing_tall')
+        ]);
+        backingAssets = {
+            backing_cover_url: bSquare,
+            backing_cover_landscape_url: bWide,
+            backing_cover_portrait_url: bTall
+        };
+    }
 
     return {
         cover_url: squarePath,
         cover_landscape_url: widePath,
-        cover_portrait_url: tallPath
+        cover_portrait_url: tallPath,
+        ...backingAssets
     };
 }
 
@@ -1362,6 +1406,14 @@ export async function uploadStory(
     const portraitUrl = await uploadImage(assets?.cover_portrait_url || '', '_tall', existingStory?.cover_portrait_url);
 
     if (coverUrl) console.log(`      ✅ Main Cover: ${coverUrl}`);
+
+    // Upload Backing Assets (Archival for Harvesting)
+    if (assets?.backing_cover_url) {
+        console.log('      🎹 Archiving Backing Track Assets...');
+        await uploadImage(assets.backing_cover_url, '_backing');
+        await uploadImage(assets.backing_cover_landscape_url || '', '_backing_wide');
+        await uploadImage(assets.backing_cover_portrait_url || '', '_backing_tall');
+    }
 
     // Upsert database record (Merge)
     const storyData = {
