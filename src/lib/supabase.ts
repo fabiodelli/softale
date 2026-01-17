@@ -104,6 +104,11 @@ export interface UserProfile {
     subscription_end_date?: string | null;
     role?: 'user' | 'admin';
     created_at: string;
+    // Stats
+    total_minutes_listened?: number;
+    stories_completed?: number;
+    current_streak?: number;
+    last_active_date?: string;
 }
 
 export interface Story {
@@ -477,6 +482,70 @@ export async function deleteProfile(userId: string): Promise<boolean> {
     return true;
 }
 
+export async function updateProfileStats(userId: string, updates: {
+    total_minutes_listened?: number;
+    stories_completed?: number;
+    current_streak?: number;
+    last_active_date?: string;
+}): Promise<void> {
+    if (!supabase) return;
+
+    // We use rpc or direct update? Direct update matches RLS usually "Users can update own profile"
+    // Assuming policy "Users can update own profile" exists
+    const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId);
+
+    if (error) {
+        console.error('Error updating profile stats:', error);
+    }
+}
+
+export async function incrementListeningTime(userId: string, minutes: number) {
+    if (!supabase) return;
+    const { data: profile } = await supabase.from('profiles').select('total_minutes_listened').eq('id', userId).single();
+    const current = profile?.total_minutes_listened || 0;
+    await updateProfileStats(userId, { total_minutes_listened: current + minutes });
+}
+
+export async function checkAndIncrementStreak(userId: string) {
+    if (!supabase) return;
+    const { data: profile } = await supabase.from('profiles').select('current_streak, last_active_date').eq('id', userId).single();
+    if (!profile) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const lastActive = profile.last_active_date;
+
+    if (lastActive === today) return; // Already counted for today
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    let newStreak = 1;
+    // Check if last active was yesterday (continue streak)
+    if (lastActive === yesterdayStr) {
+        newStreak = (profile.current_streak || 0) + 1;
+    }
+    // If last active was older than yesterday, streak resets to 1 (default)
+    // If last active is null (first time), streak is 1
+
+    // Also, if lastActive was TODAY (handled above)
+
+    await updateProfileStats(userId, {
+        current_streak: newStreak,
+        last_active_date: today
+    });
+}
+
+export async function incrementStoriesCompleted(userId: string) {
+    if (!supabase) return;
+    const { data: profile } = await supabase.from('profiles').select('stories_completed').eq('id', userId).single();
+    const current = profile?.stories_completed || 0;
+    await updateProfileStats(userId, { stories_completed: current + 1 });
+}
+
 // Admin: Collections
 export async function getAllCollections(): Promise<Collection[]> {
     if (!supabase) return [];
@@ -707,4 +776,196 @@ export async function saveListeningProgress(
     if (error) {
         console.error('Error saving listening progress:', error);
     }
+}
+
+// ========================================
+// User Playlists Helpers
+// ========================================
+
+export interface Playlist {
+    id: string;
+    user_id: string;
+    title: string;
+    description: string | null;
+    created_at: string;
+    items?: Story[]; // Joined stories
+    item_count?: number; // Count of items (helper)
+    cover_url?: string; // First story cover
+}
+
+export interface PlaylistItem {
+    id: string;
+    playlist_id: string;
+    story_id: string;
+    position: number;
+    added_at: string;
+    story?: Story;
+}
+
+export async function createPlaylist(userId: string, title: string, description?: string): Promise<Playlist | null> {
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+        .from('playlists')
+        .insert({ user_id: userId, title, description })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating playlist:', error);
+        return null;
+    }
+    return data;
+}
+
+export async function getUserPlaylists(userId: string): Promise<Playlist[]> {
+    if (!supabase) return [];
+
+    const { data, error } = await supabase
+        .from('playlists')
+        .select(`
+            *,
+            playlist_items(count),
+            items_ref:playlist_items(
+                position,
+                stories(cover_url)
+            )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching playlists:', error);
+        return [];
+    }
+
+    // Map supabase response to our interface
+    return data.map((d: any) => {
+        // Find first item by position
+        const sorted = d.items_ref?.sort((a: any, b: any) => a.position - b.position);
+        const cover = sorted?.[0]?.stories?.cover_url;
+
+        return {
+            ...d,
+            item_count: d.playlist_items?.[0]?.count || 0,
+            cover_url: cover
+        };
+    }) || [];
+}
+
+export async function getPlaylistDetails(playlistId: string): Promise<Playlist | null> {
+    if (!supabase) return null;
+
+    // 1. Get Playlist
+    const { data: playlist, error } = await supabase
+        .from('playlists')
+        .select('*')
+        .eq('id', playlistId)
+        .single();
+
+    if (error || !playlist) {
+        console.error('Error fetching playlist details:', error);
+        return null;
+    }
+
+    // 2. Get Items with Stories
+    const { data: items, error: itemsError } = await supabase
+        .from('playlist_items')
+        .select(`
+            *,
+            stories:stories (*)
+        `)
+        .eq('playlist_id', playlistId)
+        .order('added_at', { ascending: true }); // Order by added time by default
+
+    if (itemsError) {
+        console.error('Error fetching playlist items:', itemsError);
+        return playlist;
+    }
+
+    const stories = items
+        .map((item: any) => item.stories)
+        .filter((s: any) => s != null && s.is_published);
+
+    return { ...playlist, items: stories, item_count: stories.length };
+}
+
+export async function addStoryToPlaylist(playlistId: string, storyId: string): Promise<boolean> {
+    if (!supabase) return false;
+
+    // Check if already exists? Supabase constraints usually handle repeats? 
+    // We didn't add unique constraint in SQL but we could check.
+    const { data } = await supabase
+        .from('playlist_items')
+        .select('id')
+        .match({ playlist_id: playlistId, story_id: storyId })
+        .single();
+
+    if (data) return true; // Already added
+
+    const { error } = await supabase
+        .from('playlist_items')
+        .insert({ playlist_id: playlistId, story_id: storyId });
+
+    if (error) {
+        console.error('Error adding to playlist:', error);
+        return false;
+    }
+    return true;
+}
+
+export async function removeStoryFromPlaylist(playlistId: string, storyId: string): Promise<boolean> {
+    if (!supabase) return false;
+
+    const { error } = await supabase
+        .from('playlist_items')
+        .delete()
+        .match({ playlist_id: playlistId, story_id: storyId });
+
+    if (error) {
+        console.error('Error removing from playlist:', error);
+        return false;
+    }
+    return true;
+}
+
+export async function deletePlaylist(playlistId: string): Promise<boolean> {
+    if (!supabase) return false;
+    const { error } = await supabase.from('playlists').delete().eq('id', playlistId);
+    if (error) return false;
+    return true;
+}
+
+// ========================================
+// Tag Gardener (Admin)
+// ========================================
+
+export interface TagStat {
+    tag: string;
+    count: number;
+}
+
+export async function getTagStats(): Promise<TagStat[]> {
+    if (!supabase) return [];
+
+    const { data, error } = await supabase.rpc('get_tag_stats');
+
+    if (error) {
+        console.error('Error fetching tag stats:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+export async function mergeTags(oldTag: string, newTag: string): Promise<boolean> {
+    if (!supabase) return false;
+
+    const { error } = await supabase.rpc('merge_tags', { old_tag: oldTag, new_tag: newTag });
+
+    if (error) {
+        console.error('Error merging tags:', error);
+        return false;
+    }
+    return true;
 }

@@ -1,12 +1,14 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Crown, Check, Sparkles, Zap, Shield, Heart, ArrowRight, Settings, Headphones } from 'lucide-react';
+import { Crown, Check, Sparkles, Zap, Shield, Heart, ArrowRight, Settings } from 'lucide-react';
 import { useAuth } from '@/lib/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import GlassLayout from '@/components/GlassLayout';
+import SettingsDrawer from '@/components/account/SettingsDrawer';
 
 export default function UpgradePage() {
     const { user, isPremium, loading: authLoading } = useAuth();
@@ -14,6 +16,7 @@ export default function UpgradePage() {
     const [loading, setLoading] = useState(false);
     const [portalLoading, setPortalLoading] = useState(false);
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const handleSubscribe = async () => {
         if (!user) {
@@ -84,25 +87,40 @@ export default function UpgradePage() {
     if (isPremium) {
         return (
             <GlassLayout variant="functional">
-                <div className="pt-8 pb-12 px-4 md:px-8">
+                <div className="pt-4 pb-12 px-4 md:px-8">
                     <div className="max-w-4xl mx-auto text-center">
-                        {/* Mobile Logo - positioned like home */}
-                        <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg">
-                            <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+                        {/* Mobile Logo - Fixed Top Center */}
+                        <Link href="/" className="fixed top-4 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg z-50">
+                            <Image
+                                src="/assets/softale-icon.png"
+                                alt="Softale"
+                                width={200}
+                                height={200}
+                                className="h-12 w-auto drop-shadow-lg group-hover:scale-105 transition-transform"
+                            />
+                            <span
+                                className="text-2xl font-semibold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent drop-shadow-lg"
+                                style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
+                            >
                                 Softale
-                            </h1>
+                            </span>
                         </Link>
+
+                        {/* Settings Gear - Fixed Top Right */}
+                        <button
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="fixed top-4 right-4 md:hidden p-2.5 bg-white/80 backdrop-blur-md rounded-full shadow-lg border border-white/40 text-slate-600 hover:text-indigo-600 z-50"
+                        >
+                            <Settings className="w-5 h-5" />
+                        </button>
 
                         {/* Header */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mb-12 mt-16 md:mt-0"
+                            className="mb-8 mt-12 md:mt-0"
                         >
-                            <span className="inline-block p-3 rounded-2xl bg-indigo-100 text-indigo-600 mb-4">
-                                <Crown className="w-8 h-8" />
-                            </span>
+                            {/* Crown Removed */}
                             <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
                                 Grazie per essere Premium! ✨
                             </h1>
@@ -206,9 +224,9 @@ export default function UpgradePage() {
                                 <span className="text-sm font-semibold">Cancel Anytime</span>
                             </div>
                         </div>
-
                     </div>
                 </div>
+                <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
             </GlassLayout>
         );
     }
@@ -216,21 +234,30 @@ export default function UpgradePage() {
     // Free User View - Upgrade Prompt (Original Style)
     return (
         <GlassLayout>
-            <div className="pt-8 pb-12 px-4 md:px-8">
+            <div className="pt-4 pb-12 px-4 md:px-8">
                 <div className="max-w-4xl mx-auto text-center">
-                    {/* Mobile Logo - positioned like home */}
-                    <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg">
-                        <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+                    {/* Mobile Logo - Fixed Top Center (Free View) */}
+                    <Link href="/" className="fixed top-4 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg z-50">
+                        <Image
+                            src="/assets/softale-icon.png"
+                            alt="Softale"
+                            width={200}
+                            height={200}
+                            className="h-12 w-auto drop-shadow-lg group-hover:scale-105 transition-transform"
+                        />
+                        <span
+                            className="text-2xl font-semibold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent drop-shadow-lg"
+                            style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
+                        >
                             Softale
-                        </h1>
+                        </span>
                     </Link>
 
                     {/* Header */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-12 mt-16"
+                        className="mb-8 mt-12"
                     >
                         <span className="inline-block p-3 rounded-2xl bg-indigo-100 text-indigo-600 mb-4">
                             <Sparkles className="w-8 h-8" />
@@ -354,3 +381,4 @@ export default function UpgradePage() {
         </GlassLayout>
     );
 }
+

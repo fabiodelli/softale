@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { getCollectionBySlug, getCollectionById, type Collection, type Story } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Play, Pause, ArrowLeft, Clock, Layers, Shuffle, Headphones } from 'lucide-react';
+import Image from 'next/image';
+import { Play, Pause, ArrowLeft, Clock, Layers, Shuffle } from 'lucide-react';
 
 import { usePlayer } from '@/lib/PlayerContext';
 import GlassLayout from '@/components/GlassLayout';
@@ -81,10 +82,19 @@ export default function CollectionPage() {
                 <div className="max-w-4xl mx-auto">
                     {/* Mobile Logo */}
                     <Link href="/" className="flex md:hidden items-center justify-center gap-2 mb-6 group">
-                        <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+                        <Image
+                            src="/assets/softale-icon.png"
+                            alt="Softale"
+                            width={200}
+                            height={200}
+                            className="h-12 w-auto drop-shadow-lg group-hover:scale-105 transition-transform"
+                        />
+                        <span
+                            className="text-2xl font-semibold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent drop-shadow-lg"
+                            style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
+                        >
                             Softale
-                        </h1>
+                        </span>
                     </Link>
 
                     {/* Back Button */}

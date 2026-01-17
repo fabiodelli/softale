@@ -5,8 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AdminGuard from '@/components/admin/AdminGuard';
 import { AdminLayout, AdminButton } from '@/components/admin/AdminLayout'; // Import unified layout
 import Link from 'next/link';
-import { Download } from 'lucide-react';
+import { Download, Sparkles, X, Loader2 } from 'lucide-react';
 import { supabase, type Story } from '@/lib/supabase';
+import { TagSelector } from '@/components/admin/TagSelector';
 
 // Categories available for stories
 // Categories synced with Factory RECIPE_MATRIX
@@ -23,6 +24,13 @@ const CATEGORIES = [
     'binaural'
 ];
 
+const SUGGESTED_TAGS = [
+    'Morning', 'Sunrise', 'Energy', 'Focus', // Morning
+    'Work', 'Deep Work', 'Background', 'Study', // Day
+    'Relax', 'Unwind', 'Sunset', 'Calm', // Evening
+    'Sleep', 'Dream', 'Night', 'Rain', 'Binaural' // Night
+];
+
 export default function StoryEditor() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -33,6 +41,7 @@ export default function StoryEditor() {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('sleep');
+    const [tags, setTags] = useState<string[]>([]);
     const [duration, setDuration] = useState(120); // seconds
     const [scriptText, setScriptText] = useState('');
     const [voiceId, setVoiceId] = useState('');
@@ -63,7 +72,69 @@ export default function StoryEditor() {
     const coverInputRef = useRef<HTMLInputElement>(null);
     const wideInputRef = useRef<HTMLInputElement>(null);
     const tallInputRef = useRef<HTMLInputElement>(null);
+
     const audioPlayerRef = useRef<HTMLAudioElement>(null);
+
+    // Generation State
+    const [genModalOpen, setGenModalOpen] = useState(false);
+    const [genType, setGenType] = useState<'square' | 'wide' | 'tall' | null>(null);
+    const [genPrompt, setGenPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const handleOpenGen = (type: 'square' | 'wide' | 'tall') => {
+        setGenType(type);
+        // Pre-fill prompt logic only if empty, to allow reuse of successful prompts
+        if (!genPrompt) {
+            const basePrompt = `Dreamy, ethereal artwork for "${title || 'Story'}" - ${category || 'relaxation'} theme`;
+            setGenPrompt(basePrompt);
+        }
+        setGenModalOpen(true);
+    };
+
+    const handleGenerate = async () => {
+        if (!genType || !genPrompt) return;
+        setIsGenerating(true);
+        setStatus('✨ Generating artwork with AI...');
+
+        try {
+            const response = await fetch('/api/admin/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: genPrompt, aspect_ratio: genType })
+            });
+
+            if (!response.ok) throw new Error('Generation failed');
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+
+            // Convert Base64 to Blob
+            const byteCharacters = atob(data.b64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'image/png' });
+
+            const file = new File([blob], `generated_${genType}.png`, { type: 'image/png' });
+
+            // Set state
+            if (genType === 'square') setCoverFile(file);
+            if (genType === 'wide') setWideFile(file);
+            if (genType === 'tall') setTallFile(file);
+
+            setGenModalOpen(false);
+            setStatus('✅ Artwork generated!');
+
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || 'Generation failed');
+            setStatus('');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     // Load existing story if editing
     useEffect(() => {
@@ -89,6 +160,7 @@ export default function StoryEditor() {
             setTitle(data.title || '');
             setDescription(data.description || '');
             setCategory(data.category || 'sleep');
+            setTags(data.tags || []);
             setDuration(data.duration || 120);
             setScriptText(data.script_text || '');
             setVoiceId(data.voice_id || '');
@@ -171,6 +243,7 @@ export default function StoryEditor() {
                 title: title.trim(),
                 description: description.trim(),
                 category,
+                tags,
                 duration,
                 is_premium: isPremium,
                 is_published: isPublished,
@@ -234,6 +307,31 @@ export default function StoryEditor() {
     const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => setCoverFile(e.target.files?.[0] || null);
     const handleWideChange = (e: React.ChangeEvent<HTMLInputElement>) => setWideFile(e.target.files?.[0] || null);
     const handleTallChange = (e: React.ChangeEvent<HTMLInputElement>) => setTallFile(e.target.files?.[0] || null);
+
+    const handleDownload = async (e: React.MouseEvent, url: string, filename: string) => {
+        e.stopPropagation();
+        e.preventDefault();
+        try {
+            setStatus('Downloading asset...');
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+            setStatus('');
+        } catch (error) {
+            console.error('Download failed:', error);
+            setStatus('Download failed. Opening in new tab...');
+            // Fallback
+            window.open(url, '_blank');
+        }
+    };
 
     if (loading) {
         return (
@@ -437,19 +535,21 @@ export default function StoryEditor() {
                                             className="w-full h-full object-cover"
                                         />
                                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm gap-2">
+                                            <div onClick={(e) => { e.stopPropagation(); handleOpenGen('square'); }}>
+                                                <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-400 transition-colors shadow-lg" title="AI Generate">
+                                                    <Sparkles size={14} />
+                                                </button>
+                                            </div>
                                             <span className="text-white text-xs font-bold uppercase tracking-widest border border-white/50 px-4 py-2 rounded-full hover:bg-white hover:text-black transition">Change</span>
                                             {existingCoverUrl && (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <a
-                                                        href={existingCoverUrl}
-                                                        download={`cover_square_${storyId || 'new'}.png`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-black hover:bg-violet-400 border border-white/50"
+                                                <div onClick={(e) => handleDownload(e, existingCoverUrl, `cover_square_${storyId || 'new'}.png`)}>
+                                                    <button
+                                                        type="button"
+                                                        className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-black hover:bg-violet-400 border border-white/50 transition-colors"
                                                         title="Download"
                                                     >
                                                         <Download size={14} />
-                                                    </a>
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -472,19 +572,21 @@ export default function StoryEditor() {
                                                 className="w-full h-full object-cover"
                                             />
                                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm gap-2">
+                                                <div onClick={(e) => { e.stopPropagation(); handleOpenGen('wide'); }}>
+                                                    <button type="button" className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-400 transition-colors shadow-lg" title="AI Generate">
+                                                        <Sparkles size={12} />
+                                                    </button>
+                                                </div>
                                                 <span className="text-xs text-white font-bold border border-white/30 px-2 py-1 rounded">Edit</span>
                                                 {existingWideUrl && (
-                                                    <div onClick={(e) => e.stopPropagation()}>
-                                                        <a
-                                                            href={existingWideUrl}
-                                                            download={`cover_wide_${storyId || 'new'}.png`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black hover:bg-violet-400 border border-white/50"
+                                                    <div onClick={(e) => handleDownload(e, existingWideUrl, `cover_wide_${storyId || 'new'}.png`)}>
+                                                        <button
+                                                            type="button"
+                                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black hover:bg-violet-400 border border-white/50 transition-colors"
                                                             title="Download"
                                                         >
                                                             <Download size={12} />
-                                                        </a>
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>
@@ -504,19 +606,21 @@ export default function StoryEditor() {
                                                 className="w-full h-full object-cover"
                                             />
                                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm gap-2">
+                                                <div onClick={(e) => { e.stopPropagation(); handleOpenGen('tall'); }}>
+                                                    <button type="button" className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-400 transition-colors shadow-lg" title="AI Generate">
+                                                        <Sparkles size={12} />
+                                                    </button>
+                                                </div>
                                                 <span className="text-xs text-white font-bold border border-white/30 px-2 py-1 rounded">Edit</span>
                                                 {existingTallUrl && (
-                                                    <div onClick={(e) => e.stopPropagation()}>
-                                                        <a
-                                                            href={existingTallUrl}
-                                                            download={`cover_tall_${storyId || 'new'}.png`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black hover:bg-violet-400 border border-white/50"
+                                                    <div onClick={(e) => handleDownload(e, existingTallUrl, `cover_tall_${storyId || 'new'}.png`)}>
+                                                        <button
+                                                            type="button"
+                                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black hover:bg-violet-400 border border-white/50 transition-colors"
                                                             title="Download"
                                                         >
                                                             <Download size={12} />
-                                                        </a>
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>
@@ -544,6 +648,34 @@ export default function StoryEditor() {
                                             <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
                                         ))}
                                     </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-zinc-400 mb-2 uppercase tracking-wider">
+                                        Tags <span className="text-zinc-500 text-xs font-normal ml-2">(Auto-suggests existing)</span>
+                                    </label>
+                                    <TagSelector
+                                        value={tags}
+                                        onChange={setTags}
+                                        placeholder="Rain, Piano, Slow, Male Voice..."
+                                    />
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        {SUGGESTED_TAGS.map(tag => (
+                                            <button
+                                                key={tag}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!tags.includes(tag)) {
+                                                        setTags([...tags, tag]);
+                                                    }
+                                                }}
+                                                className="text-[10px] uppercase font-bold px-2 py-1 rounded bg-zinc-800 text-zinc-400 hover:bg-violet-500 hover:text-white transition border border-zinc-700 hover:border-violet-400"
+                                            >
+                                                + {tag}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-zinc-500 mt-2">Use these "System Tags" to boost visibility at specific times of day.</p>
                                 </div>
 
                                 <div className="space-y-4 pt-2">
@@ -605,6 +737,65 @@ export default function StoryEditor() {
                     </div>
                 </form>
             </AdminLayout>
+
+            {/* Generation Modal */}
+            {genModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
+                        <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Sparkles className="text-indigo-400" size={20} />
+                                Generate Artwork
+                            </h3>
+                            <button onClick={() => setGenModalOpen(false)} className="text-zinc-500 hover:text-white transition">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold text-zinc-400 mb-2 uppercase tracking-wider">Prompt</label>
+                                <textarea
+                                    value={genPrompt}
+                                    onChange={(e) => setGenPrompt(e.target.value)}
+                                    rows={4}
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 resize-none placeholder-zinc-700"
+                                    placeholder="Describe the image you want..."
+                                    autoFocus
+                                />
+                                <p className="text-xs text-zinc-500 mt-2">Target Aspect Ratio: <span className="text-indigo-400 font-bold uppercase">{genType}</span></p>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating || !genPrompt.trim()}
+                                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isGenerating ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={18} />
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles size={18} />
+                                            Generate
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setGenModalOpen(false)}
+                                    disabled={isGenerating}
+                                    className="px-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-3 rounded-xl font-bold transition disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AdminGuard>
     );
 }

@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/AuthProvider';
-import { Search, User, Headphones, Library } from 'lucide-react';
+import { Search, User, Library } from 'lucide-react';
 import AmbienceSelector from './AmbienceSelector';
 import MoodToggleButton from './MoodToggleButton';
 import { useMood } from '@/context/MoodContext';
@@ -100,10 +101,22 @@ export default function Navbar() {
 
                 {/* Desktop: Logo Left */}
                 <Link href="/" className={`hidden md:flex items-center gap-2 group ${textBase}`}>
-                    <Headphones className={`w-6 h-6 transition-colors ${isScrolled ? 'text-indigo-600' : 'text-white group-hover:text-indigo-300'}`} />
-                    <h1 className={`text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r block tracking-tight transition-all ${isScrolled ? 'from-indigo-600 to-violet-600' : 'from-white to-white'}`}>
+                    <Image
+                        src="/assets/softale-icon.png"
+                        alt="Softale"
+                        width={200}
+                        height={200}
+                        className={`h-10 w-auto transition-all group-hover:scale-105`}
+                    />
+                    <span
+                        className={`text-xl font-semibold tracking-tight transition-all ${isScrolled
+                                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent'
+                                : 'text-white'
+                            }`}
+                        style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
+                    >
                         Softale
-                    </h1>
+                    </span>
                 </Link>
 
                 {/* Desktop Nav Actions */}
@@ -201,3 +214,4 @@ export default function Navbar() {
         </header>
     );
 }
+

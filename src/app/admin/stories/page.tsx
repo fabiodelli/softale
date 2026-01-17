@@ -88,9 +88,21 @@ export default function StoriesManager() {
         if (!confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) return;
 
         try {
-            if (!supabase) throw new Error('Supabase client not initialized');
-            const { error } = await supabase.from('stories').delete().eq('id', id);
-            if (error) throw error;
+            // Use API endpoint that has service role to bypass RLS
+            const response = await fetch('/api/admin/delete-story', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ storyId: id }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to delete story');
+            }
+
             setStories(stories.filter(s => s.id !== id));
             setSelectedStoryIds(prev => {
                 const next = new Set(prev);
@@ -100,7 +112,8 @@ export default function StoriesManager() {
             setStatus(`Deleted "${title}"`);
         } catch (error: any) {
             console.error('Delete failed:', error);
-            setStatus(`Error: ${error.message}`);
+            const message = error?.message || 'Unknown error';
+            setStatus(`Error: ${message}`);
         }
     };
 
@@ -176,8 +189,22 @@ export default function StoriesManager() {
             if (action === 'free') updates = { is_premium: false };
 
             if (action === 'delete') {
-                const { error } = await supabase.from('stories').delete().in('id', ids);
-                if (error) throw error;
+                // Use API endpoint for each story to bypass RLS and cascade delete
+                const deletePromises = ids.map(id =>
+                    fetch('/api/admin/delete-story', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ storyId: id }),
+                    })
+                );
+
+                const results = await Promise.allSettled(deletePromises);
+                const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok));
+
+                if (failed.length > 0) {
+                    console.warn(`${failed.length} stories failed to delete`);
+                }
+
                 setStories(prev => prev.filter(s => !selectedStoryIds.has(s.id)));
                 setSelectedStoryIds(new Set());
             } else {

@@ -14,6 +14,7 @@ import { Layers } from 'lucide-react';
 import { getLayoutForMood } from '@/config/home-layout';
 import ContentSection from '@/components/ContentSection';
 import FeaturedCard from '@/components/FeaturedCard';
+import { trackEvent } from '@/lib/analytics';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthProvider'; // Import Auth
 import LandingPage from '@/components/landing/LandingPage'; // Import Landing
@@ -145,8 +146,15 @@ export default function HomePage() {
     'energized': 'ocean'
   };
 
+  // Removed invalid import
+  // Wait, I can't add import here easily. I should just update the function and add import separately.
+  // The tool supports multiple replacements but "Imports" are far.
+  // I will assume I can update imports separately or user auto-import. 
+  // I'll stick to updating the function and hope for auto-import or I will do 2 steps.
+  // Step 1: Update Function.
   const handleMoodSelect = (mood: Mood) => {
     setActiveMood(mood);
+    trackEvent('mood_select', { mood });
     sessionStorage.setItem('reverie_active_mood', mood);
     const trackId = moodToAmbience[mood];
     if (trackId) setTrack(trackId);
@@ -268,6 +276,14 @@ export default function HomePage() {
             /* CONTEXTUAL FEED MODE */
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
 
+              {/* 0. Featured Hero Card (Top Relevance) */}
+              {layout.featured && (
+                <div className="mb-16">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 px-1">Featured for {activeMood}</h3>
+                  <FeaturedCard story={layout.featured} />
+                </div>
+              )}
+
               {/* 1. Collections Row */}
               {displayedCollections.length > 0 && (
                 <div className="mb-12">
@@ -302,6 +318,7 @@ export default function HomePage() {
                     subtitle={section.subtitle}
                     items={section.items}
                     type={section.type}
+                    displayType={section.displayType}
                   />
                 </div>
               ))}
@@ -316,6 +333,6 @@ export default function HomePage() {
           )}
         </div>
       </div>
-    </motion.div>
+    </motion.div >
   );
 }

@@ -53,10 +53,17 @@ export default function UsersManager() {
         try {
             if (modal.type === 'premium') {
                 const newValue = !user.is_premium;
-                const success = await updateUserStatus(user.id, { is_premium: newValue });
-                if (success) {
+                const res = await fetch('/api/admin/update-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user.id, updates: { is_premium: newValue } }),
+                });
+
+                if (res.ok) {
                     setUsers(users.map(u => u.id === user.id ? { ...u, is_premium: newValue } : u));
                     setStatus(`Updated status for ${user.email}`);
+                } else {
+                    throw new Error('Update failed');
                 }
             } else if (modal.type === 'admin') {
                 const success = await updateUserStatus(user.id, { role: 'admin' });
@@ -65,10 +72,18 @@ export default function UsersManager() {
                     setStatus(`Promoted ${user.email} to Admin`);
                 }
             } else if (modal.type === 'delete') {
-                const success = await deleteProfile(user.id);
-                if (success) {
+                const res = await fetch('/api/admin/delete-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user.id }),
+                });
+
+                if (res.ok) {
                     setUsers(users.filter(u => u.id !== user.id));
                     setStatus(`Deleted user ${user.email}`);
+                } else {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Delete failed');
                 }
             }
         } catch (error) {
@@ -158,19 +173,6 @@ export default function UsersManager() {
 
                                                 {user.role !== 'admin' && (
                                                     <>
-                                                        <AdminButton
-                                                            size="sm"
-                                                            style={{ backgroundColor: 'rgba(88, 28, 135, 0.2)', color: '#d8b4fe', borderColor: 'rgba(139, 92, 246, 0.2)' }}
-                                                            onClick={() => promptAction(
-                                                                'admin',
-                                                                user,
-                                                                'Promote to Admin',
-                                                                `DANGER: This will give ${user.email} full control over the system.`,
-                                                                true
-                                                            )}
-                                                        >
-                                                            <Crown size={14} className="mr-1" /> Make Admin
-                                                        </AdminButton>
                                                         <button
                                                             onClick={() => promptAction(
                                                                 'delete',

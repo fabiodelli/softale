@@ -1,214 +1,428 @@
 'use client';
 
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { useRef, useState } from 'react';
-import { ArrowRight, Play, Pause, Wind, Moon, Zap, Headphones, ChevronRight, Star } from 'lucide-react';
+import { motion, useScroll, useSpring } from 'framer-motion';
+import { ArrowRight, Play, Heart, Wind, Star, Headphones } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface LandingPageProps {
     onEnterApp: () => void;
     showNav?: boolean;
 }
 
+// Noise Texture Data URI
+const NOISE_SVG = `data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E`;
+
 export default function LandingPage({ onEnterApp, showNav = true }: LandingPageProps) {
-    const containerRef = useRef(null);
-    const { scrollYProgress } = useScroll({
-        target: containerRef,
-        offset: ["start start", "end end"]
+    const { scrollYProgress } = useScroll();
+    const scaleX = useSpring(scrollYProgress, {
+        stiffness: 100,
+        damping: 30,
+        restDelta: 0.001
     });
 
-    const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-    const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 1.1]);
-    const textY = useTransform(scrollYProgress, [0, 0.3], [0, 100]);
-
     return (
-        <div ref={containerRef} className="bg-slate-50 min-h-screen font-sans selection:bg-indigo-100 overflow-x-hidden">
+        <div className="bg-slate-950 min-h-screen font-sans selection:bg-indigo-500/30 text-white overflow-x-hidden relative">
+
+            {/* Scroll Progress Bar */}
+            <motion.div
+                className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-400 via-purple-400 to-amber-300 origin-left z-50 transform-gpu"
+                style={{ scaleX }}
+            />
+
+            {/* Global Noise Overlay */}
+            <div className="fixed inset-0 pointer-events-none z-40 opacity-40 mix-blend-overlay" style={{ backgroundImage: `url("${NOISE_SVG}")` }} />
 
             {/* --- HERO SECTION --- */}
-            <div className="relative h-screen flex items-center justify-center overflow-hidden">
-                {/* Background (Video Placeholder) */}
-                <motion.div
-                    style={{ opacity: heroOpacity, scale: heroScale }}
-                    className="absolute inset-0 z-0"
-                >
-                    {/* Using the Vision Hero image for now, but ready for video */}
-                    <img
-                        src="/assets/vision-hero.png"
-                        alt="Ethereal Background"
-                        className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/30 mix-blend-multiply" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/20 to-slate-50" />
-                </motion.div>
+            <HeroSection onEnterApp={onEnterApp} showNav={showNav} />
 
-                {/* Navbar (Absolute) */}
-                {showNav && (
-                    <nav className="absolute top-0 left-0 right-0 z-50 p-6 flex items-center justify-between max-w-7xl mx-auto w-full text-white">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center text-white font-bold border border-white/20">S</div>
-                            <span className="text-xl font-bold tracking-tight">Softale</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Link href="/login" className="px-5 py-2 text-sm font-medium text-white/80 hover:text-white transition">
-                                Log In
-                            </Link>
-                            <button
-                                onClick={onEnterApp}
-                                className="px-5 py-2 text-sm font-bold bg-white text-slate-900 rounded-full hover:bg-slate-200 transition shadow-lg shadow-white/10"
-                            >
-                                Start App
-                            </button>
-                        </div>
-                    </nav>
-                )}
+            {/* --- MOOD EXPERIENCE SECTION --- */}
+            <MoodSection />
 
-                {/* Content */}
-                <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
-                    <motion.div style={{ y: textY }}>
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                        >
-                            <span className="inline-block px-4 py-1.5 rounded-full border border-white/30 text-white/90 text-sm font-medium tracking-wide backdrop-blur-md mb-8 shadow-lg shadow-black/10">
-                                The First Adaptive Audio Sanctuary
-                            </span>
-                            <h1 className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter leading-[0.9] drop-shadow-sm">
-                                Silence in the <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-orange-100">Signal.</span>
-                            </h1>
-                            <p className="text-xl md:text-2xl text-slate-200 max-w-2xl mx-auto font-light leading-relaxed mb-12">
-                                In a world screaming for your attention, <br />we offer a sanctuary for your mind.
-                            </p>
+            {/* --- FLUIDITY SECTION --- */}
+            <FluiditySection onEnterApp={onEnterApp} />
 
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={onEnterApp}
-                                className="inline-flex items-center gap-3 px-10 py-5 bg-white text-slate-900 rounded-full font-bold text-lg shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all group"
-                            >
-                                <Play className="w-5 h-5 fill-slate-900" />
-                                Start Listening
-                                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-slate-400" />
-                            </motion.button>
-                        </motion.div>
-                    </motion.div>
-                </div>
+            {/* --- WARMTH SECTION --- */}
+            <WarmthSection />
+
+            {/* --- CTA SECTION --- */}
+            <CTASection onEnterApp={onEnterApp} />
+
+            {/* --- FOOTER --- */}
+            <Footer />
+        </div>
+    );
+}
+
+// --- SUB-COMPONENTS ---
+
+function HeroSection({ onEnterApp, showNav }: { onEnterApp: () => void, showNav: boolean }) {
+    const textVariants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: { opacity: 1, y: 0, transition: { duration: 1, ease: [0.22, 1, 0.36, 1] } }
+    };
+
+    return (
+        <div className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden perspective-1000">
+            {/* Dark & Moody Atmospherics */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[10%] left-[20%] w-[60vh] h-[60vh] bg-indigo-900/40 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
+                <div className="absolute bottom-[10%] right-[10%] w-[50vh] h-[50vh] bg-amber-900/20 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '1s' }} />
             </div>
 
-            {/* --- SECT 2: THE SCIENCE (Why? Frequencies) --- */}
-            <section className="py-32 px-6 bg-slate-50 relative overflow-hidden">
-                <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-                    <div>
-                        <span className="text-indigo-600 font-bold tracking-widest uppercase text-xs mb-4 block">The Science</span>
-                        <h2 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 leading-tight">
-                            Designed for <br /><span className="text-indigo-600">State Shift.</span>
-                        </h2>
-                        <p className="text-lg text-slate-600 leading-relaxed mb-8 font-light">
-                            Your brain operates on frequencies. Beta for focus, Theta for dreams, Delta for deep rest.
-                            <br /><br />
-                            Softale uses <strong>Entrainment Technology</strong> (Binaural Beats & Isochronic Tones) to gently guide your brainwaves into the state you choose. It's not magic, it's physics.
-                        </p>
-                        <div className="flex gap-4">
-                            {['432Hz Healing', '40Hz Gamma Focus', 'Theta REM'].map((tag) => (
-                                <span key={tag} className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-md text-xs font-bold uppercase tracking-wider border border-indigo-100">
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="relative aspect-square md:aspect-[4/3] bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl overflow-hidden shadow-2xl shadow-indigo-500/20 flex items-center justify-center group">
-                        {/* Abstract Visualizer Placeholder */}
-                        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1614730341194-75c60740a070?q=80&w=2574&auto=format&fit=crop')] bg-cover bg-center opacity-50 mix-blend-overlay group-hover:scale-110 transition duration-1000" />
-                        <div className="w-64 h-64 border border-white/30 rounded-full flex items-center justify-center animate-pulse">
-                            <div className="w-48 h-48 border border-white/50 rounded-full flex items-center justify-center">
-                                <Play className="w-12 h-12 text-white fill-white" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            {/* 3D MOOD ICONS FLOATING */}
+            <div className="absolute inset-0 pointer-events-none z-0">
+                {/* Sleep (Top Right) */}
+                <motion.div
+                    animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-[15%] right-[10%] w-32 h-32 md:w-64 md:h-64 opacity-80 mix-blend-screen"
+                >
+                    <Image src="/assets/moods_3d/sleep.png" alt="Sleep" width={512} height={512} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(99,102,241,0.5)]" />
+                </motion.div>
 
-            {/* --- SECT 3: THE LIBRARY (Desire) --- */}
-            <section className="py-32 bg-slate-900 text-white overflow-hidden">
-                <div className="max-w-7xl mx-auto px-6 mb-16 flex justify-between items-end">
-                    <div>
-                        <span className="text-emerald-400 font-bold tracking-widest uppercase text-xs mb-4 block">The Library</span>
-                        <h2 className="text-4xl md:text-5xl font-bold">Infinite Variety.</h2>
+                {/* Nature (Bottom Left) */}
+                <motion.div
+                    animate={{ y: [0, -30, 0], rotate: [0, -5, 0] }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                    className="absolute bottom-[20%] left-[5%] w-28 h-28 md:w-56 md:h-56 opacity-80 mix-blend-screen"
+                >
+                    <Image src="/assets/moods_3d/nature.png" alt="Nature" width={512} height={512} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(16,185,129,0.5)]" />
+                </motion.div>
+
+                {/* Fantasy (Top Left) */}
+                <motion.div
+                    animate={{ y: [0, -15, 0], x: [0, 10, 0] }}
+                    transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                    className="absolute top-[20%] left-[10%] w-24 h-24 md:w-48 md:h-48 opacity-70 mix-blend-screen"
+                >
+                    <Image src="/assets/moods_3d/fantasy.png" alt="Fantasy" width={512} height={512} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(244,63,94,0.5)]" />
+                </motion.div>
+
+                {/* Energy (Bottom Right) */}
+                <motion.div
+                    animate={{ y: [0, -25, 0] }}
+                    transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                    className="absolute bottom-[15%] right-[15%] w-20 h-20 md:w-40 md:h-40 opacity-80 mix-blend-screen"
+                >
+                    <Image src="/assets/moods_3d/energy.png" alt="Energy" width={512} height={512} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(245,158,11,0.5)]" />
+                </motion.div>
+
+                {/* Meditation (Center Back - Faint) */}
+                <motion.div
+                    animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50vh] h-[50vh] opacity-30 mix-blend-screen blur-sm z-[-1]"
+                >
+                    <Image src="/assets/moods_3d/meditation.png" alt="Meditation" width={512} height={512} className="w-full h-full object-contain" />
+                </motion.div>
+            </div>
+
+
+            {/* Nav */}
+            {showNav && (
+                <nav className="absolute top-0 left-0 right-0 z-50 p-6 flex items-center justify-between max-w-7xl mx-auto w-full">
+                    <div className="flex items-center gap-3">
+                        {/* Minimal Logo */}
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
+                            <span className="font-serif font-black italic text-white text-sm">S</span>
+                        </div>
+                        <span className="text-lg font-bold tracking-tight" style={{ fontFamily: 'var(--font-serif)' }}>Softale</span>
                     </div>
-                    <button onClick={onEnterApp} className="hidden md:flex items-center gap-2 text-slate-300 hover:text-white transition group">
-                        Explore Full Catalog <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                    <button onClick={onEnterApp} className="px-6 py-2 text-xs font-bold uppercase tracking-widest bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-full transition text-white/90">
+                        Launch
                     </button>
+                </nav>
+            )}
+
+            {/* Scroll Indicator */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 2, duration: 1 }}
+                className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/20 flex flex-col items-center gap-4 cursor-pointer hover:text-white/40 transition-colors z-20"
+                onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
+            >
+                <div className="w-[1px] h-12 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+                <span className="text-[10px] uppercase tracking-[0.3em]">Scroll</span>
+            </motion.div>
+        </div>
+    );
+}
+
+function MoodSection() {
+    const moods = [
+        { name: "Focus", img: "/assets/moods_3d/energy.png", desc: "Sharpen your mind" }, // Using energy asset for Focus if no dedicated one, or nature? Used energy.
+        { name: "Sleep", img: "/assets/moods_3d/sleep.png", desc: "Drift into dreams" },
+        { name: "Calm", img: "/assets/moods_3d/meditation.png", desc: "Finding balance" }, // Meditation for Calm
+        { name: "Energy", img: "/assets/moods_3d/energy.png", desc: "Rise and shine" },
+        { name: "Fantasy", img: "/assets/moods_3d/fantasy.png", desc: "Explore new worlds" },
+    ];
+    // Note: I mapped generated assets to these. I might have duplicates or I should check exactly what I have.
+    // I have: sleep, nature, fantasy, meditation, energy.
+    // Mapping:
+    // Focus -> Meditation (or Nature?)
+    // Calm -> Nature?
+    // Let's adjust mapping for visual variety.
+
+    const moodMapping = [
+        { name: "Focus", asset: "meditation.png", desc: "Deep work & flow" },
+        { name: "Sleep", asset: "sleep.png", desc: "Restorative rest" },
+        { name: "Nature", asset: "nature.png", desc: "Peaceful escape" }, // Replaced "Calm" with "Nature" to match asset, or keep Calm label with Nature asset.
+        { name: "Fantasy", asset: "fantasy.png", desc: "Cinematic journeys" },
+        { name: "Energy", asset: "energy.png", desc: "Vibrant awakening" },
+    ];
+
+
+    return (
+        <section className="py-32 px-6 relative overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[500px] bg-gradient-to-r from-indigo-900/10 via-purple-900/10 to-transparent rounded-full blur-[100px]" />
+
+            <div className="max-w-7xl mx-auto relative z-10">
+                <div className="mb-24 text-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                    >
+                        <span className="text-indigo-400 font-bold tracking-[0.2em] uppercase text-xs mb-6 block">The Mood Engine</span>
+                        <h2 className="text-4xl md:text-6xl font-medium text-white/90 leading-[1.1] mb-6" style={{ fontFamily: 'var(--font-serif)' }}>
+                            Selected with <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Precision.</span>
+                        </h2>
+                        <p className="text-slate-400 max-w-xl mx-auto font-light">
+                            Our proprietary engine curates soundscapes based on the frequency of your desired state.
+                        </p>
+                    </motion.div>
                 </div>
 
-                {/* Horizontal Scroll Mockup */}
-                <div className="flex gap-6 overflow-x-auto pb-8 -mx-6 px-6 md:px-0 scrollbar-hide">
-                    <div className="w-6 md:w-0 flex-shrink-0" /> {/* Spacer */}
-                    {[
-                        { title: "The Night Train", cat: "Sleep Tale", img: "bg-indigo-800" },
-                        { title: "Deep Focus Protocol", cat: "Binaural", img: "bg-amber-700" },
-                        { title: "Forest Rain", cat: "Nature", img: "bg-emerald-800" },
-                        { title: "Morning Gratitude", cat: "Meditation", img: "bg-teal-700" },
-                        { title: "Crystal Cave", cat: "Fantasy", img: "bg-purple-800" },
-                    ].map((item, i) => (
+                {/* Floating Elements Showcase */}
+                <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20">
+                    {moodMapping.map((mood, idx) => (
                         <motion.div
-                            key={i}
-                            whileHover={{ y: -10 }}
-                            className="flex-shrink-0 w-64 md:w-80 aspect-[3/4] rounded-2xl overflow-hidden relative group cursor-pointer"
-                            onClick={onEnterApp}
+                            key={idx}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: idx * 0.1 }}
+                            whileHover={{ scale: 1.1, translateY: -10 }}
+                            className="group relative flex flex-col items-center cursor-pointer"
                         >
-                            <div className={`absolute inset-0 ${item.img} transition-transform duration-700 group-hover:scale-110`} />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
-                            <div className="absolute bottom-0 left-0 right-0 p-6">
-                                <span className="text-xs font-bold uppercase tracking-wider opacity-70 mb-2 block">{item.cat}</span>
-                                <h3 className="text-2xl font-bold leading-tight">{item.title}</h3>
+                            {/* The 3D Asset */}
+                            <div className="relative w-32 h-32 md:w-48 md:h-48 mb-6 drop-shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+                                <Image
+                                    src={`/assets/moods_3d/${mood.asset}`}
+                                    alt={mood.name}
+                                    width={256}
+                                    height={256}
+                                    className="w-full h-full object-contain mix-blend-screen opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+                                />
+                                {/* Halo on Hover */}
+                                <div className="absolute inset-0 bg-white/20 blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 rounded-full" />
                             </div>
-                            <div className="absolute top-4 right-4 w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Play className="w-4 h-4 fill-white text-white" />
+
+                            {/* Label */}
+                            <div className="text-center">
+                                <h3 className="text-xl md:text-2xl font-medium text-white mb-1 group-hover:text-indigo-300 transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>{mood.name}</h3>
+                                <p className="text-xs text-white/40 uppercase tracking-widest group-hover:text-white/60">{mood.desc}</p>
                             </div>
                         </motion.div>
                     ))}
                 </div>
-            </section>
+            </div>
+        </section>
+    )
+}
 
-            {/* --- SECT 4: SOCIAL PROOF --- */}
-            <section className="py-24 px-6 bg-white">
-                <div className="max-w-4xl mx-auto text-center">
-                    <div className="flex justify-center gap-1 mb-8">
-                        {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-6 h-6 fill-amber-400 text-amber-400" />)}
-                    </div>
-                    <blockquote className="text-3xl md:text-5xl font-serif text-slate-800 leading-tight italic mb-8 block">
-                        "Finally, an app that doesn't feel like a to-do list. It's just... peaceful. Instant calm."
-                    </blockquote>
-                    <cite className="text-slate-500 font-medium not-italic">— Sarah J., Product Designer</cite>
-                </div>
-            </section>
+function FluiditySection({ onEnterApp }: { onEnterApp: () => void }) {
+    return (
+        <section className="py-32 relative overflow-hidden">
+            {/* Side Glows */}
+            <div className="absolute right-0 top-1/4 w-[40vw] h-[60vh] bg-indigo-600/10 rounded-full blur-[120px]" />
 
-            {/* --- FINAL CTA --- */}
-            <section className="py-32 px-6 bg-slate-50 border-t border-slate-200">
-                <div className="max-w-3xl mx-auto text-center">
-                    <h2 className="text-5xl font-black text-slate-900 mb-8">Ready to reclaim your mind?</h2>
-                    <p className="text-xl text-slate-500 mb-12">Join thousands of others finding silence in the signal.</p>
-                    <button
-                        onClick={onEnterApp}
-                        className="px-12 py-5 bg-slate-900 text-white rounded-full font-bold text-lg hover:bg-slate-800 transition shadow-2xl shadow-slate-900/20 transform hover:scale-105"
+            <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-24 items-center relative z-10">
+                <div className="order-2 md:order-1 flex justify-center">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, rotate: -5 }}
+                        whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="relative w-[320px] h-[640px] bg-[#050510] rounded-[3.5rem] border-[6px] border-[#1a1a2e] shadow-2xl shadow-indigo-900/30 overflow-hidden ring-1 ring-white/10"
                     >
-                        Start Your Free Trial
-                    </button>
-                    <p className="mt-6 text-sm text-slate-400">No credit card required for basic access.</p>
-                </div>
-            </section>
+                        {/* Phone Glow */}
+                        <div className="absolute top-0 inset-x-0 h-32 bg-indigo-500/20 blur-[50px] pointer-events-none" />
 
-            {/* --- FOOTER --- */}
-            <footer className="py-12 px-6 bg-slate-100 text-center text-slate-500 text-sm">
-                <div className="flex justify-center gap-8 mb-8">
-                    <Link href="/privacy" className="hover:text-slate-900 transition">Privacy Policy</Link>
-                    <Link href="/terms" className="hover:text-slate-900 transition">Terms of Service</Link>
-                    <Link href="mailto:hello@softale.app" className="hover:text-slate-900 transition">Contact Support</Link>
-                </div>
-                <p>&copy; {new Date().getFullYear()} Softale Inc. All rights reserved.</p>
-            </footer>
+                        {/* Screen Content */}
+                        <div className="relative h-full w-full flex flex-col">
+                            {/* Header */}
+                            <div className="p-8 pt-14 flex justify-between items-center text-white/20">
+                                <div className="w-8 h-8 rounded-full border border-white/10" />
+                                <div className="w-12 h-1.5 rounded-full bg-white/10" />
+                            </div>
 
-        </div>
+                            {/* Album Art Area */}
+                            <div className="mx-8 aspect-square rounded-[2rem] bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-white/5 mb-10 relative overflow-hidden flex items-center justify-center">
+                                <div className="absolute inset-0 bg-indigo-500/20 blur-2xl animate-pulse" style={{ animationDuration: '4s' }} />
+                                <div className="w-24 h-24 rounded-full bg-white/5 backdrop-blur-md flex items-center justify-center border border-white/10">
+                                    <Play className="w-8 h-8 fill-white text-white ml-2 opacity-80" />
+                                </div>
+                            </div>
+
+                            {/* Info */}
+                            <div className="px-8 mb-6">
+                                <div className="h-6 bg-white/10 rounded-full w-2/3 mb-3" />
+                                <div className="h-4 bg-white/5 rounded-full w-1/3" />
+                            </div>
+
+                            {/* Floating Player Controls */}
+                            <div className="mt-auto m-6 p-4 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 flex items-center justify-between">
+                                <div className="flex gap-4 items-center">
+                                    <div className="w-10 h-10 rounded-full bg-white/10" />
+                                    <div className="space-y-1">
+                                        <div className="w-24 h-3 bg-white/20 rounded-full" />
+                                        <div className="w-16 h-2 bg-white/10 rounded-full" />
+                                    </div>
+                                </div>
+                                <div
+                                    onClick={onEnterApp}
+                                    className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 cursor-pointer hover:scale-110 transition-transform"
+                                >
+                                    <Play className="w-4 h-4 fill-white" />
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+
+                <div className="order-1 md:order-2">
+                    <motion.div
+                        initial={{ opacity: 0, x: 50 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                    >
+                        <h2 className="text-5xl md:text-8xl font-medium mb-8 leading-[0.9] text-white/90" style={{ fontFamily: 'var(--font-serif)' }}>
+                            Effortless <br /> <span className="italic text-indigo-400">Flow.</span>
+                        </h2>
+                        <p className="text-xl md:text-2xl text-slate-400 font-light leading-relaxed mb-12">
+                            We obsessed over every pixel to ensure nothing stands between you and your peace.
+                            A user interface that feels less like an app, and more like an extension of your mind.
+                        </p>
+
+                        <div className="space-y-6">
+                            {[
+                                { title: "Seamless Playback", desc: "No buffering, just instant calm." },
+                                { title: "Immersive Visuals", desc: "Gradients that breathe with you." },
+                                { title: "Instant State Shift", desc: "One tap to change your world." }
+                            ].map((item, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: 0.2 + (i * 0.1) }}
+                                    className="flex items-start gap-4 group"
+                                >
+                                    <div className="mt-1 w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group-hover:bg-indigo-500/20 transition-colors">
+                                        <div className="w-2 h-2 rounded-full bg-indigo-400" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-lg font-bold text-white mb-1 group-hover:text-indigo-300 transition-colors">{item.title}</h4>
+                                        <p className="text-slate-500 text-sm">{item.desc}</p>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+        </section>
+    )
+}
+
+function WarmthSection() {
+    return (
+        <section className="py-32 px-6 relative">
+            <div className="max-w-5xl mx-auto text-center relative z-10">
+                <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    whileInView={{ scale: 1, opacity: 1 }}
+                    viewport={{ once: true }}
+                    className="w-24 h-24 mx-auto mb-12 rounded-full bg-gradient-to-tr from-rose-500/20 to-amber-500/20 flex items-center justify-center blur-sm"
+                >
+                    <Heart className="w-10 h-10 text-rose-300 fill-rose-500/20 animate-pulse" />
+                </motion.div>
+
+                <motion.h2
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="text-4xl md:text-7xl font-medium text-white/90 mb-10 leading-tight"
+                    style={{ fontFamily: 'var(--font-serif)' }}
+                >
+                    "Warmth, above all."
+                </motion.h2>
+
+                <p className="text-xl md:text-3xl text-slate-400 font-light leading-relaxed mb-20 max-w-3xl mx-auto">
+                    We believe technology should feel natural. Softale is designed to be a digital fireplace—a place of comfort, where every sound is crafted to wrap around you.
+                </p>
+
+                <div className="grid md:grid-cols-3 gap-8 text-left">
+                    {[
+                        { title: "Immersive Narration", desc: "Voices tuned to the frequency of calm.", icon: Headphones },
+                        { title: "Curated Journeys", desc: "Every story is a path to a specific state.", icon: Star },
+                        { title: "Cinematic Soundscapes", desc: "Audio that feels like a lucid dream.", icon: Wind },
+                    ].map((card, i) => (
+                        <motion.div
+                            key={i}
+                            whileHover={{ y: -5 }}
+                            className="p-10 rounded-[2rem] bg-white/5 backdrop-blur-md border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300"
+                        >
+                            <card.icon className="w-8 h-8 text-indigo-300 mb-6 opacity-80" />
+                            <h4 className="text-xl font-bold text-white mb-3" style={{ fontFamily: 'var(--font-serif)' }}>{card.title}</h4>
+                            <p className="text-slate-400 leading-relaxed">{card.desc}</p>
+                        </motion.div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    )
+}
+
+function CTASection({ onEnterApp }: { onEnterApp: () => void }) {
+    return (
+        <section className="py-40 px-6 text-center relative overflow-hidden">
+            {/* Gradient Bursts */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-full blur-[120px]" />
+
+            <div className="relative z-10 max-w-3xl mx-auto">
+                <h2 className="text-5xl md:text-8xl font-medium mb-12 tracking-tight text-white" style={{ fontFamily: 'var(--font-serif)' }}>
+                    Ready to feel <br /> <span className="italic text-indigo-300">better?</span>
+                </h2>
+                <button
+                    onClick={onEnterApp}
+                    className="px-16 py-6 bg-white text-slate-950 rounded-full font-bold text-xl hover:bg-indigo-50 transition-colors shadow-[0_0_60px_-15px_rgba(255,255,255,0.3)] transform hover:scale-105"
+                >
+                    Enter Softale
+                </button>
+                <p className="mt-8 text-white/30 text-sm tracking-widest uppercase">No account required to start.</p>
+            </div>
+        </section>
+    )
+}
+
+function Footer() {
+    return (
+        <footer className="py-12 px-6 border-t border-white/5 text-white/30 text-sm">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex items-center gap-2">
+                    <span className="font-serif font-black italic text-white/50">S</span>
+                    <span>&copy; {new Date().getFullYear()} Softale Inc.</span>
+                </div>
+                <div className="flex gap-8">
+                    <Link href="/privacy" className="hover:text-white transition">Privacy</Link>
+                    <Link href="/terms" className="hover:text-white transition">Terms</Link>
+                </div>
+            </div>
+        </footer>
     );
 }

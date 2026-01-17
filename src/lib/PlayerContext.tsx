@@ -1,11 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
+import { trackEvent } from './analytics';
 import type { Story } from './supabase';
 import { useAuth } from './AuthProvider';
-import { updateListeningProgress } from './supabase';
+import { updateListeningProgress, incrementListeningTime, checkAndIncrementStreak, incrementStoriesCompleted } from './supabase';
 import { useAmbience } from '@/context/AmbienceContext';
-
 // Audio Engine V2 Types
 export type PlaybackStatus = 'IDLE' | 'LOADING' | 'PLAYING' | 'PAUSED' | 'ERROR';
 
@@ -94,6 +94,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const currentPhaseRef = useRef<string>('');
     const crossfadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const progressSyncRef = useRef<number>(0);
+    const accumulatedTimeRef = useRef<number>(0);
 
     // Derived State
     const isPlaying = status === 'PLAYING';
@@ -269,6 +270,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const play = useCallback((story: Story) => {
         if (!user) return;
 
+        trackEvent('story_play', { story_id: story.id, story_title: story.title, category: story.category });
+
+        // Check Streak on Play
+        checkAndIncrementStreak(user.id).catch(e => console.error("Streak check failed", e));
+
         // Pause mood background audio when story starts
         ambience.pause();
 
@@ -443,15 +449,30 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
         // Sync Progress (Skip for loopable content to save DB writes)
         const now = Date.now();
-        if (user && currentStory && !isLoopable && (now - progressSyncRef.current > PROGRESS_SYNC_INTERVAL)) {
-            updateListeningProgress(user.id, currentStory.id, Math.floor(time), false);
-            progressSyncRef.current = now;
+        if (user && currentStory && !isLoopable) {
+            // 1. Sync Playback Position
+            if (now - progressSyncRef.current > PROGRESS_SYNC_INTERVAL) {
+                updateListeningProgress(user.id, currentStory.id, Math.floor(time), false);
+                progressSyncRef.current = now;
+            }
+
+            // 2. Track Minutes Listened
+            const delta = Math.max(0, time - prevTime);
+            if (delta < 5) { // Avoid seeking jumps
+                accumulatedTimeRef.current += delta;
+                if (accumulatedTimeRef.current >= 60) {
+                    incrementListeningTime(user.id, 1).catch(e => console.error("Time tracking failed", e));
+                    accumulatedTimeRef.current -= 60;
+                }
+            }
         }
     };
 
     const handleEnded = () => {
         if (user && currentStory) {
+            trackEvent('story_complete', { story_id: currentStory.id, story_title: currentStory.title, duration_listened: duration });
             updateListeningProgress(user.id, currentStory.id, Math.floor(duration), true);
+            incrementStoriesCompleted(user.id).catch(e => console.error("Completion tracking failed", e));
         }
 
         if (queueIndex < queue.length - 1) {

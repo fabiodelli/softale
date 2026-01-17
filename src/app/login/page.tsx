@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { supabase, signInWithGoogle } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthProvider';
-import { Headphones } from 'lucide-react';
+import Image from 'next/image';
 
 function LoginForm() {
     const router = useRouter();
@@ -67,10 +67,19 @@ function LoginForm() {
             <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-xl">
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-2 mb-2">
-                        <Headphones className="w-8 h-8 text-indigo-600" />
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+                        <Image
+                            src="/assets/softale-icon.png"
+                            alt="Softale"
+                            width={200}
+                            height={200}
+                            className="h-14 w-auto"
+                        />
+                        <span
+                            className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent"
+                            style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
+                        >
                             Softale
-                        </h1>
+                        </span>
                     </div>
                     <p className="text-slate-500 mt-2">
                         {isSignUp ? 'Create your sanctuary' : 'Welcome back'}
@@ -191,3 +200,4 @@ export default function LoginPage() {
         </Suspense>
     );
 }
+

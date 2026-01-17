@@ -24,6 +24,7 @@ import { createClient } from '@supabase/supabase-js';
 import { CATALOG_ITEMS } from './catalog-config.js';
 import { ConceptEngine, StoryConcept } from './ConceptEngine.js';
 import { voiceService } from './VoiceService.js';
+import { AutoTagger } from './AutoTagger.js';
 
 // ENIVORNMENT CONFIGURATION - CENTRALIZED
 const rootEnvLocal = path.resolve(process.cwd(), '.env.local');
@@ -94,6 +95,7 @@ export interface GeneratedScript {
     ambiencePrompt?: string;
     pacingMode?: 'continuous' | 'immersive' | 'breathwork';
     warmupDuration?: number;
+    tags?: string[]; // V5
 }
 
 export interface AudioPhase {
@@ -714,6 +716,7 @@ export async function generateScript(brief: StoryBrief, conceptOverride?: StoryC
         ambiencePrompt: conceptOverride?.audioIdentity?.ambienceLayer || assetDesign.ambiencePrompt,
         pacingMode: conceptOverride?.pacingMode,
         warmupDuration: conceptOverride?.warmupDuration,
+        tags: conceptOverride?.tags,
     };
 }
 
@@ -1433,7 +1436,8 @@ export async function uploadStory(
         script_text: script.script || existingStory?.script_text || null,
         // Preserve social fields
         social_reel_url: existingStory?.social_reel_url || null,
-        social_status: existingStory?.social_status || 'generated'
+        social_status: existingStory?.social_status || 'generated',
+        tags: script.tags || existingStory?.tags || []
     };
 
     const { data, error } = await supabase
@@ -1676,6 +1680,11 @@ Commands:
 
                 const rawConcept = JSON.parse(fs.readFileSync(conceptPath, 'utf-8'));
                 await buildStoryFromConcept(rawConcept);
+                break;
+            }
+
+            case 'autotag': {
+                await AutoTagger.processAll();
                 break;
             }
 

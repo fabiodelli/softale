@@ -4,16 +4,20 @@ import { motion } from 'framer-motion';
 import { Flame, Clock, Calendar, Quote } from 'lucide-react';
 import { useMemo } from 'react';
 
+import { useAuth } from '@/lib/AuthProvider';
+
 interface DashboardTabProps {
     username?: string;
 }
 
 export default function DashboardTab({ username }: DashboardTabProps) {
-    // Mock Data (will be real later)
+    const { profile } = useAuth();
+
+    // Real Data from Profile
     const stats = {
-        streak: 3,
-        totalMinutes: 142,
-        sessions: 12
+        streak: profile?.current_streak || 0,
+        totalMinutes: profile?.total_minutes_listened || 0,
+        sessions: profile?.stories_completed || 0
     };
 
     const quote = useMemo(() => {

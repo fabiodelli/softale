@@ -328,6 +328,16 @@ export default function FactoryStudio() {
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    <div>
+                                                        <h3 className="text-gray-500 text-xs uppercase font-bold tracking-widest mb-2">AI Tags</h3>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {(generatedConcept.tags || []).map((tag: any) => (
+                                                                <span key={tag} className="px-2 py-1 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase rounded border border-indigo-500/30">
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <div className="space-y-6">

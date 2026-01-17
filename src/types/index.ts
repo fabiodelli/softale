@@ -7,7 +7,7 @@ export type { Mood } from '../lib/constants';
 export type Category = typeof CATEGORIES[number]['id'];
 
 // Filter types for Library page
-export type FilterType = 'all' | 'favorites' | 'continue' | 'collections' | Category;
+export type FilterType = 'all' | 'favorites' | 'continue' | 'collections' | 'playlists' | Category;
 
 // Story with progress information
 export interface StoryWithProgress {

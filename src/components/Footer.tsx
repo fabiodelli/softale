@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Headphones } from 'lucide-react';
+import Logo from './Logo';
 
 export default function Footer() {
     return (
@@ -9,12 +9,9 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-5 gap-8">
 
                 <div className="col-span-1 md:col-span-2">
-                    <Link href="/" className="inline-flex items-center gap-2 group mb-4">
-                        <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                        <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
-                            Softale
-                        </span>
-                    </Link>
+                    <div className="mb-4">
+                        <Logo size="lg" />
+                    </div>
                     <p className="text-slate-500 max-w-sm">
                         Mindful audio stories for relaxation, sleep, and focus.
                         Your daily escape into calmness.
@@ -57,3 +54,4 @@ export default function Footer() {
         </footer>
     );
 }
+

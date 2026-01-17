@@ -95,12 +95,21 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
     const handleDeleteAccount = async () => {
         if (!user) return;
         setLoading(true);
-        const success = await deleteProfile(user.id);
-        if (success) {
+        // Secure Delete via API
+        try {
+            const res = await fetch('/api/auth/delete-account', {
+                method: 'POST',
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Delete failed');
+            }
+
             await signOut();
             window.location.href = '/';
-        } else {
-            setMessage({ type: 'error', text: 'Failed to delete account. Contact support.' });
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message || 'Failed to delete account.' });
             setLoading(false);
             setShowDeleteConfirm(false);
         }

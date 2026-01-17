@@ -2,7 +2,8 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Moon, Brain, Sparkles, Leaf, Waves, Headphones } from 'lucide-react';
+import Image from 'next/image';
+import { Moon, Brain, Sparkles, Leaf, Waves } from 'lucide-react';
 import { useAmbience } from '@/context/AmbienceContext';
 
 export type Mood = 'sleep' | 'meditation' | 'fantasy' | 'nature' | 'energized';
@@ -76,12 +77,21 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
     return (
         <div className="relative w-full h-[100dvh] flex items-center justify-center overflow-hidden">
 
-            {/* Mobile Logo - Fixed in Hero, UNDER scrolling content */}
-            <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 z-10 md:hidden flex items-center gap-2 group drop-shadow-lg">
-                <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600 block tracking-tight">
+            {/* Mobile Logo - Fixed in Hero (Top-4 to align with global header) */}
+            <Link href="/" className="absolute top-4 left-1/2 -translate-x-1/2 z-10 md:hidden flex items-center gap-2 group drop-shadow-lg">
+                <Image
+                    src="/assets/softale-icon.png"
+                    alt="Softale"
+                    width={200}
+                    height={200}
+                    className="h-12 w-auto drop-shadow-lg group-hover:scale-105 transition-transform"
+                />
+                <span
+                    className="text-2xl font-semibold tracking-tight text-white drop-shadow-lg"
+                    style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
+                >
                     Softale
-                </h1>
+                </span>
             </Link>
 
             {/* Background Image Layer */}
@@ -136,7 +146,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                                 transition={{ delay: 0.1 }}
                                 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-none drop-shadow-2xl [-webkit-text-stroke:1.5px_rgba(0,0,0,0.4)] [paint-order:stroke_fill]"
                             >
-                                What are you<br />looking for?
+                                How do you want<br />to feel?
                             </motion.h1>
                         </div>
 
@@ -190,3 +200,4 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
         </div>
     );
 }
+

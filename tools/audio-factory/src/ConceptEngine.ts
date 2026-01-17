@@ -5,6 +5,7 @@ export interface StoryConcept {
     title: string;
     logline: string;
     category: string;
+    tags?: string[]; // V5: AI Generated Tags
     theme?: string;
     mood?: string;
     targetAudience?: string;
@@ -79,7 +80,12 @@ CATEGORY GUIDELINES:
 - **Sleep**: Low conflict, hypnotic, cozy. Use 'immersive' pacing with long pauses.
 - **Kids**: Wondrous, safe, clear moral. Use 'continuous' pacing.
 - **Sci-Fi/Fantasy**: Vivid lore. Use 'continuous' pacing usually.
-- **Meditation**: Use 'breathwork' or 'immersive' pacing.`;
+- **Meditation**: Use 'breathwork' or 'immersive' pacing.
+
+TAGGING RULES:
+- Include 2-3 **SYSTEM TAGS** from: [Morning, Sunrise, Energy, Focus, Work, Deep Work, Background, Study, Relax, Unwind, Sunset, Calm, Sleep, Dream, Night, Binaural]
+- Include 3-5 **DESCRIPTIVE TAGS** (e.g. Piano, Rain, Forest, Male Voice, Slow, Ethereal, Cinematic).
+- Total of ~5-8 tags.`;
 
         // Build Mandates
         let mandate = '';
@@ -96,6 +102,7 @@ RETURN JSON OBJECT EXACTLY LIKE THIS:
     "title": "Title",
     "logline": "One sentence summary",
     "category": "${category}",
+    "tags": ["SystemTag", "DescriptiveTag"],
     "pacingMode": "continuous" OR "immersive" OR "breathwork",
     "warmupDuration": 8,
     "theme": "Core theme",

@@ -1,8 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Settings, Headphones } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthProvider';
 import { useState, useEffect } from 'react';
@@ -48,24 +49,43 @@ export default function AccountPage() {
 
     return (
         <GlassLayout variant="functional">
-            <div className="pt-8 pb-4 px-6 max-w-xl mx-auto">
-                {/* Mobile Logo - Scrolls with page, positioned like home */}
-                <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg">
-                    <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+            <div className="pt-4 pb-4 px-6 max-w-xl mx-auto">
+                {/* Mobile Logo - Fixed Top Center (Aligned with Mood and Gear) */}
+                <Link href="/" className="fixed top-4 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg z-50">
+                    <Image
+                        src="/assets/softale-icon.png"
+                        alt="Softale"
+                        width={200}
+                        height={200}
+                        className="h-12 w-auto drop-shadow-lg group-hover:scale-105 transition-transform"
+                    />
+                    <span
+                        className="text-2xl font-semibold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent drop-shadow-lg"
+                        style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
+                    >
                         Softale
-                    </h1>
+                    </span>
                 </Link>
 
-                <div className="flex items-center justify-between mb-6 mt-16 md:mt-0">{/* mt-16 for absolute logo */}
-                    {/* Gear Icon - Top Left */}
+                {/* Settings Gear - Fixed Top Right */}
+                <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="fixed top-4 right-4 md:hidden p-2.5 bg-white/80 backdrop-blur-md rounded-full shadow-lg border border-white/40 text-slate-600 hover:text-indigo-600 z-50"
+                >
+                    <Settings className="w-5 h-5" />
+                </button>
+
+                {/* Gear Icon - Moved to fixed top-4 right-4 below */
+                }
+
+                {/* Desktop Gear - Restored */}
+                <div className="flex justify-end mb-6 mt-12 md:mt-0">
                     <button
                         onClick={() => setIsSettingsOpen(true)}
-                        className="p-2 bg-white rounded-full shadow-sm border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition"
+                        className="hidden md:block p-2 bg-white rounded-full shadow-sm border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition"
                     >
                         <Settings className="w-6 h-6" />
                     </button>
-                    <div />
                 </div>
 
                 {/* Tab Navigation - Centered */}
@@ -107,3 +127,4 @@ export default function AccountPage() {
         </GlassLayout>
     );
 }
+

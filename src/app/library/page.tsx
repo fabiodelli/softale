@@ -3,18 +3,23 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getStories, getFavorites, getInProgressStories, getCollections, type Story, type StoryWithProgress, type Collection } from '@/lib/supabase';
+import { getStories, getFavorites, getInProgressStories, getCollections, getUserPlaylists, type Story, type StoryWithProgress, type Collection, type Playlist } from '@/lib/supabase';
+import { getRecommendedStories } from '@/lib/recommendations';
 import StoryCard from '@/components/StoryCard';
 import CollectionCard from '@/components/CollectionCard';
 import { usePlayer } from '@/lib/PlayerContext';
 import { useAuth } from '@/lib/AuthProvider';
-import { Heart, Play, Layers, X, Search, Headphones, ChevronRight } from 'lucide-react';
+import { Heart, Play, Layers, X, Search, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { AnimatePresence } from 'framer-motion';
 import GlassLayout from '@/components/GlassLayout';
 import HorizontalSlider from '@/components/HorizontalSlider';
+import PlaylistCard from '@/components/PlaylistCard';
+import CreatePlaylistModal from '@/components/modals/CreatePlaylistModal';
 import { CATEGORIES, ANIMATION, Z_INDEX } from '@/lib/constants';
 import type { FilterType } from '@/types';
+import { Plus, ListMusic } from 'lucide-react';
 
 
 
@@ -26,10 +31,14 @@ export default function LibraryPage() {
     const [allCollections, setAllCollections] = useState<Collection[]>([]);
     const [favorites, setFavorites] = useState<Story[]>([]);
     const [inProgress, setInProgress] = useState<StoryWithProgress[]>([]);
+    const [recommended, setRecommended] = useState<Story[]>([]);
+    const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [showCreatePlaylistModal, setShowCreatePlaylistModal] = useState(false);
+
 
     // Data Fetching
     useEffect(() => {
@@ -49,29 +58,38 @@ export default function LibraryPage() {
     useEffect(() => {
         async function fetchUserData() {
             if (user) {
-                const [favs, progress] = await Promise.all([
+                const [favs, progress, userPlaylists, recs] = await Promise.all([
                     getFavorites(user.id),
-                    getInProgressStories(user.id)
+                    getInProgressStories(user.id),
+                    getUserPlaylists(user.id),
+                    getRecommendedStories(user.id)
                 ]);
                 setFavorites(favs);
                 setInProgress(progress);
+                setPlaylists(userPlaylists);
+                setRecommended(recs);
             } else {
                 setFavorites([]);
                 setInProgress([]);
+                setRecommended([]);
+                setPlaylists([]);
             }
         }
         fetchUserData();
     }, [user]);
 
-    // Get stories by category
+    // Get stories by category with Search
     const getStoriesByCategory = (category: string) => {
         let stories = allStories.filter(s => s.category === category);
+
+        // Search
         if (searchQuery) {
             stories = stories.filter(s =>
                 s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 s.description.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
+
         return stories;
     };
 
@@ -85,19 +103,35 @@ export default function LibraryPage() {
     const isShowFavorites = activeFilter === 'favorites';
     const isShowContinue = activeFilter === 'continue';
     const isShowCollections = activeFilter === 'collections';
-    const showCategoryFilter = !isShowAll && !isShowFavorites && !isShowContinue && !isShowCollections;
+    const isShowPlaylists = activeFilter === 'playlists';
+    const showCategoryFilter = !isShowAll && !isShowFavorites && !isShowContinue && !isShowCollections && !isShowPlaylists;
 
     const getFilteredData = () => {
-        if (isShowFavorites) return { stories: favorites, collections: [] };
-        if (isShowContinue) return { stories: inProgress, collections: [] };
-        if (isShowCollections) return { stories: [], collections: allCollections };
-        if (showCategoryFilter) {
-            return {
+        let result = { stories: [] as Story[], collections: [] as Collection[], playlists: [] as Playlist[] };
+
+        if (isShowFavorites) result = { stories: favorites, collections: [], playlists: [] };
+        else if (isShowContinue) result = { stories: inProgress, collections: [], playlists: [] };
+        else if (isShowCollections) result = { stories: [], collections: allCollections, playlists: [] };
+        else if (isShowPlaylists) result = { stories: [], collections: [], playlists: playlists };
+        else if (showCategoryFilter) {
+            result = {
                 stories: getStoriesByCategory(activeFilter),
-                collections: getCollectionsByCategory(activeFilter)
+                collections: getCollectionsByCategory(activeFilter),
+                playlists: []
             };
+        } else {
+            // Fallback or All
+            let stories = allStories;
+            if (searchQuery) {
+                stories = stories.filter(s =>
+                    s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    s.description.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+            }
+            result = { stories: stories, collections: allCollections, playlists: [] };
         }
-        return { stories: allStories, collections: allCollections };
+
+        return result;
     };
 
     if (loading) {
@@ -112,11 +146,20 @@ export default function LibraryPage() {
         <GlassLayout>
             <div className="px-6 md:px-12">
                 {/* Mobile Logo - Scrolls with page, positioned like home */}
-                <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg">
-                    <Headphones className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
+                <Link href="/" className="fixed top-4 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg z-50">
+                    <Image
+                        src="/assets/softale-icon.png"
+                        alt="Softale"
+                        width={200}
+                        height={200}
+                        className="h-12 w-auto drop-shadow-lg group-hover:scale-105 transition-transform"
+                    />
+                    <span
+                        className="text-2xl font-semibold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent drop-shadow-lg"
+                        style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
+                    >
                         Softale
-                    </h1>
+                    </span>
                 </Link>
 
                 {/* Header */}
@@ -161,7 +204,7 @@ export default function LibraryPage() {
                     {user && favorites.length > 0 && (
                         <button
                             onClick={() => setActiveFilter('favorites')}
-                            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'favorites'
+                            className={`hidden md:block px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'favorites'
                                 ? 'bg-slate-900 text-white'
                                 : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
                                 }`}
@@ -172,7 +215,7 @@ export default function LibraryPage() {
                     {user && inProgress.length > 0 && (
                         <button
                             onClick={() => setActiveFilter('continue')}
-                            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'continue'
+                            className={`hidden md:block px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'continue'
                                 ? 'bg-slate-900 text-white'
                                 : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
                                 }`}
@@ -183,7 +226,7 @@ export default function LibraryPage() {
                     {allCollections.length > 0 && (
                         <button
                             onClick={() => setActiveFilter('collections')}
-                            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'collections'
+                            className={`hidden md:block px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'collections'
                                 ? 'bg-slate-900 text-white'
                                 : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
                                 }`}
@@ -191,18 +234,29 @@ export default function LibraryPage() {
                             📚 Collections
                         </button>
                     )}
+                    {user && (
+                        <button
+                            onClick={() => setActiveFilter('playlists')}
+                            className={`hidden md:block px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeFilter === 'playlists'
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                                }`}
+                        >
+                            🎧 Playlists
+                        </button>
+                    )}
 
                     {/* Filter Button */}
                     <button
                         onClick={() => setIsFilterOpen(true)}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1 ${showCategoryFilter
+                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1 ${showCategoryFilter || (!isShowAll && !showCategoryFilter)
                             ? 'bg-slate-900 text-white'
                             : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
                             }`}
                     >
                         {showCategoryFilter
                             ? `${CATEGORIES.find(c => c.id === activeFilter)?.emoji} ${CATEGORIES.find(c => c.id === activeFilter)?.label}`
-                            : '🔍 Filter'}
+                            : (!isShowAll && !showCategoryFilter) ? '✨ Filters Active' : '🔍 Filters'}
                     </button>
                 </div>
 
@@ -235,23 +289,82 @@ export default function LibraryPage() {
                                         </button>
                                     </div>
 
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {CATEGORIES.map((cat) => (
-                                            <button
-                                                key={cat.id}
-                                                onClick={() => {
-                                                    setActiveFilter(cat.id as FilterType);
-                                                    setIsFilterOpen(false);
-                                                }}
-                                                className={`flex flex-col items-center justify-center p-4 rounded-2xl gap-2 transition-all border ${activeFilter === cat.id
-                                                    ? 'bg-slate-900 text-white border-slate-900 shadow-lg scale-[1.02]'
-                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
-                                                    }`}
-                                            >
-                                                <span className="text-3xl filter drop-shadow-sm">{cat.emoji}</span>
-                                                <span className="text-xs font-semibold">{cat.label}</span>
-                                            </button>
-                                        ))}
+                                    <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+
+                                        {/* Quick Links (Formerly Horizontal Scroll) */}
+                                        <section>
+                                            <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">Quick Access</h4>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {user && favorites.length > 0 && (
+                                                    <button
+                                                        onClick={() => { setActiveFilter('favorites'); setIsFilterOpen(false); }}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${activeFilter === 'favorites'
+                                                            ? 'bg-slate-900 text-white border-slate-900'
+                                                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'}`}
+                                                    >
+                                                        <span className="text-xl">❤️</span>
+                                                        <span className="font-bold text-sm">Favorites</span>
+                                                    </button>
+                                                )}
+                                                {user && inProgress.length > 0 && (
+                                                    <button
+                                                        onClick={() => { setActiveFilter('continue'); setIsFilterOpen(false); }}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${activeFilter === 'continue'
+                                                            ? 'bg-slate-900 text-white border-slate-900'
+                                                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'}`}
+                                                    >
+                                                        <span className="text-xl">▶️</span>
+                                                        <span className="font-bold text-sm">Continue</span>
+                                                    </button>
+                                                )}
+                                                {allCollections.length > 0 && (
+                                                    <button
+                                                        onClick={() => { setActiveFilter('collections'); setIsFilterOpen(false); }}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${activeFilter === 'collections'
+                                                            ? 'bg-slate-900 text-white border-slate-900'
+                                                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'}`}
+                                                    >
+                                                        <span className="text-xl">📚</span>
+                                                        <span className="font-bold text-sm">Collections</span>
+                                                    </button>
+                                                )}
+                                                {user && (
+                                                    <button
+                                                        onClick={() => { setActiveFilter('playlists'); setIsFilterOpen(false); }}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${activeFilter === 'playlists'
+                                                            ? 'bg-slate-900 text-white border-slate-900'
+                                                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'}`}
+                                                    >
+                                                        <span className="text-xl">🎧</span>
+                                                        <span className="font-bold text-sm">Playlists</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </section>
+                                        <section>
+                                            <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">Category</h4>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {CATEGORIES.map((cat) => (
+                                                    <button
+                                                        key={cat.id}
+                                                        onClick={() => {
+                                                            setActiveFilter(cat.id as FilterType);
+                                                            // Don't close immediately if we want to add more filters? 
+                                                            // Actually users might expect it. Let's keep it open only if they click tags?
+                                                            // For now let's close on category change as it's the main filter.
+                                                            setIsFilterOpen(false);
+                                                        }}
+                                                        className={`flex flex-col items-center justify-center p-3 rounded-xl gap-1 transition-all border ${activeFilter === cat.id
+                                                            ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-[1.02]'
+                                                            : 'bg-slate-50 text-slate-600 border-transparent hover:bg-white hover:border-slate-200 hover:shadow-sm'
+                                                            }`}
+                                                    >
+                                                        <span className="text-2xl filter drop-shadow-sm">{cat.emoji}</span>
+                                                        <span className="text-[10px] uppercase font-bold tracking-wide">{cat.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </section>
                                     </div>
 
                                     {/* Clear Filter */}
@@ -292,6 +405,23 @@ export default function LibraryPage() {
                                             aspectRatio="square"
                                             progress={story.progress_percent}
                                         />
+                                    </motion.div>
+                                ))}
+                            </HorizontalSlider>
+                        )}
+
+                        {/* Recommended For You */}
+                        {user && recommended.length > 0 && (
+                            <HorizontalSlider title="Recommended For You" emoji="🔮">
+                                {recommended.map((story, i) => (
+                                    <motion.div
+                                        key={story.id}
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.03 * i }}
+                                        className="flex-shrink-0 w-36 md:w-44"
+                                    >
+                                        <StoryCard story={story} aspectRatio="square" />
                                     </motion.div>
                                 ))}
                             </HorizontalSlider>
@@ -379,7 +509,8 @@ export default function LibraryPage() {
                                 {isShowFavorites ? 'Your Favorites'
                                     : isShowContinue ? 'Continue Listening'
                                         : isShowCollections ? 'All Collections'
-                                            : CATEGORIES.find(c => c.id === activeFilter)?.label || 'Stories'}
+                                            : isShowPlaylists ? 'Your Playlists'
+                                                : CATEGORIES.find(c => c.id === activeFilter)?.label || 'Stories'}
                             </h2>
 
                             {/* Show Collections Grid when isShowCollections */}
@@ -393,6 +524,28 @@ export default function LibraryPage() {
                                             transition={{ delay: 0.03 * Math.min(i, 10) }}
                                         >
                                             <CollectionCard collection={collection} />
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            ) : isShowPlaylists ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        onClick={() => setShowCreatePlaylistModal(true)}
+                                        className="cursor-pointer group relative aspect-square rounded-2xl overflow-hidden bg-white/5 border-2 border-dashed border-white/20 hover:border-indigo-400 hover:bg-white/10 transition flex flex-col items-center justify-center text-white/60 hover:text-indigo-300"
+                                    >
+                                        <Plus className="w-10 h-10 mb-2" />
+                                        <span className="font-bold">Create New</span>
+                                    </motion.div>
+                                    {playlists.map((playlist, i) => (
+                                        <motion.div
+                                            key={playlist.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.05 * i }}
+                                        >
+                                            <PlaylistCard playlist={playlist} />
                                         </motion.div>
                                     ))}
                                 </div>
@@ -440,6 +593,17 @@ export default function LibraryPage() {
                     </>
                 )}
             </div>
+            <CreatePlaylistModal
+                isOpen={showCreatePlaylistModal}
+                onClose={() => setShowCreatePlaylistModal(false)}
+                onCreated={async () => {
+                    if (user) {
+                        const data = await getUserPlaylists(user.id);
+                        setPlaylists(data);
+                    }
+                }}
+            />
         </GlassLayout>
     );
 }
+

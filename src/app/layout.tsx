@@ -47,20 +47,20 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className={`${inter.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`}>
+      <body className={`${inter.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`} style={{ '--font-serif': 'Playfair Display, serif' } as React.CSSProperties}>
         <Providers><div className="flex flex-col min-h-screen">
-            <Navbar />
-            <div className="flex-grow">
-              {children}
-            </div>
-            <div className="hidden md:block relative z-10 bg-slate-50">
-              <Footer />
-            </div>
+          <Navbar />
+          <div className="flex-grow">
+            {children}
           </div>
+          <div className="hidden md:block relative z-10 bg-slate-50">
+            <Footer />
+          </div>
+        </div>
           <CookieConsent />
           <MiniPlayer />
           <PremiumModal />

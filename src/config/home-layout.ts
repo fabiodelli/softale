@@ -1,172 +1,191 @@
 
 import { Story } from '@/lib/supabase';
 import { Mood } from '@/components/MoodSelector';
+import { sortStoriesByMood, scoreStoryForMood } from '@/lib/recommendations';
 
 export interface ContentSection {
     id: string;
     title: string;
     subtitle?: string;
     items: Story[];
-    type: 'row' | 'grid' | 'mixed'; // 'row' for horizontal scroll, 'grid' for standard, 'mixed' for Featured + List
+    type: 'row' | 'grid' | 'mixed';
+    displayType?: 'slider' | 'list'; // New property for UI control
     /** Category filter to use when navigating to Library via "View All" */
     filterCategory?: string;
+    avgScore?: number;
 }
 
 export interface HomeLayout {
-    featured?: Story; // The "Hero" content for this mood
+    featured?: Story;
     sections: ContentSection[];
 }
 
-/**
- * Helper to filter stories by exact category or list of categories
- */
-const getByCat = (stories: Story[], cats: string[]) => {
-    return stories.filter(s => cats.includes(s.category));
-}
-
-const getById = (stories: Story[], idPartial: string) => {
-    return stories.find(s => s.id.includes(idPartial) || s.title.toLowerCase().includes(idPartial.toLowerCase()));
-}
-
 export const getLayoutForMood = (mood: Mood, allStories: Story[]): HomeLayout => {
+    // 1. Sort ALL stories by Relevance
+    const sortedStories = sortStoriesByMood(allStories, mood);
+    const usedStoryIds = new Set<string>();
 
+    // 2. Select Featured (Top 1)
+    const featured = sortedStories[0];
+    if (featured) {
+        usedStoryIds.add(featured.id);
+    }
 
+    // 3. Best Matches Section (Next Top 5 - List View)
+    // Filter out featured
+    const bestMatchCandidates = sortedStories.filter(s => !usedStoryIds.has(s.id));
+    const bestMatchItems = bestMatchCandidates.slice(0, 5); // Limit to 5 for list view
 
-    // === RELAXED (Sleep) ===
+    // Mark best matches as used
+    bestMatchItems.forEach(s => usedStoryIds.add(s.id));
+
+    const bestMatches: ContentSection = {
+        id: 'best_matches',
+        title: 'Mood Driven',
+        subtitle: `Selected for your current vibe`,
+        items: bestMatchItems,
+        type: 'mixed',
+        displayType: 'list', // Explicit List Mode
+        filterCategory: 'all',
+        avgScore: 9999
+    };
+
+    // Helper to get from SORTED list avoiding duplicates
+    const getOrderedAndUnused = (cats: string[]) => {
+        return sortedStories.filter(s => cats.includes(s.category) && !usedStoryIds.has(s.id));
+    };
+
+    // Helper to create and score a section
+    const createSection = (id: string, title: string, subtitle: string | undefined, categories: string[], filterCat: string): ContentSection => {
+        const items = getOrderedAndUnused(categories);
+
+        // Mark these as used? 
+        // Logic: The user wants "Global Deduplication".
+        // But sections run in parallel? No, valid code executes sequentially.
+        // BUT, getOrderedAndUnused runs for ALL sections. If Section A claims a story, Section B shouldn't avail it?
+        // In current implementation logic, we define candidates array.
+        // This implies we need to process sections sequentially to mark IDs as used.
+        // Re-architecture needed: We can't define candidates in an array literal if they depend on shared state mutation.
+
+        // We will do this differently immediately below.
+
+        let avgScore = 0;
+        if (items.length > 0) {
+            const totalScore = items.reduce((sum, s) => sum + scoreStoryForMood(s, mood), 0);
+            avgScore = totalScore / items.length;
+        }
+
+        return {
+            id,
+            title,
+            subtitle,
+            items,
+            type: 'mixed',
+            displayType: 'slider', // Defaults to slider
+            filterCategory: filterCat,
+            avgScore
+        };
+    };
+
+    // 4. Define Section Definitions (Meta-data only)
+    type SectionDef = { id: string, title: string, subtitle?: string, cats: string[], filterCat: string };
+
+    let sectionDefs: SectionDef[] = [];
+
     if (mood === 'sleep') {
-        // Dynamic: Get newest Sleep or Meditation story
-        const featured = getByCat(allStories, ['sleep', 'meditation'])[0];
-        return {
-            featured,
-            sections: [
-                {
-                    id: 'sleep_tales',
-                    title: 'Sleep Tales',
-                    subtitle: 'Drift off with soothing narratives',
-                    items: getByCat(allStories, ['sleep']),
-                    type: 'mixed',
-                    filterCategory: 'sleep'
-                },
-                {
-                    id: 'peaceful',
-                    title: 'Peaceful Environments',
-                    items: getByCat(allStories, ['soundscape', 'nature']),
-                    type: 'mixed', // Banner + Slider
-                    filterCategory: 'soundscape'
-                },
-                {
-                    id: 'deep_rest',
-                    title: 'Deep Rest Frequencies',
-                    items: getByCat(allStories, ['binaural', 'meditation']),
-                    type: 'mixed', // Banner + Slider
-                    filterCategory: 'binaural'
-                }
-            ]
-        };
+        sectionDefs = [
+            { id: 'sleep_tales', title: 'Sleep Tales', subtitle: 'Drift off with soothing narratives', cats: ['sleep'], filterCat: 'sleep' },
+            { id: 'peaceful', title: 'Peaceful Environments', cats: ['soundscape', 'nature'], filterCat: 'soundscape' },
+            { id: 'deep_rest', title: 'Deep Rest Frequencies', cats: ['binaural', 'meditation'], filterCat: 'binaural' },
+            { id: 'wind_down', title: 'Wind Down', cats: ['music_instrumental', 'fantasy'], filterCat: 'music_instrumental' }
+        ];
+    } else if (mood === 'meditation') {
+        sectionDefs = [
+            { id: 'deep_work', title: 'Deep Work Music', cats: ['music_instrumental'], filterCat: 'music_instrumental' },
+            { id: 'science_focus', title: 'Focus Science', cats: ['binaural'], filterCat: 'binaural' },
+            { id: 'quick_reset', title: 'Quick Resets', cats: ['work_break', 'meditation'], filterCat: 'work_break' },
+            { id: 'ambient_flow', title: 'Ambient Flow', cats: ['soundscape'], filterCat: 'soundscape' }
+        ];
+    } else if (mood === 'energized') {
+        sectionDefs = [
+            { id: 'morning', title: 'Morning Routine', cats: ['motivation', 'meditation'], filterCat: 'motivation' },
+            { id: 'upbeat', title: 'Energizing Audio', cats: ['music_instrumental', 'nature'], filterCat: 'music_instrumental' },
+            { id: 'kids_energy', title: 'For Kids', cats: ['kids', 'fantasy'], filterCat: 'kids' }
+        ];
+    } else if (mood === 'nature') {
+        sectionDefs = [
+            { id: 'pure_nature', title: 'Pure Nature', cats: ['nature', 'soundscape'], filterCat: 'nature' },
+            { id: 'grounding', title: 'Grounding Practices', cats: ['meditation'], filterCat: 'meditation' },
+            { id: 'instrumental_nature', title: 'Nature Inspired Music', cats: ['music_instrumental'], filterCat: 'music_instrumental' }
+        ];
+    } else if (mood === 'fantasy') {
+        sectionDefs = [
+            { id: 'fantasy_journeys', title: 'Fantasy Journeys', cats: ['fantasy', 'kids'], filterCat: 'fantasy' },
+            { id: 'surreal', title: 'Surreal Soundscapes', cats: ['soundscape', 'music_instrumental'], filterCat: 'soundscape' },
+            { id: 'sleep_stories', title: 'Sleepy Tales', cats: ['sleep'], filterCat: 'sleep' }
+        ];
     }
 
-    // === FOCUSED (Work) ===
-    if (mood === 'meditation') {
-        const featured = getByCat(allStories, ['music_instrumental', 'binaural', 'motivation'])[0];
-        return {
-            featured,
-            sections: [
-                {
-                    id: 'deep_work',
-                    title: 'Deep Work Music',
-                    items: getByCat(allStories, ['music_instrumental']),
-                    type: 'mixed',
-                    filterCategory: 'music_instrumental'
-                },
-                {
-                    id: 'science_focus',
-                    title: 'Focus Science',
-                    items: getByCat(allStories, ['binaural']),
-                    type: 'mixed', // Banner + Slider
-                    filterCategory: 'binaural'
-                },
-                {
-                    id: 'quick_reset',
-                    title: 'Quick Resets',
-                    items: getByCat(allStories, ['work_break', 'meditation']),
-                    type: 'mixed', // Banner + Slider
-                    filterCategory: 'work_break'
-                }
-            ]
-        };
+    // 5. Instantiate Sections Sequentially (Greedy Allocation)
+    // We want to sort definitions by POTENTIAL relevance first? 
+    // Or just iterate? User wants dynamic ordering.
+    // If we iterate defined order, "Sleep Tales" always grabs stories first.
+    // If "Sleep Tales" is low relevance, does it matter?
+    // Problem: Dynamic Ordering was based on content. But content allocation depends on order.
+    // Solution:
+    // A. Calculate Potential Score for each def (without claiming IDs).
+    // B. Sort Defs by Potential Score.
+    // C. Allocate IDs.
+
+    const validSections: ContentSection[] = [];
+
+    // A. Estimate Score (Peek)
+    const scoredDefs = sectionDefs.map(def => {
+        // Just peek at what matches from unused (without marking used yet)
+        const potentialItems = sortedStories.filter(s => def.cats.includes(s.category) && !usedStoryIds.has(s.id));
+        let avgScore = 0;
+        if (potentialItems.length > 0) {
+            avgScore = potentialItems.reduce((sum, s) => sum + scoreStoryForMood(s, mood), 0) / potentialItems.length;
+        }
+        return { ...def, avgScore, potentialItems };
+    });
+
+    // B. Sort
+    scoredDefs.sort((a, b) => b.avgScore - a.avgScore);
+
+    // C. Allocate (Real)
+    // Now we iterate the sorted definitions and actually claim the stories.
+    // Since we sorted by "Potential Quality", the best sections get first pick.
+
+    for (const def of scoredDefs) {
+        // Re-filter because previous sections might have stolen matches?
+        // Actually, if themes are distinct, unlikely. But if "Nature" and "Soundscape" overlap, yes.
+        const realItems = sortedStories.filter(s => def.cats.includes(s.category) && !usedStoryIds.has(s.id));
+
+        if (realItems.length > 0) {
+            realItems.forEach(s => usedStoryIds.add(s.id));
+
+            validSections.push({
+                id: def.id,
+                title: def.title,
+                subtitle: def.subtitle,
+                items: realItems,
+                type: 'mixed',
+                displayType: 'slider',
+                filterCategory: def.filterCat,
+                avgScore: def.avgScore
+            });
+        }
     }
 
-    // === ENERGIZED ===
-    if (mood === 'energized') {
-        const featured = getByCat(allStories, ['motivation', 'music_instrumental'])[0];
-        return {
-            featured,
-            sections: [
-                {
-                    id: 'morning',
-                    title: 'Morning Routine',
-                    items: getByCat(allStories, ['motivation', 'meditation']),
-                    type: 'mixed',
-                    filterCategory: 'motivation'
-                },
-                {
-                    id: 'upbeat',
-                    title: 'Energizing Audio',
-                    items: getByCat(allStories, ['music_instrumental', 'nature']),
-                    type: 'mixed', // Banner + Slider
-                    filterCategory: 'music_instrumental'
-                }
-            ]
-        };
-    }
+    // Return Layout
+    // If Best Match has items, include it.
+    const sections = [];
+    if (bestMatchItems.length > 0) sections.push(bestMatches);
+    sections.push(...validSections);
 
-    // === PEACEFUL (Nature) ===
-    if (mood === 'nature') {
-        const featured = getByCat(allStories, ['nature', 'soundscape'])[0];
-        return {
-            featured,
-            sections: [
-                {
-                    id: 'pure_nature',
-                    title: 'Pure Nature',
-                    items: getByCat(allStories, ['nature', 'soundscape']),
-                    type: 'mixed',
-                    filterCategory: 'nature'
-                },
-                {
-                    id: 'grounding',
-                    title: 'Grounding Practices',
-                    items: getByCat(allStories, ['meditation']),
-                    type: 'mixed', // Banner + Slider
-                    filterCategory: 'meditation'
-                }
-            ]
-        };
-    }
-
-    // === DREAMY (Fantasy) ===
-    if (mood === 'fantasy') {
-        const featured = getByCat(allStories, ['fantasy', 'kids', 'soundscape', 'nature'])[0];
-        return {
-            featured,
-            sections: [
-                {
-                    id: 'fantasy_journeys',
-                    title: 'Fantasy Journeys',
-                    items: getByCat(allStories, ['fantasy', 'kids']),
-                    type: 'mixed',
-                    filterCategory: 'fantasy'
-                },
-                {
-                    id: 'surreal',
-                    title: 'Surreal Soundscapes',
-                    items: getByCat(allStories, ['soundscape', 'music_instrumental']),
-                    type: 'mixed', // Banner + Slider
-                    filterCategory: 'soundscape'
-                }
-            ]
-        };
-    }
-
-    return { sections: [] };
+    return {
+        featured,
+        sections
+    };
 };
