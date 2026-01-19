@@ -326,13 +326,15 @@ export default function UpgradePage() {
                                 <strong>Price locked</strong> as long as you stay subscribed.
                             </p>
 
+
+
                             <button
                                 onClick={handleSubscribe}
                                 disabled={loading}
-                                className={`w-full py-4 rounded-xl text-lg font-bold mb-6 transition-all transform active:scale-95 shadow-lg shadow-amber-500/20
+                                className={`w-full py-4 rounded-xl text-lg font-bold mb-6 transition-all transform active:scale-95 shadow-lg
                                 ${loading
-                                        ? 'bg-slate-100 text-slate-400 cursor-wait'
-                                        : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:shadow-indigo-500/40'
+                                        ? 'bg-slate-100 text-slate-400 cursor-wait shadow-none'
+                                        : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:shadow-indigo-500/40 shadow-amber-500/20'
                                     }`}
                             >
                                 {loading ? 'Processing...' : 'Claim Founder Price'}
@@ -360,6 +362,14 @@ export default function UpgradePage() {
                                     <span className="bg-emerald-100 text-emerald-600 p-1 rounded-full"><Check className="w-4 h-4" /></span>
                                     <span className="font-medium">Support Independent Creators</span>
                                 </div>
+                            </div>
+
+                            {/* Geo-Blocking Notice (Footer) */}
+                            <div className="mt-8 pt-6 border-t border-slate-100">
+                                <p className="text-xs text-slate-400 leading-relaxed text-center">
+                                    <span className="block font-semibold text-slate-500 mb-1">🌍 Regional Availability</span>
+                                    Premium is currently available for residents of <strong>US, UK, Canada, Australia</strong> and other non-EU regions only.
+                                </p>
                             </div>
                         </div>
                     </motion.div>

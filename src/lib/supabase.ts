@@ -131,6 +131,7 @@ export interface Story {
     voice_id?: string; // ElevenLabs voice ID used for narration
     social_reel_url?: string;
     social_status?: 'draft' | 'generated' | 'approved' | 'posted';
+    cost_metadata?: any; // JSONB for detailed cost breakdown
     created_at: string;
 }
 

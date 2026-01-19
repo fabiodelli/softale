@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
         const session = await stripe.checkout.sessions.create({
             customer: customerId,
             payment_method_types: ['card'],
+            shipping_address_collection: {
+                allowed_countries: ['US', 'GB', 'CA', 'AU', 'CH', 'NZ', 'JP', 'SG', 'BR', 'MX', 'IN'], // Non-EU Whitelist
+            },
             line_items: [
                 {
                     price: priceId || process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY,

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Download, Sparkles, X, Loader2 } from 'lucide-react';
 import { supabase, type Story } from '@/lib/supabase';
 import { TagSelector } from '@/components/admin/TagSelector';
+import { estimateStoryCost, calculateFinalCost, type CostBreakdown } from '@/lib/cost-engine';
 
 // Categories available for stories
 // Categories synced with Factory RECIPE_MATRIX
@@ -60,6 +61,10 @@ export default function StoryEditor() {
     const [existingCoverUrl, setExistingCoverUrl] = useState('');
     const [existingWideUrl, setExistingWideUrl] = useState('');
     const [existingTallUrl, setExistingTallUrl] = useState('');
+
+    // Cost State
+    const [estimatedCost, setEstimatedCost] = useState<CostBreakdown | null>(null);
+    const [actualCost, setActualCost] = useState<CostBreakdown | null>(null);
 
     // UI State
     const [loading, setLoading] = useState(false);
@@ -143,6 +148,25 @@ export default function StoryEditor() {
         }
     }, [storyId, isEditMode]);
 
+    // Live Cost Estimation Effect
+    useEffect(() => {
+        // Calculate estimated assets based on current state
+        // 1 Square cover is mandatory usually. Wide/Tall are optional/extra.
+        // We assume Factory defaults: 1 square, 1 wide, 1 tall for new stories.
+        // If files are uploaded manually, cost is 0 for those. If generated, cost applies.
+        // For simple estimation, we assume full generation suite if no files present.
+
+        const est = estimateStoryCost(
+            duration / 60,
+            category,
+            {
+                includeVoice: !['soundscape', 'binaural', 'music_instrumental'].includes(category),
+                includeImages: true
+            }
+        );
+        setEstimatedCost(est);
+    }, [duration, category]);
+
     const loadStory = async (id: string) => {
         setLoading(true);
         try {
@@ -174,6 +198,11 @@ export default function StoryEditor() {
             setExistingCoverUrl(data.cover_url || '');
             setExistingWideUrl(data.cover_landscape_url || '');
             setExistingTallUrl(data.cover_portrait_url || '');
+
+            if (data.cost_metadata) {
+                const final = calculateFinalCost(data.cost_metadata);
+                setActualCost(final);
+            }
 
         } catch (err: any) {
             setError(err.message);
@@ -733,6 +762,36 @@ export default function StoryEditor() {
                             <Link href="/admin/stories" className="text-zinc-500 hover:text-white text-sm transition font-medium underline decoration-zinc-700 underline-offset-4 hover:decoration-white">
                                 Cancel & Return to List
                             </Link>
+
+                            {/* Cost Display */}
+                            <div className="mt-6 p-4 rounded-xl bg-zinc-900 border border-zinc-800 w-full max-w-md">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                                        {actualCost ? 'ACTUAL COST' : 'ESTIMATED COST'}
+                                    </span>
+                                    <span className={`text-xl font-mono font-bold ${actualCost ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                                        ${(actualCost?.total || estimatedCost?.total || 0).toFixed(4)}
+                                    </span>
+                                </div>
+                                <div className="space-y-1 text-xs text-zinc-600 font-mono">
+                                    <div className="flex justify-between">
+                                        <span>Voice Generation</span>
+                                        <span>${(actualCost?.details.voice || estimatedCost?.details.voice || 0).toFixed(4)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>LLM (Script)</span>
+                                        <span>${(actualCost?.details.script || estimatedCost?.details.script || 0).toFixed(4)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Assets (Images)</span>
+                                        <span>${(actualCost?.details.images || estimatedCost?.details.images || 0).toFixed(4)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-zinc-700 pt-1 border-t border-zinc-800 mt-1">
+                                        <span>Storage/Bandwidth</span>
+                                        <span>(Included in Pro)</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>

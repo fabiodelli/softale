@@ -96,6 +96,14 @@ export interface GeneratedScript {
     pacingMode?: 'continuous' | 'immersive' | 'breathwork';
     warmupDuration?: number;
     tags?: string[]; // V5
+    usageStats?: {
+        claudeInput: number;
+        claudeOutput: number;
+        elevenLabsChars: number;
+        dalleImages: number;
+        stableAudioCount: number;
+        veoVideoCount: number;
+    };
 }
 
 export interface AudioPhase {
@@ -232,7 +240,15 @@ function formatLoopsForPrompt(loops: LoopAsset[]): string {
 // Claude API Helper
 // =====================================================
 
-export async function callClaude(systemPrompt: string, userPrompt: string, maxTokens: number = 4096): Promise<string> {
+export interface ClaudeResponse {
+    text: string;
+    usage: {
+        input_tokens: number;
+        output_tokens: number;
+    };
+}
+
+export async function callClaude(systemPrompt: string, userPrompt: string, maxTokens: number = 4096): Promise<ClaudeResponse> {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not set');
 
@@ -244,7 +260,7 @@ export async function callClaude(systemPrompt: string, userPrompt: string, maxTo
             'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-            model: 'claude-opus-4-20250514',
+            model: 'claude-opus-4-5-20251101', // UPDATED TO 4.5 (2026)
             max_tokens: maxTokens,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],
@@ -257,10 +273,17 @@ export async function callClaude(systemPrompt: string, userPrompt: string, maxTo
     }
 
     const data = await response.json();
-    console.log(`   ✅ Model used: ${data.model}`);
-    console.log(`   📊 Tokens: ${data.usage?.input_tokens || 'N/A'} in / ${data.usage?.output_tokens || 'N/A'} out`);
+    const usage = {
+        input_tokens: data.usage?.input_tokens || 0,
+        output_tokens: data.usage?.output_tokens || 0
+    };
 
-    return data.content[0].text;
+    console.log(`   ✅ Model: ${data.model} | 📊 Tokens: ${usage.input_tokens} in / ${usage.output_tokens} out`);
+
+    return {
+        text: data.content[0].text,
+        usage
+    };
 }
 
 // =====================================================
@@ -438,7 +461,7 @@ Return JSON with empty script field.`
 // Phase 1: Story Design
 // =====================================================
 
-async function generatePhase1_StoryDesign(brief: StoryBrief): Promise<StoryDesign> {
+async function generatePhase1_StoryDesign(brief: StoryBrief): Promise<{ design: StoryDesign, usage: any }> {
     console.log('📝 Phase 1: Generating Story Design...');
 
     const targetWords = getTargetWordCount(brief.category, brief.duration);
@@ -466,17 +489,17 @@ Return JSON only:
 }`;
 
     const response = await callClaude(systemPrompt, userPrompt, 1000);
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const jsonMatch = response.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Failed to parse Phase 1 response');
 
-    return JSON.parse(jsonMatch[0]);
+    return { design: JSON.parse(jsonMatch[0]), usage: response.usage };
 }
 
 // =====================================================
 // Phase 2: Script Generation
 // =====================================================
 
-async function generatePhase2_Script(design: StoryDesign, category: string): Promise<ScriptResult> {
+async function generatePhase2_Script(design: StoryDesign, category: string): Promise<ScriptResult & { usage: any }> {
     console.log('📜 Phase 2: Generating Script...');
 
     const categoryPrompt = CATEGORY_PROMPTS[category] || CATEGORY_PROMPTS['fantasy'];
@@ -504,7 +527,7 @@ Return JSON only:
 }`;
 
     const response = await callClaude(systemPrompt, userPrompt, 8000);
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const jsonMatch = response.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Failed to parse Phase 2 response');
 
     const result = JSON.parse(jsonMatch[0]);
@@ -515,14 +538,14 @@ Return JSON only:
 
     console.log(`   📊 Word count: ${actualWords} / ${design.targetWordCount} target`);
 
-    return result;
+    return { ...result, usage: response.usage };
 }
 
 // =====================================================
 // Phase 2.5: Script Expansion (if needed)
 // =====================================================
 
-async function expandScript(scriptResult: ScriptResult, targetWords: number, category: string): Promise<ScriptResult> {
+async function expandScript(scriptResult: ScriptResult, targetWords: number, category: string): Promise<ScriptResult & { usage: any }> {
     console.log('📜 Phase 2.5: Expanding Script...');
 
     const shortfall = targetWords - scriptResult.actualWordCount;
@@ -551,7 +574,7 @@ Return JSON only:
 }`;
 
     const response = await callClaude(systemPrompt, userPrompt, 10000);
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const jsonMatch = response.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Failed to parse expansion response');
 
     const result = JSON.parse(jsonMatch[0]);
@@ -560,14 +583,14 @@ Return JSON only:
 
     console.log(`   📊 Expanded word count: ${actualWords} / ${targetWords} target`);
 
-    return result;
+    return { ...result, usage: response.usage };
 }
 
 // =====================================================
 // Phase 3: Asset Design
 // =====================================================
 
-async function generatePhase3_Assets(design: StoryDesign, stockLoops: LoopAsset[], category: string): Promise<AssetDesign> {
+async function generatePhase3_Assets(design: StoryDesign, stockLoops: LoopAsset[], category: string): Promise<{ design: AssetDesign, usage: any }> {
     console.log('🎨 Phase 3: Generating Asset Design...');
 
     const isPureAudio = PURE_AUDIO_CATEGORIES.includes(category);
@@ -601,10 +624,10 @@ Return JSON only:
 }`;
 
     const response = await callClaude(systemPrompt, userPrompt, 1000);
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const jsonMatch = response.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Failed to parse Phase 3 response');
 
-    return JSON.parse(jsonMatch[0]);
+    return { design: JSON.parse(jsonMatch[0]), usage: response.usage };
 }
 
 // =====================================================
@@ -654,7 +677,8 @@ export async function generateScript(brief: StoryBrief, conceptOverride?: StoryC
         brief.mood = conceptOverride.mood;
         brief.voiceStyle = conceptOverride.audioIdentity?.voiceStyle;
     } else {
-        storyDesign = await generatePhase1_StoryDesign(brief);
+        const p1 = await generatePhase1_StoryDesign(brief);
+        storyDesign = p1.design;
         console.log(`   ✅ Phase 1 complete: "${storyDesign.title}"`);
     }
 
@@ -662,15 +686,30 @@ export async function generateScript(brief: StoryBrief, conceptOverride?: StoryC
     let actualWordCount = 0;
     let pauseMarkersUsed = 0;
 
+    // Track cumulative usage
+    let tokenUsage = { input_tokens: 0, output_tokens: 0 };
+
     // Phase 2: Script Generation (skip for pure audio)
     if (!isPureAudio) {
         let scriptResult = await generatePhase2_Script(storyDesign, brief.category);
+
+        // Track P2 Usage
+        if (scriptResult.usage) {
+            tokenUsage.input_tokens += scriptResult.usage.input_tokens;
+            tokenUsage.output_tokens += scriptResult.usage.output_tokens;
+        }
 
         // Validation loop: expand if too short
         let attempts = 0;
         while (scriptResult.actualWordCount < storyDesign.targetWordCount * 0.85 && attempts < 2) {
             console.log(`   ⚠️ Script too short, expanding (attempt ${attempts + 1}/2)...`);
-            scriptResult = await expandScript(scriptResult, storyDesign.targetWordCount, brief.category);
+            const expansion = await expandScript(scriptResult, storyDesign.targetWordCount, brief.category);
+            // Track Expansion Usage
+            if (expansion.usage) {
+                tokenUsage.input_tokens += expansion.usage.input_tokens;
+                tokenUsage.output_tokens += expansion.usage.output_tokens;
+            }
+            scriptResult = expansion;
             attempts++;
         }
 
@@ -683,7 +722,15 @@ export async function generateScript(brief: StoryBrief, conceptOverride?: StoryC
     }
 
     // Phase 3: Asset Design
-    const assetDesign = await generatePhase3_Assets(storyDesign, stockLoops, brief.category);
+    const p3 = await generatePhase3_Assets(storyDesign, stockLoops, brief.category);
+    const assetDesign = p3.design;
+
+    // Track P3 Usage
+    if (p3.usage) {
+        tokenUsage.input_tokens += p3.usage.input_tokens;
+        tokenUsage.output_tokens += p3.usage.output_tokens;
+    }
+
     console.log(`   ✅ Phase 3 complete: Assets designed`);
 
     // Voice selection
@@ -734,19 +781,19 @@ const PREMIUM_VOICES: Record<string, string> = {
     'Aria': '9BWtsMINqrJLrRacOk9x',
 };
 
-export async function generateVoice(script: GeneratedScript): Promise<string> {
+export async function generateVoice(script: GeneratedScript): Promise<{ path: string, characterCount: number }> {
     const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
 
     if (!elevenLabsKey) {
         console.log('⚠️ ELEVENLABS_API_KEY not set - skipping voice generation');
-        return '';
+        return { path: '', characterCount: 0 };
     }
 
     console.log('🎙️ Generating voice with ElevenLabs v3...');
 
     if (!script.script || script.script.trim().length === 0) {
         console.log('   ⏭️ Empty script (pure audio mode). Skipping voice.');
-        return '';
+        return { path: '', characterCount: 0 };
     }
 
     let voiceId = script.voiceIdOverride;
@@ -850,7 +897,7 @@ export async function generateVoice(script: GeneratedScript): Promise<string> {
     fs.writeFileSync(outputPath, finalBuffer);
     console.log(`   ✅ Voice saved: ${outputPath} (${(finalBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
 
-    return outputPath;
+    return { path: outputPath, characterCount: cleanScript.length };
 }
 
 // =====================================================
@@ -1055,12 +1102,12 @@ interface AssetPack {
     backing_cover_portrait_url?: string;
 }
 
-export async function generateAssetPack(script: GeneratedScript): Promise<AssetPack> {
+export async function generateAssetPack(script: GeneratedScript): Promise<AssetPack & { imageCount: number }> {
     const openaiKey = process.env.OPENAI_API_KEY;
 
     if (!openaiKey) {
         console.log('⚠️ OPENAI_API_KEY not set - skipping asset generation');
-        return { cover_url: '', cover_landscape_url: '', cover_portrait_url: '' };
+        return { cover_url: '', cover_landscape_url: '', cover_portrait_url: '', imageCount: 0 };
     }
 
     console.log('🖼️ Generating Asset Pack with GPT Image 1.5...');
@@ -1139,7 +1186,8 @@ export async function generateAssetPack(script: GeneratedScript): Promise<AssetP
         cover_url: squarePath,
         cover_landscape_url: widePath,
         cover_portrait_url: tallPath,
-        ...backingAssets
+        ...backingAssets,
+        imageCount: 3 + (script.backingCoverPrompt ? 3 : 0) // Track actual generations
     };
 }
 
@@ -1437,7 +1485,8 @@ export async function uploadStory(
         // Preserve social fields
         social_reel_url: existingStory?.social_reel_url || null,
         social_status: existingStory?.social_status || 'generated',
-        tags: script.tags || existingStory?.tags || []
+        tags: script.tags || existingStory?.tags || [],
+        cost_metadata: script.usageStats || existingStory?.cost_metadata || null
     };
 
     const { data, error } = await supabase
@@ -1476,19 +1525,28 @@ async function generateStory(brief: any): Promise<string> {
     const isInstrumental = NO_VOICE_CATEGORIES.includes(script.category.toLowerCase()) || script.category.toLowerCase().includes('instrumental');
 
     let voicePath = '';
+    let voiceChars = 0;
     if (!isInstrumental) {
-        voicePath = await generateVoice(script);
+        const vResult = await generateVoice(script);
+        voicePath = vResult.path;
+        voiceChars = vResult.characterCount;
     } else {
         console.log(`   🚫 Skipping Voice Generation for category: ${script.category} (Instrumental/Ambient)`);
     }
 
     const loopPath = await generateOrFetchLoop(script);
     const ambiencePath = await generateOrFetchAmbience(script);
-    const assetPack = await generateAssetPack(script);
+    const assetResult = await generateAssetPack(script);
+
+    // Update Usage Stats
+    if (script.usageStats) {
+        script.usageStats.elevenLabsChars = voiceChars;
+        script.usageStats.dalleImages = assetResult.imageCount;
+    }
 
     const mixedPath = await mixAudio(voicePath, loopPath, script, ambiencePath);
 
-    const storyId = await uploadStory(script, mixedPath, assetPack, voicePath);
+    const storyId = await uploadStory(script, mixedPath, assetResult, voicePath);
     console.log(`   ✅ Story Complete! ID: ${storyId}`);
 
     return storyId;
@@ -1573,17 +1631,27 @@ export async function buildStoryFromConcept(rawConcept: any): Promise<string> {
     const isInstrumental = NO_VOICE_CATEGORIES.includes(script.category.toLowerCase()) || script.category.toLowerCase().includes('instrumental');
 
     let voicePath = '';
+    let voiceChars = 0;
     if (!isInstrumental) {
-        voicePath = await generateVoice(script);
+        const vResult = await generateVoice(script);
+        voicePath = vResult.path;
+        voiceChars = vResult.characterCount;
     } else {
         console.log(`   🚫 Skipping Voice Generation for category: ${script.category} (Instrumental/Ambient)`);
     }
 
     const loopPath = await generateOrFetchLoop(script);
     const ambiencePath = await generateOrFetchAmbience(script);
-    const assetPack = await generateAssetPack(script);
+    const assetResult = await generateAssetPack(script);
+
+    // Update Usage Stats
+    if (script.usageStats) {
+        script.usageStats.elevenLabsChars = voiceChars;
+        script.usageStats.dalleImages = assetResult.imageCount;
+    }
+
     const mixedPath = await mixAudio(voicePath, loopPath, script, ambiencePath);
-    const storyId = await uploadStory(script, mixedPath, assetPack, voicePath);
+    const storyId = await uploadStory(script, mixedPath, assetResult, voicePath);
     console.log(`✅ Build Complete! ID: ${storyId}`);
 
     return storyId;
