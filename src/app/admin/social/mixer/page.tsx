@@ -40,6 +40,10 @@ export default function SocialMixerPage() {
 
     const handleMix = async () => {
         if (!selectedStoryId || !videoFile) return;
+        if (!supabase) {
+            setStatus('❌ Supabase client not initialized');
+            return;
+        }
 
         setProcessing(true);
         setStatus('🚀 Uploading & Mixing... This may take a minute.');

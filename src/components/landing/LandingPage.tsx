@@ -227,20 +227,26 @@ export default function LandingPage({ onEnterApp, showNav = true }: LandingPageP
                 {/* ===== 1. HERO SECTION ===== */}
                 <section className="min-h-screen flex items-center justify-center p-6 pt-24">
                     <div className="max-w-5xl w-full text-center">
-                        {/* Logo */}
+                        {/* Logo + Brand Name */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.6 }}
-                            className="mb-8"
+                            className="mb-8 flex flex-col items-center gap-3"
                         >
                             <Image
                                 src="/assets/softale-icon.png"
                                 alt="Softale"
                                 width={80}
                                 height={80}
-                                className="mx-auto drop-shadow-xl"
+                                className="drop-shadow-xl"
                             />
+                            <span
+                                className="text-3xl md:text-4xl font-semibold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent"
+                                style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
+                            >
+                                Softale
+                            </span>
                         </motion.div>
 
                         <motion.h1
@@ -406,8 +412,8 @@ export default function LandingPage({ onEnterApp, showNav = true }: LandingPageP
                                         key={pref.id}
                                         onClick={() => togglePreference(pref.id)}
                                         className={`flex items-center gap-2 px-5 py-3 rounded-full border-2 font-medium transition-all ${isSelected
-                                                ? `${pref.color} border-slate-400 ring-2 ring-slate-300 scale-105`
-                                                : `${pref.color} border-transparent`
+                                            ? `${pref.color} border-slate-400 ring-2 ring-slate-300 scale-105`
+                                            : `${pref.color} border-transparent`
                                             }`}
                                     >
                                         <pref.icon className="w-5 h-5" />
@@ -541,26 +547,107 @@ export default function LandingPage({ onEnterApp, showNav = true }: LandingPageP
                     </div>
                 </section>
 
-                {/* ===== 7. FINAL CTA ===== */}
+                {/* ===== 7. COMING SOON - APP STORES ===== */}
+                <section className="py-16 px-6 bg-gradient-to-b from-white/40 to-slate-50/60">
+                    <div className="max-w-4xl mx-auto text-center">
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="text-sm text-slate-400 uppercase tracking-widest mb-4"
+                        >
+                            Coming Soon
+                        </motion.p>
+                        <motion.h3
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="text-2xl md:text-3xl font-bold text-slate-900 mb-8"
+                        >
+                            Available on iOS & Android
+                        </motion.h3>
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                            className="flex flex-wrap justify-center gap-4"
+                        >
+                            {/* App Store Badge */}
+                            <div className="flex items-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-xl">
+                                <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.74 1.18 0 2.45-1.62 3.57-1.62 1.58.13 2.59 1.03 2.59 1.03S16.96 8.3 16.92 11c-.04 2.8 2.2 3.99 2.2 3.99-.2.62-.27 1.34-1.07 2.5-1.06 1.5-1.78 1.57-1 2.79zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.16 2.22-1.89 4.19-3.74 4.25z" />
+                                </svg>
+                                <div className="text-left">
+                                    <div className="text-[10px] uppercase opacity-70">Download on the</div>
+                                    <div className="text-lg font-semibold -mt-1">App Store</div>
+                                </div>
+                            </div>
+                            {/* Google Play Badge */}
+                            <div className="flex items-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-xl">
+                                <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M3 20.5v-17c0-.83.67-1.5 1.5-1.5.34 0 .67.11.95.32l14.24 8.5c.48.29.78.8.78 1.36s-.3 1.07-.78 1.36l-14.24 8.5c-.28.21-.61.32-.95.32-.83 0-1.5-.67-1.5-1.5zm2.41-15.42L14.14 12 5.41 18.92V5.08zm11.91 6.92l-2.83-1.69 2.83-1.69v3.38z" />
+                                </svg>
+                                <div className="text-left">
+                                    <div className="text-[10px] uppercase opacity-70">Get it on</div>
+                                    <div className="text-lg font-semibold -mt-1">Google Play</div>
+                                </div>
+                            </div>
+                        </motion.div>
+                        <p className="mt-6 text-slate-400 text-sm">Join the waitlist to be notified</p>
+                    </div>
+                </section>
+
+                {/* ===== 8. FINAL CTA ===== */}
                 <section className="py-32 md:py-40 px-6 text-center relative overflow-hidden bg-white/50 backdrop-blur-xl">
                     <div className="max-w-4xl mx-auto relative z-10">
-                        <h2 className="text-4xl md:text-6xl font-medium mb-8 text-slate-900" style={{ fontFamily: 'var(--font-serif)' }}>
+                        <motion.h2
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="text-4xl md:text-6xl font-medium mb-12 text-slate-900"
+                            style={{ fontFamily: 'var(--font-serif)' }}
+                        >
                             Your mind deserves <br /> <span className="italic text-indigo-500">space.</span>
-                        </h2>
+                        </motion.h2>
 
-                        <div className="p-12 md:p-20 rounded-[3rem] bg-slate-900 text-white shadow-2xl relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-900" />
+                        <motion.div
+                            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                            className="p-10 md:p-16 lg:p-20 rounded-[2.5rem] md:rounded-[3rem] bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 text-white shadow-2xl relative overflow-hidden"
+                        >
+                            {/* Animated background orbs */}
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse" />
+                            <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-br from-violet-500/10 to-transparent rounded-full blur-3xl" />
+
                             <div className="relative z-10">
-                                <h3 className="text-2xl md:text-4xl font-bold mb-6">Start your journey today.</h3>
+                                <p className="text-white/60 text-sm uppercase tracking-widest mb-4">Ready to feel better?</p>
+                                <h3 className="text-3xl md:text-5xl font-bold mb-8">Start your journey today.</h3>
                                 <button
                                     onClick={handleEnterWithPreferences}
-                                    className="px-12 md:px-16 py-5 md:py-6 bg-white text-slate-950 rounded-full font-bold text-lg md:text-xl hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl hover:scale-105"
+                                    className="group px-12 md:px-16 py-5 md:py-6 bg-white text-slate-950 rounded-full font-bold text-lg md:text-xl hover:bg-slate-50 transition-all shadow-xl hover:shadow-2xl hover:scale-105"
                                 >
-                                    Enter Softale
+                                    <span className="flex items-center gap-3">
+                                        Enter Softale
+                                        <motion.span
+                                            animate={{ x: [0, 5, 0] }}
+                                            transition={{ duration: 1.5, repeat: Infinity }}
+                                        >
+                                            →
+                                        </motion.span>
+                                    </span>
                                 </button>
-                                <p className="mt-6 text-white/40 text-xs tracking-widest uppercase">Free to try • No credit card required</p>
+                                <div className="mt-8 flex flex-wrap justify-center gap-6 text-white/50 text-sm">
+                                    <span className="flex items-center gap-2">✓ Free to try</span>
+                                    <span className="flex items-center gap-2">✓ No credit card</span>
+                                    <span className="flex items-center gap-2">✓ Cancel anytime</span>
+                                </div>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
                 </section>
 
