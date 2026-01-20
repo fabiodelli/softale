@@ -264,7 +264,7 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
 
                 {/* Info Container (Outside) */}
                 <div>
-                    <h3 className="font-bold text-base leading-tight mb-1.5 line-clamp-2 transition-colors text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]">
+                    <h3 className="font-bold text-base leading-tight mb-1.5 line-clamp-2 transition-colors text-slate-900">
                         {story.title}
                     </h3>
 
@@ -280,7 +280,7 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
                             )}
                         </div>
                         {/* Author Name */}
-                        <span className="text-xs font-medium text-white/90 truncate [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]">
+                        <span className="text-xs font-medium text-slate-600 truncate">
                             {story.author || 'Softale'}
                         </span>
                     </div>

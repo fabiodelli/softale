@@ -260,7 +260,7 @@ export default function HomePage() {
           {searchQuery ? (
             <div className="mb-20">
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]">Results for "{searchQuery}"</h2>
+                <h2 className="text-2xl font-bold text-slate-900">Results for "{searchQuery}"</h2>
               </div>
               {displayedStories.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">

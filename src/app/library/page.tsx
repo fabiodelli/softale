@@ -165,7 +165,7 @@ export default function LibraryPage() {
                 {/* Header */}
                 <div className="mb-6 mt-16 md:mt-0">{/* mt-16 to account for absolute logo */}
 
-                    <h1 className="text-3xl font-bold text-white [text-shadow:_0_1px_4px_rgb(0_0_0_/_90%)] mb-4">Library</h1>
+                    {/* Title removed as per user request */}
 
                     {/* Mobile Search */}
                     <div className="relative group md:hidden mb-4">

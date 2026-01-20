@@ -184,8 +184,8 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                                             </motion.button>
                                             <span className={`
                                                 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all duration-300 mt-2
-                                                text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]
-                                                ${isActive ? 'scale-110 opacity-100' : 'opacity-80 hover:opacity-100'}
+                                                text-slate-800
+                                                ${isActive ? 'scale-110 opacity-100' : 'opacity-70 hover:opacity-100'}
                                             `}>
                                                 {m.label}
                                             </span>

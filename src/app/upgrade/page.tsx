@@ -45,7 +45,7 @@ export default function UpgradePage() {
             if (url) {
                 window.location.href = url;
             } else {
-                alert(`Errore: ${error || 'Impossibile creare la sessione di checkout'}`);
+                alert(`Error: ${error || 'Unable to create checkout session'}`);
             }
         } catch (error) {
             console.error('Upgrade error:', error);
@@ -66,7 +66,7 @@ export default function UpgradePage() {
             });
             const { url, error } = await res.json();
             if (url) window.location.href = url;
-            else if (error) alert(`Errore: ${error}`);
+            else if (error) alert(`Error: ${error}`);
         } catch (e) {
             console.error(e);
         } finally {
@@ -122,10 +122,10 @@ export default function UpgradePage() {
                         >
                             {/* Crown Removed */}
                             <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
-                                Grazie per essere Premium! ✨
+                                Thank you for being Premium! ✨
                             </h1>
                             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                                Hai accesso completo a tutti i contenuti esclusivi di Softale.
+                                You have full access to all exclusive Softale content.
                             </p>
                         </motion.div>
 
@@ -156,14 +156,14 @@ export default function UpgradePage() {
                                     <div className="text-left">
                                         <h2 className="text-2xl font-bold text-slate-900">Softale Premium</h2>
                                         <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold tracking-wide uppercase">
-                                            Abbonamento Attivo
+                                            Active Subscription
                                         </span>
                                     </div>
                                 </div>
 
                                 <p className="text-center text-sm text-slate-500 mb-6 border-b border-slate-100 pb-6">
-                                    Stai godendo di tutti i vantaggi esclusivi.<br />
-                                    <strong>Grazie per il tuo supporto!</strong>
+                                    You're enjoying all the exclusive benefits.<br />
+                                    <strong>Thank you for your support!</strong>
                                 </p>
 
                                 <div className="space-y-4 text-left mb-6">

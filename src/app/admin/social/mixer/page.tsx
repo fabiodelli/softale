@@ -16,6 +16,7 @@ export default function SocialMixerPage() {
     const [status, setStatus] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
+    const isProduction = process.env.NODE_ENV === 'production';
 
     // Fetch Stories
     useEffect(() => {
@@ -165,7 +166,7 @@ export default function SocialMixerPage() {
 
                             <button
                                 onClick={handleMix}
-                                disabled={!selectedStoryId || !videoFile || processing}
+                                disabled={!selectedStoryId || !videoFile || processing || isProduction}
                                 className={`
                                     w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all
                                     ${!selectedStoryId || !videoFile
@@ -189,6 +190,18 @@ export default function SocialMixerPage() {
                             )}
 
                         </div>
+
+                        {isProduction && (
+                            <div className="bg-amber-900/20 border border-amber-500/30 p-4 rounded-xl text-amber-200 text-xs leading-relaxed">
+                                <h4 className="flex items-center gap-2 mb-2 font-bold">
+                                    <AlertTriangle className="w-3 h-3" /> Production Mode
+                                </h4>
+                                <p>
+                                    Video mixing requires ffmpeg and cannot run on edge/serverless.
+                                    Please run locally (<code className="bg-black/30 px-1 rounded">npm run dev</code>) to use this feature.
+                                </p>
+                            </div>
+                        )}
 
                         <div className="bg-blue-500/5 border border-blue-500/10 p-4 rounded-xl text-blue-200/60 text-xs leading-relaxed">
                             <h4 className="flex items-center gap-2 mb-2 font-semibold text-blue-300">

@@ -136,8 +136,8 @@ export default function ContentSection({
             >
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h3 className="text-xl font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]">{title}</h3>
-                        {subtitle && <p className="text-white font-medium text-sm mt-0.5 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9),_0_0_2px_black]">{subtitle}</p>}
+                        <h3 className="text-xl font-bold text-slate-900">{title}</h3>
+                        {subtitle && <p className="text-slate-600 font-medium text-sm mt-0.5">{subtitle}</p>}
                     </div>
                     {/* View All */}
                     {filterCategory && (
@@ -171,8 +171,8 @@ export default function ContentSection({
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <div>
-                        <h3 className="text-xl font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]">{title}</h3>
-                        {subtitle && <p className="text-white font-medium text-sm mt-0.5 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9),_0_0_2px_black]">{subtitle}</p>}
+                        <h3 className="text-xl font-bold text-slate-900">{title}</h3>
+                        {subtitle && <p className="text-slate-600 font-medium text-sm mt-0.5">{subtitle}</p>}
                     </div>
 
                     {/* Scroll Controls - Only for row type */}
@@ -230,7 +230,7 @@ export default function ContentSection({
                     {items.length > 1 && (
                         <div>
                             {/* Optional Sub-header for the slider part */}
-                            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4 px-1 [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]">More in this section</h4>
+                            <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 px-1">More in this section</h4>
                             <div
                                 className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide w-full cursor-grab"
                                 ref={scrollRef}

@@ -32,6 +32,12 @@ function LoginForm() {
 
         try {
             if (isSignUp) {
+                // Password Strength Validation
+                const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+                if (!strongPasswordRegex.test(password)) {
+                    throw new Error('Password must be at least 8 characters long and include an uppercase letter, a number, and a special character.');
+                }
+
                 const { error } = await supabase!.auth.signUp({ email, password });
                 if (error) throw error;
                 alert('Account Created! Check your email to confirm.');

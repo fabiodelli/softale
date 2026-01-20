@@ -122,7 +122,7 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
 
                 {/* Info */}
                 <div className="px-1">
-                    <h2 className="text-2xl font-extrabold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)] leading-tight line-clamp-2 mb-2">
+                    <h2 className="text-2xl font-extrabold text-slate-900 leading-tight line-clamp-2 mb-2">
                         {story.title}
                     </h2>
                     <div className="flex items-center gap-2">
@@ -133,7 +133,7 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
                                 <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-[9px] text-indigo-600 font-bold">S</div>
                             )}
                         </div>
-                        <span className="text-sm font-semibold text-white/90 [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]">{story.author || 'Softale Production'}</span>
+                        <span className="text-sm font-semibold text-slate-600">{story.author || 'Softale Production'}</span>
                     </div>
                 </div>
             </div>

@@ -183,7 +183,7 @@ export default function AppHome() {
                         {displayedCollections.length > 0 && (
                             <div className="mb-12">
                                 <div className="mb-4">
-                                    <h3 className="text-lg font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]">Collections</h3>
+                                    <h3 className="text-lg font-bold text-slate-900">Collections</h3>
                                 </div>
                                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-6 md:-mx-12 px-6 md:px-12">
                                     {displayedCollections.slice(0, 6).map((collection, i) => (

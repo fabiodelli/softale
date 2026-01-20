@@ -69,3 +69,32 @@ body {
   transform: translateY(-4px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
+
+/* ===========================================
+   READABILITY BOOST: Darken Light Text Colors
+   Improves contrast for better accessibility.
+   Does NOT affect Hero/Landing page sections.
+   =========================================== */
+
+/* Default text improvements - make light grays darker */
+.text-slate-400 {
+  color: rgb(100 116 139) !important; /* slate-500 */
+}
+
+.text-slate-500 {
+  color: rgb(71 85 105) !important; /* slate-600 */
+}
+
+/* Preserve original lighter colors only in specific contexts */
+/* Landing/Vision pages can keep the lighter aesthetic */
+section.bg-white\/50 .text-slate-400,
+.landing-hero .text-slate-400,
+[class*="backdrop-blur"] .text-slate-400 {
+  color: rgb(148 163 184) !important; /* Original slate-400 */
+}
+
+section.bg-white\/50 .text-slate-500,
+.landing-hero .text-slate-500,
+[class*="backdrop-blur"] .text-slate-500 {
+  color: rgb(100 116 139) !important; /* Original slate-500 */
+}

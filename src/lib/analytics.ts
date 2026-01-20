@@ -13,6 +13,15 @@ export interface AnalyticsMetadata {
 export const trackEvent = async (eventName: EventName, metadata: AnalyticsMetadata = {}) => {
     if (!supabase) return;
 
+    // GDPR/Privacy Check
+    if (typeof window !== 'undefined') {
+        const consent = localStorage.getItem('softale-cookie-consent');
+        // Only track if explicitly accepted
+        if (consent !== 'accepted') {
+            return;
+        }
+    }
+
     try {
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id || null;

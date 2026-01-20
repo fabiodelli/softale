@@ -10,6 +10,7 @@ export default function FactoryStudio() {
     const [activeTab, setActiveTab] = useState<'concept' | 'production'>('concept');
     const [status, setStatus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const isProduction = process.env.NODE_ENV === 'production';
 
     // Concept State (V5)
     const [title, setTitle] = useState('');
@@ -112,6 +113,15 @@ export default function FactoryStudio() {
                 backLink={{ href: '/admin', label: 'Dashboard' }}
             >
                 {/* Status Bar */}
+                {isProduction && (
+                    <div className="mb-6 p-4 rounded-xl flex items-center gap-3 bg-amber-900/20 border border-amber-500/30 text-amber-200">
+                        <span className="text-xl">⚠️</span>
+                        <div>
+                            <span className="font-bold">Production Mode Detected:</span> Generation features are disabled to prevent timeouts.
+                            Please run the app locally (<code className="bg-black/30 px-1 rounded">npm run dev</code>) to generate content.
+                        </div>
+                    </div>
+                )}
                 {status && (
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
@@ -253,7 +263,7 @@ export default function FactoryStudio() {
                         {/* ACTION BUTTON */}
                         <button
                             onClick={handleGenerateConcept}
-                            disabled={isLoading || !idea}
+                            disabled={isLoading || !idea || isProduction}
                             className="w-full py-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:grayscale rounded-xl font-bold text-white shadow-xl shadow-indigo-900/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
                         >
                             {isLoading ? (
@@ -390,8 +400,8 @@ export default function FactoryStudio() {
                                         {!builtStoryId && (
                                             <button
                                                 onClick={handleBuildStory}
-                                                disabled={isLoading}
-                                                className="px-4 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 rounded text-xs font-mono uppercase tracking-widest transition"
+                                                disabled={isLoading || isProduction}
+                                                className="px-4 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 rounded text-xs font-mono uppercase tracking-widest transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 {isLoading ? 'EXECUTING...' : 'RUN_BUILD_SEQUENCE'}
                                             </button>
