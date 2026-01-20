@@ -140,21 +140,7 @@ function LoginForm() {
                     <div className="h-px bg-slate-200 flex-1" />
                 </div>
 
-                <button
-                    onClick={async () => {
-                        try {
-                            await import('@/lib/supabase').then(m => m.signInWithApple());
-                        } catch (err: any) {
-                            setError(err.message);
-                        }
-                    }}
-                    className="w-full bg-black hover:bg-zinc-800 text-white font-medium py-3 rounded-xl transition-all flex items-center justify-center gap-3 mb-3"
-                >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.74 1.18 0 2.45-1.62 3.57-1.62 1.58.13 2.59 1.03 2.59 1.03S16.96 8.3 16.92 11c-.04 2.8 2.2 3.99 2.2 3.99-.2.62-.27 1.34-1.07 2.5-1.06 1.5-1.78 1.57-1 2.79zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.16 2.22-1.89 4.19-3.74 4.25z" />
-                    </svg>
-                    Continue with Apple
-                </button>
+                {/* Apple login removed - not yet configured */}
 
                 <button
                     onClick={handleGoogle}

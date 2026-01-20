@@ -113,6 +113,26 @@ export default function HomePage() {
     setTimeout(() => setAppReady(true), 500); // Small delay for fade effect if needed
   };
 
+  // Autoplay from Vision page
+  useEffect(() => {
+    if (!appReady) return;
+
+    const autoplayData = sessionStorage.getItem('softale_autoplay_story');
+    if (autoplayData) {
+      try {
+        const story = JSON.parse(autoplayData);
+        if (story && story.id) {
+          // Delay slightly to ensure player is ready
+          setTimeout(() => play(story), 300);
+        }
+      } catch (e) {
+        console.error('Failed to parse autoplay story:', e);
+      }
+      // Clear after use
+      sessionStorage.removeItem('softale_autoplay_story');
+    }
+  }, [appReady, play]);
+
   // Time-based Greeting
   useEffect(() => {
     const hour = new Date().getHours();

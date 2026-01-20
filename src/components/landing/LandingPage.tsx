@@ -1,98 +1,165 @@
 'use client';
 
-import { motion, useScroll, useSpring, useTransform, useInView } from 'framer-motion';
-import { ArrowRight, Play, Heart, Wind, Star, Headphones, Sparkles, Zap, Moon, Cloud, Sun } from 'lucide-react';
+import { motion, AnimatePresence, useScroll, useSpring, useMotionValueEvent } from 'framer-motion';
+import { ArrowRight, Play, Heart, Wind, Star, Headphones, Sparkles, Zap, Moon, Cloud, Sun, Leaf, Brain, Waves } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { getStories, type Story } from '@/lib/supabase';
+import { formatDuration } from '@/lib/formatters';
 
 interface LandingPageProps {
     onEnterApp: () => void;
     showNav?: boolean;
 }
 
-// --- CONFIGURATION ---
-
+// --- CONFIGURATION - Colors matched with MoodSelector ---
 const MOODS = [
     {
-        id: 'intro',
-        name: 'Softale',
-        colors: ['#f8fafc', '#f1f5f9', '#e2e8f0'], // Slate White
-        accent: 'from-slate-400 to-slate-600',
-        desc: 'The Sound of Your Serenity',
-        icon: null,
-        asset: null
-    },
-    {
-        id: 'peaceful',
-        name: 'Peaceful',
-        colors: ['#e0f2fe', '#f0f9ff', '#e0e7ff'], // Light Blue/White
-        accent: 'from-sky-400 to-indigo-400',
-        desc: 'Clear your mind',
-        icon: Cloud,
-        asset: '/assets/moods_3d/nature.png'
-    },
-    {
-        id: 'relax',
-        name: 'Relax',
-        colors: ['#fff7ed', '#ffedd5', '#fed7aa'], // Warm Orange/Amber
-        accent: 'from-orange-400 to-rose-400',
-        desc: 'Warmth & Comfort',
-        icon: Sun,
-        asset: '/assets/moods_3d/sleep.png'
-    },
-    {
-        id: 'energize',
-        name: 'Energize',
-        colors: ['#ecfeff', '#cffafe', '#a5f3fc'], // Cyan/Electric
-        accent: 'from-cyan-400 to-teal-400',
-        desc: 'Rise & Shine',
-        icon: Zap,
-        asset: '/assets/moods_3d/energy.png'
-    },
-    {
-        id: 'dreamy',
-        name: 'Dreamy',
-        colors: ['#f5f3ff', '#ede9fe', '#ddd6fe'], // Deep Purple/Indigo
-        accent: 'from-violet-500 to-fuchsia-500',
-        desc: 'Explore worlds',
+        id: 'sleep',
+        name: 'Relaxed',
+        category: 'sleep',
+        colors: ['#e0e7ff', '#eef2ff', '#c7d2fe'], // Indigo
+        colorClass: 'bg-indigo-100',
+        accent: 'from-indigo-400 to-indigo-600',
+        desc: 'Drift into Calm',
         icon: Moon,
-        asset: '/assets/moods_3d/fantasy.png'
+        asset: '/assets/moods_3d/sleep.png',
+        image: '/images/moods/starry_night.png'
     },
     {
-        id: 'focus',
-        name: 'Focus',
-        colors: ['#f0fdf4', '#dcfce7', '#bbf7d0'], // Emerald/Teal
-        accent: 'from-emerald-400 to-teal-500',
-        desc: 'Deep Flow',
+        id: 'nature',
+        name: 'Peaceful',
+        category: 'nature',
+        colors: ['#d1fae5', '#ecfdf5', '#a7f3d0'], // Emerald
+        colorClass: 'bg-emerald-100',
+        accent: 'from-emerald-400 to-emerald-600',
+        desc: 'Find Your Peace',
+        icon: Leaf,
+        asset: '/assets/moods_3d/nature.png',
+        image: '/images/moods/forest.png'
+    },
+    {
+        id: 'fantasy',
+        name: 'Dreamy',
+        category: 'fantasy',
+        colors: ['#ffe4e6', '#fff1f2', '#fecdd3'], // Rose
+        colorClass: 'bg-rose-100',
+        accent: 'from-rose-400 to-rose-600',
+        desc: 'Explore Worlds',
         icon: Sparkles,
-        asset: '/assets/moods_3d/meditation.png'
+        asset: '/assets/moods_3d/fantasy.png',
+        image: '/images/moods/sunset.png'
+    },
+    {
+        id: 'meditation',
+        name: 'Focused',
+        category: 'meditation',
+        colors: ['#e0f2fe', '#f0f9ff', '#bae6fd'], // Sky
+        colorClass: 'bg-sky-100',
+        accent: 'from-sky-400 to-sky-600',
+        desc: 'Deep Flow',
+        icon: Brain,
+        asset: '/assets/moods_3d/meditation.png',
+        image: '/images/moods/zen_stones.png'
+    },
+    {
+        id: 'energized',
+        name: 'Energized',
+        category: 'motivation',
+        colors: ['#fef3c7', '#fffbeb', '#fde68a'], // Amber
+        colorClass: 'bg-amber-100',
+        accent: 'from-amber-400 to-amber-600',
+        desc: 'Rise & Shine',
+        icon: Waves,
+        asset: '/assets/moods_3d/energy.png',
+        image: '/images/moods/ocean-vibrant.jpg'
     }
 ];
 
 export default function LandingPage({ onEnterApp, showNav = true }: LandingPageProps) {
-    // Current Active Mood Index (0 to MOODS.length)
+    const router = useRouter();
+
+    // Current Active Mood Index
     const [activeIndex, setActiveIndex] = useState(0);
     const activeMood = MOODS[activeIndex];
 
-    // Scroll Progress
-    const { scrollYProgress } = useScroll();
-    const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+    // Stories by category
+    const [storiesByCategory, setStoriesByCategory] = useState<Record<string, Story>>({});
+
+    // Scroll tracking for mood sections
+    const moodSectionRef = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({
+        target: moodSectionRef,
+        offset: ["start start", "end end"]
+    });
+
+    // Track scroll progress to change active mood
+    useMotionValueEvent(scrollYProgress, "change", (latest) => {
+        // Divide scroll into equal parts for each mood
+        const segmentSize = 1 / MOODS.length;
+        const newIndex = Math.min(Math.floor(latest / segmentSize), MOODS.length - 1);
+        if (newIndex !== activeIndex && newIndex >= 0) {
+            setActiveIndex(newIndex);
+        }
+    });
+
+    // Fetch stories on mount
+    useEffect(() => {
+        async function fetchStories() {
+            const stories = await getStories();
+            const byCategory: Record<string, Story> = {};
+
+            // Get one story per category
+            for (const mood of MOODS) {
+                if (mood.category) {
+                    const categoryStory = stories.find(s => s.category === mood.category);
+                    if (categoryStory) {
+                        byCategory[mood.category] = categoryStory;
+                    }
+                }
+            }
+            setStoriesByCategory(byCategory);
+        }
+        fetchStories();
+    }, []);
+
+    // Scroll Progress for nav bar
+    const { scrollYProgress: pageProgress } = useScroll();
+    const scaleX = useSpring(pageProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+
+    // Handle card click - navigate to app with autoplay
+    const handleCardClick = (story: Story | undefined) => {
+        if (story) {
+            sessionStorage.setItem('softale_autoplay_story', JSON.stringify(story));
+        }
+        onEnterApp();
+    };
+
+    const currentStory = activeMood.category ? storiesByCategory[activeMood.category] : undefined;
 
     return (
         <div className="font-sans text-slate-900 relative bg-slate-50 overscroll-none">
             {/* --- FIXED BACKGROUND LAYER --- */}
-            <div className="fixed inset-0 z-0 transition-colors duration-1000 ease-in-out"
-                style={{
-                    background: `linear-gradient(180deg, ${activeMood.colors[0]} 0%, ${activeMood.colors[1]} 50%, ${activeMood.colors[2]} 100%)`
-                }}
-            >
-                {/* Dynamic Gradient Orbs logic could go here */}
-                {/* Noise */}
-                <div className="absolute inset-0 opacity-[0.04] mix-blend-multiply pointer-events-none"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-                />
-            </div>
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeMood.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="fixed inset-0 z-0"
+                    style={{
+                        background: `linear-gradient(180deg, ${activeMood.colors[0]} 0%, ${activeMood.colors[1]} 50%, ${activeMood.colors[2]} 100%)`
+                    }}
+                >
+                    {/* Noise */}
+                    <div className="absolute inset-0 opacity-[0.04] mix-blend-multiply pointer-events-none"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+                    />
+                </motion.div>
+            </AnimatePresence>
 
             {/* --- FIXED NAVIGATION --- */}
             {showNav && (
@@ -114,26 +181,142 @@ export default function LandingPage({ onEnterApp, showNav = true }: LandingPageP
             {/* --- SCROLL CONTENT --- */}
             <main className="relative z-10 w-full">
 
-                {/* 1. INTRO HERO */}
-                <MoodSection
-                    mood={MOODS[0]}
-                    index={0}
-                    setActiveIndex={setActiveIndex}
-                    onEnterApp={onEnterApp}
-                    isHero={true}
-                />
+                {/* 1. INTRO HERO SECTION */}
+                <section className="min-h-screen flex items-center justify-center p-6 pt-24">
+                    <div className="max-w-5xl w-full text-center">
+                        <motion.h1
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8 }}
+                            className="text-6xl md:text-9xl font-black tracking-tighter text-slate-900 mb-6 leading-tight"
+                            style={{ fontFamily: 'var(--font-serif)' }}
+                        >
+                            The Sound of <br />
+                            <span className="italic text-transparent bg-clip-text bg-gradient-to-br from-slate-500 to-slate-800">Serenity.</span>
+                        </motion.h1>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8, delay: 0.2 }}
+                            className="text-xl md:text-2xl text-slate-600 font-light max-w-2xl mx-auto leading-relaxed mb-10"
+                        >
+                            A bubble of digital wellness. Stories, sounds, and frequencies designed to make you feel, finally, okay.
+                        </motion.p>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.8, delay: 0.5 }}
+                            className="animate-bounce text-slate-400 text-sm tracking-widest uppercase"
+                        >
+                            Scroll to explore
+                        </motion.div>
+                    </div>
+                </section>
 
-                {/* 2. MOOD JOURNEY */}
-                {MOODS.slice(1).map((mood, idx) => (
-                    <MoodSection
-                        key={mood.id}
-                        mood={mood}
-                        index={idx + 1}
-                        setActiveIndex={setActiveIndex}
-                        onEnterApp={onEnterApp}
-                        isHero={false}
-                    />
-                ))}
+                {/* 2. MOOD JOURNEY - Single Sticky Container with Changing Content */}
+                <div
+                    ref={moodSectionRef}
+                    style={{ height: `${MOODS.length * 100}vh` }} // Scroll space for all moods
+                    className="relative"
+                >
+                    {/* Sticky Content Container */}
+                    <div className="sticky top-0 h-screen flex items-center justify-center p-6 overflow-hidden">
+                        <div className="max-w-5xl w-full grid md:grid-cols-2 gap-12 items-center">
+
+                            {/* Text Side - Animated */}
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={activeMood.id + '-text'}
+                                    initial={{ opacity: 0, x: -30 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 30 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="text-left"
+                                >
+                                    {/* Mood Badge */}
+                                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${activeMood.colorClass} border border-white/40 backdrop-blur-sm text-xs font-bold uppercase tracking-widest text-slate-700 mb-6 shadow-sm`}>
+                                        {activeMood.icon && <activeMood.icon className="w-4 h-4" />}
+                                        {activeMood.name}
+                                    </div>
+
+                                    <h2 className="text-5xl md:text-7xl font-bold text-slate-900 mb-6" style={{ fontFamily: 'var(--font-serif)' }}>
+                                        {activeMood.desc}
+                                    </h2>
+
+                                    <p className="text-lg text-slate-600 leading-relaxed mb-8 max-w-md">
+                                        Immerse yourself in a soundscape curated for this precise state of mind.
+                                        Balanced frequencies and narrations that gently guide you.
+                                    </p>
+
+                                    <button onClick={onEnterApp} className="group flex items-center gap-2 text-slate-900 font-bold border-b border-slate-900 pb-0.5 hover:text-indigo-600 hover:border-indigo-600 transition-colors">
+                                        Listen to preview <Play className="w-4 h-4 fill-current" />
+                                    </button>
+
+                                    {/* Mood Progress Dots */}
+                                    <div className="flex gap-2 mt-12">
+                                        {MOODS.map((mood, idx) => (
+                                            <div
+                                                key={mood.id}
+                                                className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === activeIndex
+                                                        ? 'bg-slate-900 scale-125'
+                                                        : 'bg-slate-300'
+                                                    }`}
+                                            />
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+
+                            {/* Card Side - Animated */}
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={activeMood.id + '-card'}
+                                    initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -50, scale: 0.9 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="relative"
+                                >
+                                    {/* The Glass Card Showcase */}
+                                    <div
+                                        onClick={() => handleCardClick(currentStory)}
+                                        className="relative aspect-[4/5] md:aspect-square bg-white/20 backdrop-blur-2xl border border-white/40 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col group cursor-pointer hover:bg-white/30 transition-colors"
+                                    >
+                                        {/* Cover Image */}
+                                        {currentStory?.cover_url && (
+                                            <div className="absolute inset-0">
+                                                <Image
+                                                    src={currentStory.cover_url}
+                                                    alt={currentStory.title}
+                                                    fill
+                                                    className="object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                            </div>
+                                        )}
+
+                                        {/* Inner Glow (fallback if no image) */}
+                                        {!currentStory?.cover_url && (
+                                            <div className={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${activeMood.accent} opacity-20 blur-[80px] rounded-full`} />
+                                        )}
+
+                                        <div className="mt-auto p-8 relative z-10">
+                                            <div className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center mb-6 shadow-md group-hover:scale-110 transition-transform">
+                                                <Play className="w-5 h-5 text-slate-900 fill-slate-900 ml-1" />
+                                            </div>
+                                            <h3 className={`text-2xl md:text-3xl font-bold mb-2 leading-tight ${currentStory?.cover_url ? 'text-white' : 'text-slate-900'}`}>
+                                                {currentStory?.title || `${activeMood.name} Session`}
+                                            </h3>
+                                            <p className={`text-sm font-medium opacity-80 ${currentStory?.cover_url ? 'text-white/80' : 'text-slate-600'}`}>
+                                                {currentStory ? `${formatDuration(currentStory.duration)} • ${currentStory.category?.replace(/_/g, ' ')}` : 'Duration: 15 min • Voice Guide'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                </div>
 
                 {/* 3. FINAL VALUES/CTA */}
                 <FinalSection onEnterApp={onEnterApp} />
@@ -141,112 +324,6 @@ export default function LandingPage({ onEnterApp, showNav = true }: LandingPageP
             </main>
         </div>
     );
-}
-
-// --- SUB-COMPONENT: MOOD SECTION ---
-function MoodSection({ mood, index, setActiveIndex, onEnterApp, isHero }: any) {
-    const ref = useRef(null);
-    const isInView = useInView(ref, { margin: "-50% 0px -50% 0px" }); // Trigger when center of section hits center of screen
-
-    useEffect(() => {
-        if (isInView) setActiveIndex(index);
-    }, [isInView, index, setActiveIndex]);
-
-    return (
-        <section ref={ref} className="min-h-screen relative flex items-center justify-center p-6 perspective-1000">
-            {/* The 3D Image (Fixed/Sticky feel via Layout) */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 md:opacity-100">
-                {mood.asset && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
-                        whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-                        exit={{ opacity: 0, scale: 1.2 }}
-                        transition={{ duration: 1.2, ease: "easeOut" }}
-                        className="w-[300px] h-[300px] md:w-[600px] md:h-[600px] relative"
-                    >
-                        <Image
-                            src={mood.asset}
-                            alt={mood.name}
-                            fill
-                            className="object-contain drop-shadow-2xl mix-blend-multiply filter blur-[1px]"
-                        />
-                    </motion.div>
-                )}
-            </div>
-
-            {/* Glass Card Content */}
-            <div className="max-w-5xl w-full grid md:grid-cols-2 gap-12 items-center relative z-10">
-
-                {/* Text Side */}
-                <motion.div
-                    initial={{ opacity: 0, x: -50 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    className={`text-left ${isHero ? 'md:col-span-2 md:text-center' : ''}`}
-                >
-                    {isHero ? (
-                        <>
-                            {/* Hero Specific Layout */}
-                            <motion.h1
-                                className="text-6xl md:text-9xl font-black tracking-tighter text-slate-900 mb-6 leading-tight"
-                                style={{ fontFamily: 'var(--font-serif)' }}
-                            >
-                                The Sound of <br />
-                                <span className="italic text-transparent bg-clip-text bg-gradient-to-br from-slate-500 to-slate-800">Serenity.</span>
-                            </motion.h1>
-                            <p className="text-xl md:text-2xl text-slate-600 font-light max-w-2xl mx-auto leading-relaxed mb-10">
-                                A bubble of digital wellness. Stories, sounds, and frequencies designed to make you feel, finally, okay.
-                            </p>
-                            <div className="flex justify-center flex-col md:flex-row gap-4 items-center mb-24">
-                                <div className="animate-bounce text-slate-400 text-sm tracking-widest uppercase">Scroll to explore</div>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            {/* Mood Specific Layout */}
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/30 border border-white/40 backdrop-blur-sm text-xs font-bold uppercase tracking-widest text-slate-600 mb-6 shadow-sm">
-                                {mood.icon && <mood.icon className="w-4 h-4" />}
-                                {mood.name}
-                            </div>
-                            <h2 className="text-5xl md:text-7xl font-bold text-slate-900 mb-6" style={{ fontFamily: 'var(--font-serif)' }}>{mood.desc}</h2>
-                            <p className="text-lg text-slate-600 leading-relaxed mb-8 max-w-md">
-                                Immerse yourself in a soundscape curated for this precise state of mind.
-                                Balanced frequencies and narrations that gently guide you.
-                            </p>
-                            <button onClick={onEnterApp} className="group flex items-center gap-2 text-slate-900 font-bold border-b border-slate-900 pb-0.5 hover:text-indigo-600 hover:border-indigo-600 transition-colors">
-                                Listen to preview <Play className="w-4 h-4 fill-current" />
-                            </button>
-                        </>
-                    )}
-                </motion.div>
-
-                {/* Example Card Side (Only for Moods) */}
-                {!isHero && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                        viewport={{ margin: "-20%" }}
-                        transition={{ duration: 0.8 }}
-                        className="relative mt-8 md:mt-0"
-                    >
-                        {/* The Glass Card Showcase */}
-                        <div className="relative aspect-[4/5] md:aspect-square bg-white/20 backdrop-blur-2xl border border-white/40 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col p-8 group cursor-pointer hover:bg-white/30 transition-colors">
-                            {/* Inner Glow */}
-                            <div className={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${mood.accent} opacity-20 blur-[80px] rounded-full`} />
-
-                            <div className="mt-auto">
-                                <div className="w-12 h-12 rounded-full bg-white/60 flex items-center justify-center mb-6 shadow-md group-hover:scale-110 transition-transform">
-                                    <Play className="w-5 h-5 text-slate-900 fill-slate-900 ml-1" />
-                                </div>
-                                <h3 className="text-3xl font-bold text-slate-900 mb-2 leading-tight">{mood.name} Session</h3>
-                                <p className="text-slate-600 text-sm font-medium opacity-80">Duration: 15 min • Voice Guide</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </div>
-        </section>
-    )
 }
 
 function FinalSection({ onEnterApp }: { onEnterApp: () => void }) {
@@ -261,7 +338,7 @@ function FinalSection({ onEnterApp }: { onEnterApp: () => void }) {
                     {[
                         { title: "Presence", desc: "Spatial audio.", icon: Wind },
                         { title: "Kindness", desc: "Warm stories.", icon: Heart },
-                        { title: "Harmony", desc: "Human curation.", icon: Sparkles }
+                        { title: "Innovation", desc: "AI-powered.", icon: Sparkles }
                     ].map((item, i) => (
                         <div key={i} className="p-6 rounded-2xl bg-white/40 border border-white/50 text-center">
                             <item.icon className="w-8 h-8 mx-auto mb-4 text-slate-700" />
