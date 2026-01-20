@@ -50,9 +50,9 @@ export default function GlassLayout({ children, variant = 'immersive' }: GlassLa
 
             {/* SCROLLING GLASS CONTENT */}
             <div className="relative min-h-screen" style={{ zIndex: Z_INDEX.content }}>
-                <div className={`min-h-screen pt-20 md:pt-24 pb-24 md:pb-16 ${variant === 'immersive'
-                        ? 'bg-slate-50/60 backdrop-blur-2xl'
-                        : 'bg-white/95 backdrop-blur-xl'
+                <div className={`min-h-screen pt-16 md:pt-24 pb-24 md:pb-16 ${variant === 'immersive'
+                    ? 'bg-slate-50/60 backdrop-blur-2xl'
+                    : 'bg-white/95 backdrop-blur-xl'
                     }`}>
                     {children}
                 </div>
