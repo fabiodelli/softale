@@ -18,6 +18,7 @@ import { trackEvent } from '@/lib/analytics';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthProvider'; // Import Auth
 import LandingPage from '@/components/landing/LandingPage'; // Import Landing
+import BreathingLoader from '@/components/BreathingLoader'; // Import Breathing Loader
 
 // Mood to Categories Mapping
 const moodToCategories: Record<string, string[]> = {
@@ -37,6 +38,7 @@ export default function HomePage() {
 
   // STATE: Landing vs App
   const [showLanding, setShowLanding] = useState(true);
+  const [showBreathing, setShowBreathing] = useState(false);
   const [appReady, setAppReady] = useState(false);
 
   // DATA STATE
@@ -106,11 +108,17 @@ export default function HomePage() {
     }
   }, [user, authLoading]);
 
-  // Transition Handler
+  // Transition Handler - Show breathing loader before app
   const handleEnterApp = () => {
     localStorage.setItem('softale_has_visited', 'true');
     setShowLanding(false);
-    setTimeout(() => setAppReady(true), 500); // Small delay for fade effect if needed
+    setShowBreathing(true); // Show breathing animation
+  };
+
+  // Called when breathing animation completes
+  const handleBreathingComplete = () => {
+    setShowBreathing(false);
+    setAppReady(true);
   };
 
   // Autoplay from Vision page
@@ -130,6 +138,30 @@ export default function HomePage() {
       }
       // Clear after use
       sessionStorage.removeItem('softale_autoplay_story');
+    }
+
+    // Apply user preferences from Vision page
+    const preferencesData = sessionStorage.getItem('softale_preferences');
+    if (preferencesData) {
+      try {
+        const preferences = JSON.parse(preferencesData);
+        // Map first preference to mood
+        const prefToMood: Record<string, Mood> = {
+          'sleep': 'sleep',
+          'stress': 'meditation',
+          'peace': 'nature',
+          'escape': 'fantasy',
+          'energy': 'energized'
+        };
+        if (preferences.length > 0 && prefToMood[preferences[0]]) {
+          setActiveMood(prefToMood[preferences[0]]);
+          sessionStorage.setItem('reverie_active_mood', prefToMood[preferences[0]]);
+        }
+      } catch (e) {
+        console.error('Failed to parse preferences:', e);
+      }
+      // Clear after use
+      sessionStorage.removeItem('softale_preferences');
     }
   }, [appReady, play]);
 
@@ -217,7 +249,12 @@ export default function HomePage() {
     return <LandingPage onEnterApp={handleEnterApp} />;
   }
 
-  // 2. APP LOADING STATE (Transition)
+  // 2. BREATHING LOADER STATE (Calm-style transition)
+  if (showBreathing) {
+    return <BreathingLoader onComplete={handleBreathingComplete} minDuration={3500} />;
+  }
+
+  // 3. APP LOADING STATE (Transition)
   if (!appReady && !dataLoading) {
     return <div className="min-h-screen bg-slate-50" />; // Empty flash during swap
   }
