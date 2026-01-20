@@ -130,7 +130,7 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={onClose}
-                            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60]"
+                            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9998]"
                         />
 
                         {/* Drawer */}
@@ -139,7 +139,7 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="fixed top-0 left-0 bottom-0 w-full max-w-sm bg-white z-[70] shadow-2xl flex flex-col"
+                            className="fixed top-0 left-0 bottom-0 w-full max-w-sm bg-white z-[9999] shadow-2xl flex flex-col"
                         >
                             {/* Header */}
                             <div className="p-6 border-b border-slate-100 flex items-center justify-between">

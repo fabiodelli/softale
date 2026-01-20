@@ -9,7 +9,6 @@ import { useAuth } from '@/lib/AuthProvider';
 import { useState, useEffect } from 'react';
 
 // Components
-import SettingsDrawer from '@/components/account/SettingsDrawer';
 import DashboardTab from '@/components/account/DashboardTab';
 import LibraryTab from '@/components/account/LibraryTab';
 import HistoryTab from '@/components/account/HistoryTab';
@@ -23,7 +22,6 @@ export default function AccountPage() {
     const { user, profile, loading } = useAuth();
 
     const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     // Redirect unauthenticated users
     useEffect(() => {
@@ -50,7 +48,7 @@ export default function AccountPage() {
     return (
         <GlassLayout variant="functional">
             <div className="pt-4 pb-4 px-6 max-w-xl mx-auto">
-                {/* Mobile Logo - Fixed Top Center (Aligned with Mood and Gear) */}
+                {/* Mobile Logo - Fixed Top Center */}
                 <Link href="/" className="fixed top-4 left-1/2 -translate-x-1/2 md:hidden flex items-center gap-2 group drop-shadow-lg z-50">
                     <Image
                         src="/assets/softale-icon.png"
@@ -67,25 +65,22 @@ export default function AccountPage() {
                     </span>
                 </Link>
 
-                {/* Settings Gear - Fixed Top Right */}
-                <button
-                    onClick={() => setIsSettingsOpen(true)}
+                {/* Settings Gear - Fixed Top Right (Links to /settings) */}
+                <Link
+                    href="/settings"
                     className="fixed top-4 right-4 md:hidden p-2.5 bg-white/80 backdrop-blur-md rounded-full shadow-lg border border-white/40 text-slate-600 hover:text-indigo-600 z-50"
                 >
                     <Settings className="w-5 h-5" />
-                </button>
+                </Link>
 
-                {/* Gear Icon - Moved to fixed top-4 right-4 below */
-                }
-
-                {/* Desktop Gear - Restored */}
+                {/* Desktop Gear - Links to /settings */}
                 <div className="flex justify-end mb-6 mt-12 md:mt-0">
-                    <button
-                        onClick={() => setIsSettingsOpen(true)}
+                    <Link
+                        href="/settings"
                         className="hidden md:block p-2 bg-white rounded-full shadow-sm border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition"
                     >
                         <Settings className="w-6 h-6" />
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Tab Navigation - Centered */}
@@ -121,10 +116,8 @@ export default function AccountPage() {
                 {activeTab === 'history' && <HistoryTab />}
                 {activeTab === 'reflections' && <ReflectionsTab />}
             </main>
-
-            {/* Settings Overlay */}
-            <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         </GlassLayout>
     );
 }
+
 
