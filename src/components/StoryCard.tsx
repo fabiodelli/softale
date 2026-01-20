@@ -14,7 +14,7 @@ interface StoryCardProps {
     rank?: number; // 1, 2, 3... for Top Charts
 }
 
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 import { useAuth } from '@/lib/AuthProvider';
 import { usePremiumModal } from '@/lib/usePremiumModal';
 import { useRouter } from 'next/navigation';

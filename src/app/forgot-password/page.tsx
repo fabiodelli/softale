@@ -27,10 +27,11 @@ export default function ForgotPassword() {
                 type: 'success',
                 message: 'Check your email for the password reset link.'
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to send reset email.';
             setStatus({
                 type: 'error',
-                message: err.message || 'Failed to send reset email.'
+                message
             });
         } finally {
             setLoading(false);

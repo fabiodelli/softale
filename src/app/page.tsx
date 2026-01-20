@@ -7,7 +7,7 @@ import StoryCard from '@/components/StoryCard';
 import CollectionCard from '@/components/CollectionCard';
 import MoodSelector, { Mood } from '@/components/MoodSelector';
 import MoodToggleButton from '@/components/MoodToggleButton';
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 import { useAmbience } from '@/context/AmbienceContext';
 import { useMood } from '@/context/MoodContext';
 import { Layers } from 'lucide-react';
@@ -198,12 +198,6 @@ export default function HomePage() {
     'energized': 'ocean'
   };
 
-  // Removed invalid import
-  // Wait, I can't add import here easily. I should just update the function and add import separately.
-  // The tool supports multiple replacements but "Imports" are far.
-  // I will assume I can update imports separately or user auto-import. 
-  // I'll stick to updating the function and hope for auto-import or I will do 2 steps.
-  // Step 1: Update Function.
   const handleMoodSelect = (mood: Mood) => {
     setActiveMood(mood);
     trackEvent('mood_select', { mood });

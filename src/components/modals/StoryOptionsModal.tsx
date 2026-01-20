@@ -62,6 +62,7 @@ export default function StoryOptionsModal({ isOpen, onClose, storyId, storyTitle
         }
 
         setShowPlaylists(true);
+        if (!user) return;
         if (playlists.length === 0) {
             setPlaylistLoading(true);
             const data = await getUserPlaylists(user.id!);

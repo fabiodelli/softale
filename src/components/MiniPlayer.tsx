@@ -1,6 +1,6 @@
 'use client';
 
-import { usePlayer, LoopDuration } from '@/lib/PlayerContext';
+import { usePlayer, LoopDuration } from '@/context/PlayerContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';

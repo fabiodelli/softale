@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Play, Pause, ArrowLeft, Clock, Layers, Shuffle } from 'lucide-react';
 
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 import GlassLayout from '@/components/GlassLayout';
 
 // Loopable categories

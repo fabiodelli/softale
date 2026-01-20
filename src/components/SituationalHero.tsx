@@ -12,7 +12,7 @@ interface SituationalHeroProps {
     onPlay?: () => void;
 }
 
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 
 export default function SituationalHero({ story, onPlay }: SituationalHeroProps) {
     const router = useRouter();

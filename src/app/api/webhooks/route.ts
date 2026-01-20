@@ -23,8 +23,10 @@ export async function POST(request: NextRequest) {
 
     try {
         event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } catch (err: any) {
-        console.error('Webhook signature verification failed:', err.message);
+        console.log('✅ Webhook verified:', event.type);
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown verification error';
+        console.error('❌ Webhook signature verification failed:', message);
         return NextResponse.json({ error: 'Webhook Error' }, { status: 400 });
     }
 
@@ -33,23 +35,29 @@ export async function POST(request: NextRequest) {
             case 'checkout.session.completed': {
                 const session = event.data.object as Stripe.Checkout.Session;
                 const userId = session.metadata?.supabase_user_id;
+                console.log('📦 checkout.session.completed - userId:', userId, 'subscription:', session.subscription);
 
                 if (userId) {
-                    await supabase
+                    const { data, error } = await supabase
                         .from('profiles')
                         .update({
                             is_premium: true,
                             subscription_id: session.subscription as string,
                             subscription_status: 'active',
                         })
-                        .eq('id', userId);
+                        .eq('id', userId)
+                        .select();
+
+                    console.log('📝 Update result:', { data, error });
                 }
                 break;
             }
 
+            case 'customer.subscription.created':
             case 'customer.subscription.updated': {
                 const subscription = event.data.object as Stripe.Subscription;
                 const customerId = subscription.customer as string;
+                console.log('📦', event.type, '- customerId:', customerId, 'status:', subscription.status);
 
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -57,15 +65,26 @@ export async function POST(request: NextRequest) {
                     .eq('stripe_customer_id', customerId)
                     .single();
 
+                console.log('👤 Found profile:', profile);
+
                 if (profile) {
-                    await supabase
+                    // Handle both 'active' and 'trialing' as premium
+                    const isPremium = subscription.status === 'active' || subscription.status === 'trialing';
+
+                    const { data, error } = await supabase
                         .from('profiles')
                         .update({
                             subscription_status: subscription.status,
-                            is_premium: subscription.status === 'active',
-                            subscription_end_date: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : null,
-                        } as any)
-                        .eq('id', profile.id);
+                            is_premium: isPremium,
+                            subscription_id: subscription.id,
+                            subscription_end_date: (subscription as Stripe.Subscription & { current_period_end?: number }).current_period_end
+                                ? new Date((subscription as Stripe.Subscription & { current_period_end?: number }).current_period_end! * 1000).toISOString()
+                                : null,
+                        })
+                        .eq('id', profile.id)
+                        .select();
+
+                    console.log('📝 Update result:', { data, error });
                 }
                 break;
             }
@@ -73,6 +92,7 @@ export async function POST(request: NextRequest) {
             case 'customer.subscription.deleted': {
                 const subscription = event.data.object as Stripe.Subscription;
                 const customerId = subscription.customer as string;
+                console.log('📦 customer.subscription.deleted - customerId:', customerId);
 
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -81,14 +101,17 @@ export async function POST(request: NextRequest) {
                     .single();
 
                 if (profile) {
-                    await supabase
+                    const { data, error } = await supabase
                         .from('profiles')
                         .update({
                             is_premium: false,
                             subscription_status: 'canceled',
                             subscription_id: null,
                         })
-                        .eq('id', profile.id);
+                        .eq('id', profile.id)
+                        .select();
+
+                    console.log('📝 Update result:', { data, error });
                 }
                 break;
             }
@@ -96,6 +119,7 @@ export async function POST(request: NextRequest) {
             case 'invoice.payment_failed': {
                 const invoice = event.data.object as Stripe.Invoice;
                 const customerId = invoice.customer as string;
+                console.log('📦 invoice.payment_failed - customerId:', customerId);
 
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -111,11 +135,16 @@ export async function POST(request: NextRequest) {
                 }
                 break;
             }
+
+            default:
+                console.log('⚠️ Unhandled event type:', event.type);
         }
 
         return NextResponse.json({ received: true });
-    } catch (error: any) {
-        console.error('Webhook handler error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        console.error('❌ Webhook handler error:', error);
+        const message = error instanceof Error ? error.message : 'Unknown handler error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
+

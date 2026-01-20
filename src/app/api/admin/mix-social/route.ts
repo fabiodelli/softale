@@ -196,8 +196,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, url: reelUrl });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Mixing failed:', error);
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
 
         // Cleanup local temp files on error
         try {
@@ -221,6 +222,6 @@ export async function POST(req: NextRequest) {
             }
         } catch (cleanupErr) { console.error("Raw cleanup error", cleanupErr); }
 
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

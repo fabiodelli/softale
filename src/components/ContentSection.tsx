@@ -7,7 +7,7 @@ import StoryCard from './StoryCard';
 import { ChevronLeft, ChevronRight, Play, Lock, MoreVertical } from 'lucide-react';
 import Link from 'next/link';
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 import { useAuth } from '@/lib/AuthProvider';
 import { formatDuration } from '@/lib/formatters';
 import { useRouter } from 'next/navigation';

@@ -4,16 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Stripe from 'stripe';
 
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
-    }
-);
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-12-15.clover' as any,
@@ -46,13 +37,24 @@ export async function POST(request: NextRequest) {
         // Check Subscription Status & Cancel if needed
         const { data: profile } = await supabaseAdmin.from('profiles').select('*').eq('id', userId).single();
 
+
         if (profile?.subscription_status === 'active' && profile.subscription_id) {
             try {
                 await stripe.subscriptions.cancel(profile.subscription_id);
                 console.log(`Cancelled subscription ${profile.subscription_id} for deleting user ${userId}`);
-            } catch (stripeError: any) {
+            } catch (stripeError: unknown) {
                 console.error("Stripe cancellation failed", stripeError);
-                return NextResponse.json({ error: 'Active subscription could not be cancelled. Please contact support.' }, { status: 400 });
+                // Allow proceeding even if cancellation fails (e.g. already cancelled)
+            }
+        }
+
+        // Clean up Stripe Customer (Prevent history persistence in Test Mode)
+        if (profile?.stripe_customer_id) {
+            try {
+                await stripe.customers.del(profile.stripe_customer_id);
+                console.log(`Deleted Stripe Customer ${profile.stripe_customer_id}`);
+            } catch (err: unknown) {
+                console.warn(`Could not delete Stripe Customer:`, err);
             }
         }
 
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: true });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Delete Account API Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

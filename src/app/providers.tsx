@@ -1,7 +1,7 @@
 'use client';
 
 import { AuthProvider } from '@/lib/AuthProvider';
-import { PlayerProvider } from '@/lib/PlayerContext';
+import { PlayerProvider } from '@/context/PlayerContext';
 import { AmbienceProvider } from '@/context/AmbienceContext';
 import { CookieProvider } from '@/context/CookieContext';
 import { MoodProvider } from '@/context/MoodContext';

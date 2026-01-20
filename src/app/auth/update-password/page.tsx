@@ -44,10 +44,11 @@ export default function UpdatePassword() {
                 router.push('/');
             }, 2000);
 
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to update password';
             setStatus({
                 type: 'error',
-                message: err.message
+                message
             });
         } finally {
             setLoading(false);

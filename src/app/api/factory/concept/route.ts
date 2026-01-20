@@ -76,10 +76,11 @@ export async function POST(req: NextRequest) {
             filePath: filePath
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('❌ Concept API Error:', error);
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
         return NextResponse.json(
-            { error: error.message || 'Internal Server Error' },
+            { error: message },
             { status: 500 }
         );
     }

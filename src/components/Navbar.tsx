@@ -93,6 +93,10 @@ export default function Navbar() {
         ? 'bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm py-3'  // Scrolled: glassmorphic
         : 'bg-transparent border-transparent py-3'; // Hero visible (home only): transparent
 
+    const isHiddenRoute = pathname === '/vision' || pathname === '/login' || pathname === '/signup';
+
+    if (isHiddenRoute) return null;
+
     return (
         <header className={`hidden md:block fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-in-out ${glassClass}`}>
             <div className="w-full px-4 md:px-8 flex items-center justify-between relative">
@@ -110,8 +114,8 @@ export default function Navbar() {
                     />
                     <span
                         className={`text-xl font-semibold tracking-tight transition-all ${isScrolled
-                                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent'
-                                : 'text-white'
+                            ? 'bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent'
+                            : 'text-white'
                             }`}
                         style={{ fontFamily: 'Outfit, var(--font-inter), system-ui, sans-serif' }}
                     >

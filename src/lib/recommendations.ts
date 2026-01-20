@@ -1,4 +1,4 @@
-import { supabase, Story } from './supabase';
+import { supabase, Story, FavoriteJoin, ProgressJoin } from './supabase';
 
 // ========================================
 // Types
@@ -70,9 +70,8 @@ export async function getRecommendedStories(userId: string): Promise<Story[]> {
     }
 
     const allStories = allStoriesRes.data as Story[];
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    const favorites = (favoritesRes.data || []).map((f: any) => f.stories).filter(Boolean);
-    const progress = (progressRes.data || []).map((p: any) => ({ story: p.stories, completed: p.completed })).filter((p: any) => p.story);
+    const favorites = (favoritesRes.data || []).map((f: unknown) => (f as FavoriteJoin).stories).filter(Boolean);
+    const progress = (progressRes.data || []).map((p: unknown) => ({ story: (p as ProgressJoin).stories, completed: (p as ProgressJoin).completed })).filter((p) => p.story);
 
     // 2. Build User Profile (Tag Affinity)
     const tagScores: Record<string, number> = {};

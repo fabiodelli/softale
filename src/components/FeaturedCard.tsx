@@ -1,5 +1,5 @@
 import { Story } from '@/lib/supabase';
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 import { useAuth } from '@/lib/AuthProvider';
 import { usePremiumModal } from '@/lib/usePremiumModal';
 import { useRouter } from 'next/navigation';

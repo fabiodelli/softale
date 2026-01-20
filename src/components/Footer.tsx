@@ -13,8 +13,7 @@ export default function Footer() {
                         <Logo size="lg" />
                     </div>
                     <p className="text-slate-500 max-w-sm mb-6">
-                        Mindful audio stories for relaxation, sleep, and focus.
-                        Your daily escape into calmness.
+                        A bubble of digital wellness. Stories, sounds, and frequencies designed to make you feel, finally, okay.
                     </p>
                     {/* Social Icons - Desktop only */}
                     <div className="hidden md:flex items-center gap-4">

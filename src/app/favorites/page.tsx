@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthProvider';
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 import { getFavorites, toggleFavorite, type Story } from '@/lib/supabase';
 import GlassLayout from '@/components/GlassLayout';
 

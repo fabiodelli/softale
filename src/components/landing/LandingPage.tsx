@@ -11,6 +11,7 @@ import { formatDuration } from '@/lib/formatters';
 interface LandingPageProps {
     onEnterApp: () => void;
     showNav?: boolean;
+    minimalHeader?: boolean;
 }
 
 // --- MOODS - Colors matched with MoodSelector ---
@@ -47,12 +48,12 @@ const MOODS = [
     },
     {
         id: 'meditation',
-        name: 'Focused',
+        name: 'Focus',
         category: 'meditation',
         colors: ['#e0f2fe', '#f0f9ff', '#bae6fd'],
         colorClass: 'bg-sky-100',
         accent: 'from-sky-400 to-sky-600',
-        desc: 'Deep Flow',
+        desc: 'Deep Focus',
         icon: Brain,
     },
     {
@@ -93,7 +94,7 @@ const TESTIMONIALS = [
     { quote: "Finally an app that understands what relaxation really means. Beautiful and effective.", author: "Emma K.", role: "Teacher" },
 ];
 
-export default function LandingPage({ onEnterApp, showNav = true }: LandingPageProps) {
+export default function LandingPage({ onEnterApp, showNav = true, minimalHeader = false }: LandingPageProps) {
     // Current Active Mood Index
     const [activeIndex, setActiveIndex] = useState(0);
     const activeMood = MOODS[activeIndex];
@@ -203,21 +204,25 @@ export default function LandingPage({ onEnterApp, showNav = true }: LandingPageP
 
             {/* --- FIXED NAVIGATION --- */}
             {showNav && (
-                <nav className="fixed top-0 left-0 right-0 z-50 p-4 md:p-6 flex items-center justify-between max-w-7xl mx-auto w-full">
-                    <div className="flex items-center gap-2">
-                        <Image
-                            src="/assets/softale-icon.png"
-                            alt="Softale"
-                            width={40}
-                            height={40}
-                            className="drop-shadow-md"
-                        />
-                        <span className="text-lg md:text-xl font-bold tracking-tight text-slate-900/80">Softale</span>
-                    </div>
+                <nav className={`fixed top-0 left-0 right-0 z-50 p-4 md:p-6 flex items-center ${minimalHeader ? 'justify-end' : 'justify-between'} max-w-7xl mx-auto w-full`}>
+                    {!minimalHeader && (
+                        <div className="flex items-center gap-2">
+                            <Image
+                                src="/assets/softale-icon.png"
+                                alt="Softale"
+                                width={40}
+                                height={40}
+                                className="drop-shadow-md"
+                            />
+                            <span className="text-lg md:text-xl font-bold tracking-tight text-slate-900/80">Softale</span>
+                        </div>
+                    )}
                     <button onClick={handleEnterWithPreferences} className="px-4 md:px-6 py-2 md:py-2.5 text-xs font-bold uppercase tracking-widest bg-white/40 hover:bg-white/60 backdrop-blur-md border border-white/50 rounded-full transition text-slate-900 shadow-sm hover:shadow-md active:scale-95">
                         Start Listening
                     </button>
-                    <motion.div className="absolute bottom-0 left-0 h-[2px] bg-slate-900/10 origin-left" style={{ scaleX, right: 0 }} />
+                    {!minimalHeader && (
+                        <motion.div className="absolute bottom-0 left-0 h-[2px] bg-slate-900/10 origin-left" style={{ scaleX, right: 0 }} />
+                    )}
                 </nav>
             )}
 
@@ -426,7 +431,7 @@ export default function LandingPage({ onEnterApp, showNav = true }: LandingPageP
                 </section>
 
                 {/* ===== 4. BENEFITS GRID ===== */}
-                <section className="py-24 md:py-32 px-6 bg-slate-50/80">
+                <section className="py-24 md:py-32 px-6 bg-amber-50/60 backdrop-blur-sm">
                     <div className="max-w-6xl mx-auto">
                         <motion.h2
                             initial={{ opacity: 0, y: 20 }}
@@ -548,7 +553,7 @@ export default function LandingPage({ onEnterApp, showNav = true }: LandingPageP
                 </section>
 
                 {/* ===== 7. COMING SOON - APP STORES ===== */}
-                <section className="py-16 px-6 bg-gradient-to-b from-white/40 to-slate-50/60">
+                <section className="py-16 px-6 bg-gradient-to-b from-amber-50/80 to-slate-50/60">
                     <div className="max-w-4xl mx-auto text-center">
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
@@ -651,19 +656,7 @@ export default function LandingPage({ onEnterApp, showNav = true }: LandingPageP
                     </div>
                 </section>
 
-                {/* ===== FOOTER ===== */}
-                <footer className="py-12 px-6 border-t border-slate-200 text-slate-500 text-sm bg-slate-50">
-                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div className="flex items-center gap-2 opacity-50">
-                            <Image src="/assets/softale-icon.png" alt="Softale" width={24} height={24} />
-                            <span>&copy; {new Date().getFullYear()} Softale Inc.</span>
-                        </div>
-                        <div className="flex gap-8">
-                            <Link href="/privacy" className="hover:text-slate-900 transition">Privacy</Link>
-                            <Link href="/terms" className="hover:text-slate-900 transition">Terms</Link>
-                        </div>
-                    </div>
-                </footer>
+
 
             </main>
         </div>

@@ -62,7 +62,8 @@ export default function UploadPage() {
 
                 if (error) throw error;
                 successCount++;
-            } catch (err: any) {
+                successCount++;
+            } catch (err: unknown) {
                 console.error(`Failed to upload ${file.name}:`, err);
                 errorCount++;
             }
@@ -94,8 +95,10 @@ export default function UploadPage() {
             if (error) throw error;
             setStatus(`🗑️ Deleted "${fileName}"`);
             fetchExistingAmbients();
-        } catch (err: any) {
-            setStatus(`Error: ${err.message}`);
+            fetchExistingAmbients();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            setStatus(`Error: ${message}`);
         }
     };
 

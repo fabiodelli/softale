@@ -7,7 +7,7 @@ import { getStories, getFavorites, getInProgressStories, getCollections, getUser
 import { getRecommendedStories } from '@/lib/recommendations';
 import StoryCard from '@/components/StoryCard';
 import CollectionCard from '@/components/CollectionCard';
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 import { useAuth } from '@/lib/AuthProvider';
 import { Heart, Play, Layers, X, Search, ChevronRight } from 'lucide-react';
 import Link from 'next/link';

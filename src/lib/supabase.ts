@@ -10,7 +10,16 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 console.log('Checking Supabase config:', { url: !!supabaseUrl, key: !!supabaseAnonKey });
 
 // Create client only if both env vars are set
-import { createSupabaseBrowserClient } from './supabase-browser';
+import { createBrowserClient } from '@supabase/ssr';
+
+// Create client only if both env vars are set
+
+
+const createSupabaseBrowserClient = () =>
+    createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
 // Create client only if both env vars are set
 // Use Browser Client for Client-Side to ensure Cookie persistence for Auth
@@ -49,8 +58,6 @@ export async function signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
 }
-
-// ... (import is already at the top)
 
 export async function signInWithGoogle() {
     const supabaseBrowser = createSupabaseBrowserClient();
@@ -162,6 +169,32 @@ export interface ListeningProgress {
 // ========================================
 // Database Helpers
 // ========================================
+// Helper Interfaces for Joins
+// ========================================
+
+export interface CollectionStoryJoin {
+    sort_order: number;
+    stories: Story | null; // Joined story might be null if deleted/unpublished
+}
+
+export interface CollectionWithJoin extends Omit<Collection, 'stories'> {
+    collection_stories?: CollectionStoryJoin[];
+    stories?: Story[]; // We map it to this later
+}
+
+export interface FavoriteJoin {
+    story_id: string;
+    stories: Story | null;
+}
+
+export interface ProgressJoin {
+    story_id: string;
+    progress_seconds: number;
+    completed: boolean;
+    stories: Story | null;
+}
+
+// ========================================
 
 export async function getProfile(userId: string, accessToken?: string): Promise<UserProfile | null> {
     try {
@@ -187,6 +220,33 @@ export async function getProfile(userId: string, accessToken?: string): Promise<
         console.error('Error fetching profile:', error);
         return null;
     }
+}
+
+import { User } from '@supabase/supabase-js';
+
+export async function createProfile(user: User): Promise<UserProfile | null> {
+    if (!supabase) return null;
+
+    const newProfile = {
+        id: user.id,
+        email: user.email!,
+        username: user.user_metadata?.full_name || user.email?.split('@')[0],
+        avatar_url: user.user_metadata?.avatar_url,
+        created_at: new Date().toISOString(),
+        role: 'user'
+    };
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .insert(newProfile)
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating profile:', error);
+        return null;
+    }
+    return data;
 }
 
 export async function getStories(categories?: string[], includeUnpublished: boolean = false): Promise<Story[]> {
@@ -294,11 +354,11 @@ export async function getFeaturedCollections(): Promise<Collection[]> {
     // Supabase returns: { ...collection, collection_stories: [{sort_order, stories: {...}}, ...] }
     // We want: { ...collection, stories: [Story, Story...] }
 
-    const formatted: Collection[] = collections.map((col: any) => {
+    const formatted: Collection[] = collections.map((col: CollectionWithJoin) => {
         const sortedStories = (col.collection_stories || [])
-            .sort((a: any, b: any) => a.sort_order - b.sort_order)
-            .map((item: any) => item.stories)
-            .filter((s: any) => s && s.is_published);
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((item) => item.stories)
+            .filter((s): s is Story => s !== null && s.is_published);
 
         return {
             ...col,
@@ -336,11 +396,11 @@ export async function getCollections(category?: string): Promise<Collection[]> {
     }
 
     // Transform nested structure (reuse logic if possible, but duplicating for safety in this snippet)
-    const formatted: Collection[] = collections.map((col: any) => {
+    const formatted: Collection[] = collections.map((col: CollectionWithJoin) => {
         const sortedStories = (col.collection_stories || [])
-            .sort((a: any, b: any) => a.sort_order - b.sort_order)
-            .map((item: any) => item.stories)
-            .filter((s: any) => s && s.is_published);
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((item) => item.stories)
+            .filter((s): s is Story => s !== null && s.is_published);
 
         return {
             ...col,
@@ -383,9 +443,9 @@ export async function getCollectionBySlug(slug: string): Promise<Collection | nu
     }
 
     // Transform result: flatten the array
-    const stories = junctionData
-        .map((item: any) => item.stories)
-        .filter((story: any) => story !== null && (story.is_published === true)); // Ensure only published stories
+    const stories = (junctionData as unknown as CollectionStoryJoin[])
+        .map((item) => item.stories)
+        .filter((story): story is Story => story !== null && (story.is_published === true)); // Ensure only published stories
 
     return { ...collection, stories };
 }
@@ -425,9 +485,9 @@ export async function getCollectionById(id: string): Promise<Collection | null> 
     }
 
     // Transform result
-    const stories = junctionData
-        .map((item: any) => item.stories)
-        .filter((story: any) => story !== null && (story.is_published === true));
+    const stories = (junctionData as unknown as CollectionStoryJoin[])
+        .map((item) => item.stories)
+        .filter((story): story is Story => story !== null && (story.is_published === true));
 
     return { ...collection, stories };
 }
@@ -667,9 +727,9 @@ export async function getFavorites(userId: string): Promise<Story[]> {
 
     // Transform result: flatten structure
     // data is [{ story_id, stories: Story }, ...]
-    const stories = data
-        .map((item: any) => item.stories)
-        .filter((s: any) => s != null); // Remove any nulls if story was deleted
+    const stories = (data as unknown as FavoriteJoin[])
+        .map((item) => item.stories)
+        .filter((s): s is Story => s != null); // Remove any nulls if story was deleted
 
     return stories;
 }
@@ -745,12 +805,12 @@ export async function getInProgressStories(userId: string): Promise<StoryWithPro
     }
 
     // Transform and calculate progress percentage
-    return data
-        .filter((item: any) => item.stories != null)
-        .map((item: any) => ({
-            ...item.stories,
+    return (data as unknown as ProgressJoin[])
+        .filter((item) => item.stories != null)
+        .map((item) => ({
+            ...item.stories!,
             progress_seconds: item.progress_seconds,
-            progress_percent: Math.round((item.progress_seconds / item.stories.duration) * 100)
+            progress_percent: Math.round((item.progress_seconds / item.stories!.duration) * 100)
         }));
 }
 

@@ -62,10 +62,12 @@ export async function POST(req: NextRequest) {
             logs: stdout
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('❌ Build API Error:', error);
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        const stdout = (error as { stdout?: string })?.stdout;
         return NextResponse.json(
-            { error: error.message || 'Internal Server Error', logs: error.stdout },
+            { error: message, logs: stdout },
             { status: 500 }
         );
     }

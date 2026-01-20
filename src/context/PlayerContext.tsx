@@ -1,10 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { trackEvent } from './analytics';
-import type { Story } from './supabase';
-import { useAuth } from './AuthProvider';
-import { updateListeningProgress, incrementListeningTime, checkAndIncrementStreak, incrementStoriesCompleted } from './supabase';
+import { trackEvent } from '@/lib/analytics';
+import type { Story } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthProvider';
+import { updateListeningProgress, incrementListeningTime, checkAndIncrementStreak, incrementStoriesCompleted } from '@/lib/supabase';
 import { useAmbience } from '@/context/AmbienceContext';
 // Audio Engine V2 Types
 export type PlaybackStatus = 'IDLE' | 'LOADING' | 'PLAYING' | 'PAUSED' | 'ERROR';

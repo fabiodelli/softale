@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { getStories, supabase, type Story } from '@/lib/supabase';
 import { Trash2, Globe, CheckSquare, Square, RefreshCw, Play, Pause, Plus, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 
 const CATEGORIES = ['all', 'sleep', 'meditation', 'nature', 'fantasy', 'soundscape', 'binaural', 'music_instrumental', 'motivation', 'work_break', 'kids'];
 
@@ -110,9 +110,9 @@ export default function StoriesManager() {
                 return next;
             });
             setStatus(`Deleted "${title}"`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Delete failed:', error);
-            const message = error?.message || 'Unknown error';
+            const message = error instanceof Error ? error.message : 'Unknown error';
             setStatus(`Error: ${message}`);
         }
     };
@@ -125,9 +125,10 @@ export default function StoriesManager() {
             if (error) throw error;
             setStories(stories.map(s => s.id === story.id ? { ...s, is_premium: newValue } : s));
             setStatus(`Updated "${story.title}" to ${newValue ? 'Premium' : 'Free'}`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Update failed:', error);
-            setStatus(`Error: ${error.message}`);
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            setStatus(`Error: ${message}`);
         }
     }
 
@@ -139,9 +140,10 @@ export default function StoriesManager() {
             if (error) throw error;
             setStories(stories.map(s => s.id === story.id ? { ...s, is_published: newValue } : s));
             setStatus(`"${story.title}" is now ${newValue ? 'Published' : 'Unpublished'}`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Publish toggle failed:', error);
-            setStatus(`Error: ${error.message}`);
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            setStatus(`Error: ${message}`);
         }
     }
 
@@ -159,10 +161,12 @@ export default function StoriesManager() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to start generation');
+            if (!res.ok) throw new Error(data.error || 'Failed to start generation');
             setStatus(`✅ Generation queued! Check Social Studio in a few minutes.`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Social generation failed:', error);
-            setStatus(`Error: ${error.message}`);
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            setStatus(`Error: ${message}`);
             setGeneratingIds(prev => {
                 const next = new Set(prev);
                 next.delete(story.id);
@@ -215,8 +219,9 @@ export default function StoriesManager() {
             }
 
             setStatus(`✅ Bulk action "${action}" complete!`);
-        } catch (error: any) {
-            setStatus(`❌ Bulk Action Failed: ${error.message}`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            setStatus(`❌ Bulk Action Failed: ${message}`);
         } finally {
             setIsBulkActionLoading(false);
         }

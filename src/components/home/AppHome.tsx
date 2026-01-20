@@ -6,7 +6,7 @@ import { getStories, getCollections, type Story, type Collection } from '@/lib/s
 import StoryCard from '@/components/StoryCard';
 import CollectionCard from '@/components/CollectionCard';
 import MoodSelector, { Mood } from '@/components/MoodSelector';
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer } from '@/context/PlayerContext';
 import { useAmbience } from '@/context/AmbienceContext';
 import { Layers } from 'lucide-react';
 import { getLayoutForMood } from '@/config/home-layout';

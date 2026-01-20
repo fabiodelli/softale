@@ -107,12 +107,14 @@ export async function POST(req: NextRequest) {
             usage: usageData
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('❌ Factory API Error:', error);
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        const stderr = (error as { stderr?: string })?.stderr;
         return NextResponse.json(
             {
-                error: error.message || 'Internal Server Error',
-                details: error.stderr,
+                error: message,
+                details: stderr,
                 debugEnv: {
                     hasAnthropic: !!process.env.ANTHROPIC_API_KEY,
                     anthropicPrefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 7) + '...' : 'MISSING',
