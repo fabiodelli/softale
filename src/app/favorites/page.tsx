@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/AuthProvider';
 import { usePlayer } from '@/lib/PlayerContext';
 import { getFavorites, toggleFavorite, type Story } from '@/lib/supabase';
-
+import GlassLayout from '@/components/GlassLayout';
 
 export default function FavoritesPage() {
     const { user, loading: authLoading } = useAuth();
@@ -55,17 +55,17 @@ export default function FavoritesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 pt-24 pb-20">
-            <div className="max-w-2xl mx-auto px-4">
+        <GlassLayout variant="functional">
+            <div className="max-w-2xl mx-auto px-4 py-8">
                 <div className="mb-8 flex items-center gap-4">
-                    <Link href="/account" className="text-white/80 hover:text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)] transition">← Back</Link>
-                    <h1 className="text-3xl font-bold text-white [text-shadow:_0_1px_4px_rgb(0_0_0_/_90%)]">Your Favorites</h1>
+                    <Link href="/account" className="text-slate-600 hover:text-slate-900 transition">← Back</Link>
+                    <h1 className="text-3xl font-bold text-slate-900">Your Favorites</h1>
                 </div>
 
                 {favorites.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                    <div className="text-center py-20 bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 shadow-sm">
                         <span className="text-4xl block mb-4">💔</span>
-                        <h3 className="text-xl font-medium text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)] mb-2">No favorites yet</h3>
+                        <h3 className="text-xl font-medium text-slate-900 mb-2">No favorites yet</h3>
                         <p className="text-slate-500 mb-6">Start exploring stories and tap the heart icon!</p>
                         <Link href="/" className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition font-medium inline-block">
                             Browse Library
@@ -80,7 +80,7 @@ export default function FavoritesPage() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="group flex items-center gap-4 p-4 bg-white hover:bg-slate-50 rounded-2xl border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md transition cursor-pointer"
+                                className="group flex items-center gap-4 p-4 bg-white/60 backdrop-blur-sm hover:bg-white/80 rounded-2xl border border-white/50 hover:border-slate-200 shadow-sm hover:shadow-md transition cursor-pointer"
                                 onClick={() => handlePlay(story)}
                             >
                                 {/* Thumbnail */}
@@ -98,7 +98,7 @@ export default function FavoritesPage() {
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)] truncate group-hover:text-indigo-200 transition">{story.title}</h3>
+                                    <h3 className="font-semibold text-slate-900 truncate group-hover:text-indigo-600 transition">{story.title}</h3>
                                     <p className="text-sm text-slate-500 truncate">{story.author || 'Softale'}</p>
                                 </div>
 
@@ -115,6 +115,6 @@ export default function FavoritesPage() {
                     </div>
                 )}
             </div>
-        </div>
+        </GlassLayout>
     );
 }
