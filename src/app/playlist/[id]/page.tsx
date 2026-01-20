@@ -91,7 +91,7 @@ export default function PlaylistPage() {
                     {/* Back Button */}
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 text-white/80 hover:text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)] transition mb-8"
+                        className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition mb-8"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         <span className="text-sm font-medium">Back</span>
@@ -122,23 +122,23 @@ export default function PlaylistPage() {
                             className="max-w-md flex flex-col justify-center md:text-left text-center flex-1"
                         >
                             <div className="flex items-center gap-2 mb-3 justify-center md:justify-start">
-                                <span className="text-xs uppercase tracking-widest text-indigo-300 font-bold">
+                                <span className="text-xs uppercase tracking-widest text-indigo-600 font-bold">
                                     Playlist
                                 </span>
                             </div>
 
-                            <h1 className="text-3xl md:text-5xl font-bold mb-4 text-white [text-shadow:_0_1px_4px_rgb(0_0_0_/_90%)] leading-tight">
+                            <h1 className="text-3xl md:text-5xl font-bold mb-4 text-slate-900 leading-tight">
                                 {playlist.title}
                             </h1>
 
                             {playlist.description && (
-                                <p className="text-slate-200 mb-6 max-w-xl leading-relaxed [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]">
+                                <p className="text-slate-600 mb-6 max-w-xl leading-relaxed">
                                     {playlist.description}
                                 </p>
                             )}
 
                             {/* Stats */}
-                            <div className="flex items-center justify-center md:justify-start gap-4 text-sm text-slate-300 mb-6 font-medium">
+                            <div className="flex items-center justify-center md:justify-start gap-4 text-sm text-slate-500 mb-6 font-medium">
                                 <div className="flex items-center gap-1.5">
                                     <ListMusic className="w-4 h-4" />
                                     <span>{playlist.items?.length || 0} tracks</span>
@@ -167,7 +167,7 @@ export default function PlaylistPage() {
                                         }
                                     }}
                                     disabled={!playlist.items || playlist.items.length === 0}
-                                    className="px-6 py-3.5 bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-full font-bold hover:bg-white/20 transition flex items-center gap-2 disabled:opacity-50"
+                                    className="px-6 py-3.5 bg-white text-slate-700 border border-slate-200 rounded-full font-bold hover:bg-slate-50 transition flex items-center gap-2 disabled:opacity-50"
                                 >
                                     <Shuffle className="w-4 h-4" />
                                     Shuffle

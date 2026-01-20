@@ -23,13 +23,27 @@ const moods = [
 
 export default function MoodToggleButton({ activeMood, onMoodSelect, variant = 'desktop' }: MoodToggleButtonProps) {
     const [isExpanded, setIsExpanded] = useState(false);
-    const { isPlaying, togglePlay, currentTrack } = useAmbience();
+    const { isPlaying, togglePlay, currentTrack, setTrack } = useAmbience();
 
     const currentMood = moods.find(m => m.id === activeMood) || moods[0];
     const CurrentIcon = currentMood.icon;
 
+    // Mood to Ambient Sound mapping
+    const moodToAmbience: Record<string, string> = {
+        'sleep': 'night',
+        'meditation': 'river',
+        'fantasy': 'wind',
+        'nature': 'forest',
+        'energized': 'ocean'
+    };
+
     const handleMoodClick = (moodId: Mood) => {
         onMoodSelect(moodId);
+        // Persist to sessionStorage for cross-page sync
+        sessionStorage.setItem('reverie_active_mood', moodId);
+        // Also trigger ambient audio change
+        const trackId = moodToAmbience[moodId];
+        if (trackId) setTrack(trackId);
         setIsExpanded(false);
     };
 
