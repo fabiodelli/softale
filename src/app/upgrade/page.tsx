@@ -321,8 +321,15 @@ export default function UpgradePage() {
                                 </span>
                             </div>
 
+                            {/* Free Trial Badge */}
+                            <div className="flex items-center justify-center gap-2 mb-4">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
+                                    ✨ 14 Days FREE
+                                </span>
+                            </div>
+
                             <p className="text-center text-sm text-slate-500 mb-6">
-                                Global Launch Offer. <br />
+                                Try free for 14 days. Cancel anytime.<br />
                                 <strong>Price locked</strong> as long as you stay subscribed.
                             </p>
 
@@ -337,12 +344,12 @@ export default function UpgradePage() {
                                         : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:shadow-indigo-500/40 shadow-amber-500/20'
                                     }`}
                             >
-                                {loading ? 'Processing...' : 'Claim Founder Price'}
+                                {loading ? 'Processing...' : 'Start 14-Day Free Trial'}
                             </button>
 
                             <p className="text-xs text-slate-400 mb-8 border-t border-slate-100 pt-4 mt-4">
-                                Regular price: €6.99/mo.<br />
-                                <strong>Today: €4.99/mo (Save 30%)</strong>
+                                No charge today. After 14 days: {billingCycle === 'monthly' ? '€4.99/mo' : '€39.99/yr'}.<br />
+                                <strong>Cancel anytime before trial ends.</strong>
                             </p>
 
                             <div className="space-y-4 text-left">
