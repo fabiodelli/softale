@@ -2155,74 +2155,9 @@ export async function buildStoryFromConcept(rawConcept: any): Promise<string> {
 
     return await generateStory(newBrief, rawConcept);
 
-    /* LEGACY EXECUTION SKIPPED */
-    // ----------------------------------------
-    // SAFETY ADAPTER: Normalize Concept Data
-    // ----------------------------------------
-    const concept: StoryConcept = {
-        ...rawConcept,
-        audioIdentity: {
-            matchStyle: 'neutral',
-            voiceStyle: 'soft_female',
-            // ...defaults
-            ...rawConcept.audioIdentity
-        }
-    };
+    // Legacy code removed (Part 1)
 
-    // Fallback for missing voice style, explicit check
-    if (!concept.audioIdentity?.voiceStyle) {
-        console.warn('⚠️ Missing voiceStyle in concept, defaulting to soft_female');
-        concept.audioIdentity = { ...concept.audioIdentity, voiceStyle: 'soft_female' };
-    }
-
-    const brief: StoryBrief = {
-        category: concept.category || 'sleep',
-        duration: concept.intendedDuration || 10,
-        theme: concept.theme || 'Relaxation',
-        mood: concept.mood || 'Calm',
-        voiceStyle: concept.audioIdentity?.voiceStyle as any
-    };
-
-    // Generate with Override
-    const script = await generateScript(brief, concept);
-    script.mixLevel = concept.mixLevel || 'balanced';
-    script.voiceStyle = brief.voiceStyle;
-    script.layers = concept.layers; // Pass V5 Layers Config
-
-    // Continue standard pipeline
-    const safeTitle = script.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-    const scriptPath = path.join(OUTPUT_DIR, `${safeTitle}.json`);
-    fs.writeFileSync(scriptPath, JSON.stringify(script, null, 2));
-
-    // Determine if voice is needed
-    const NO_VOICE_CATEGORIES = ['music_instrumental', 'soundscape', 'binaural'];
-    const isInstrumental = NO_VOICE_CATEGORIES.includes(script.category.toLowerCase()) || script.category.toLowerCase().includes('instrumental');
-
-    let voicePath = '';
-    let voiceChars = 0;
-    if (!isInstrumental) {
-        const vResult = await generateVoice(script);
-        voicePath = vResult.path;
-        voiceChars = vResult.characterCount;
-    } else {
-        console.log(`   🚫 Skipping Voice Generation for category: ${script.category} (Instrumental/Ambient)`);
-    }
-
-    const loopPath = await generateOrFetchLoop(script);
-    const ambiencePath = await generateOrFetchAmbience(script);
-    const assetResult = await generateAssetPack(script);
-
-    // Update Usage Stats
-    if (script.usageStats) {
-        script.usageStats.elevenLabsChars = voiceChars;
-        script.usageStats.dalleImages = assetResult.imageCount;
-    }
-
-    const mixedPath = await mixAudio(voicePath, loopPath, script, ambiencePath);
-    const storyId = await uploadStory(script, mixedPath, assetResult, voicePath);
-    console.log(`✅ Build Complete! ID: ${storyId}`);
-
-    return storyId;
+    // Legacy code removed (Part 2)
 }
 
 // =====================================================
