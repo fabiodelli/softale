@@ -24,4 +24,8 @@ export interface StoryWithProgress {
     author_image_url?: string;
     is_premium: boolean;
     progress_percent?: number;
+    // V6 Audio Stems
+    voice_url?: string;
+    ambient_url?: string;
+    music_url?: string;
 }
