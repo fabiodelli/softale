@@ -68,6 +68,22 @@ export interface StoryBrief {
     voiceStyle?: 'soft_female' | 'soft_male' | 'neutral';
     voiceId?: string;
     musicFile?: string;
+    // V5 Fields
+    pacingMode?: 'continuous' | 'immersive' | 'breathwork';
+    warmupDuration?: number;
+    mixSettings?: {
+        voice: number;
+        music: number;
+        ambience: number;
+    };
+    layers?: {
+        voice: boolean;
+        music: boolean;
+        ambience: boolean;
+    };
+    ambiencePrompt?: string;
+    // V6 Phased Narration
+    generationMode?: 'auto' | 'continuous' | 'phased';
 }
 
 export interface GeneratedScript {
@@ -85,6 +101,11 @@ export interface GeneratedScript {
     audioPhases?: AudioPhase[];
     voiceIdOverride?: string;
     mixLevel?: string;
+    mixSettings?: {
+        voice: number;
+        music: number;
+        ambience: number;
+    };
     voiceStyle?: string;
     musicFile?: string;
     backingCategory?: string;
@@ -96,6 +117,11 @@ export interface GeneratedScript {
     pacingMode?: 'continuous' | 'immersive' | 'breathwork';
     warmupDuration?: number;
     tags?: string[]; // V5
+    layers?: {
+        voice: boolean;
+        music: boolean;
+        ambience: boolean;
+    };
     usageStats?: {
         claudeInput: number;
         claudeOutput: number;
@@ -104,6 +130,19 @@ export interface GeneratedScript {
         stableAudioCount: number;
         veoVideoCount: number;
     };
+    // V6 Phased Narration
+    generationMode?: 'continuous' | 'phased';
+    phases?: NarrationPhase[];
+}
+
+// V6: Phased Narration Support
+export interface NarrationPhase {
+    id: number;
+    type: 'narration' | 'silence' | 'ambience_only' | 'breathing_guide';
+    durationSeconds: number;
+    content?: string;           // Script text (only for 'narration')
+    breathPattern?: string;     // e.g., "4-7-8" for breathing_guide
+    transitionNote?: string;    // Internal note for AI continuity
 }
 
 export interface AudioPhase {
@@ -734,12 +773,8 @@ export async function generateScript(brief: StoryBrief, conceptOverride?: StoryC
     console.log(`   ✅ Phase 3 complete: Assets designed`);
 
     // Voice selection
-    const VOICE_MAP: Record<string, string> = {
-        'soft_female': 'mZ3kbJNnKRWI4YzJXA9j', // Delilah
-        'soft_male': 'GUDYcgRAONiI1nXDcNQQ',   // Milo
-        'neutral': '21m00Tcm4TlvDq8ikWAM',      // Rachel
-    };
-    const voiceId = brief.voiceId || VOICE_MAP[brief.voiceStyle || 'soft_female'];
+    const voiceId = brief.voiceId; // REMOVED HARDCODED MAP to allow dynamic lookup in generateVoice
+
 
     // Assemble final GeneratedScript
     return {
@@ -764,6 +799,159 @@ export async function generateScript(brief: StoryBrief, conceptOverride?: StoryC
         pacingMode: conceptOverride?.pacingMode,
         warmupDuration: conceptOverride?.warmupDuration,
         tags: conceptOverride?.tags,
+    };
+}
+
+// =====================================================
+// V6: Phased Script Generation (Cost-Optimized)
+// =====================================================
+
+const PHASED_CATEGORIES = ['meditation', 'sleep', 'breathwork'];
+
+interface PhaseTemplate {
+    type: NarrationPhase['type'];
+    durationPercent: number;
+    description: string;
+}
+
+const PHASE_TEMPLATES: Record<string, PhaseTemplate[]> = {
+    meditation: [
+        { type: 'narration', durationPercent: 15, description: 'Opening grounding' },
+        { type: 'silence', durationPercent: 10, description: 'Settle into presence' },
+        { type: 'narration', durationPercent: 20, description: 'Breath awareness guidance' },
+        { type: 'breathing_guide', durationPercent: 15, description: 'Guided breathing' },
+        { type: 'narration', durationPercent: 15, description: 'Visualization or body scan' },
+        { type: 'ambience_only', durationPercent: 15, description: 'Deep integration' },
+        { type: 'narration', durationPercent: 10, description: 'Gentle return' },
+    ],
+    sleep: [
+        { type: 'narration', durationPercent: 20, description: 'Scene setting and arrival' },
+        { type: 'narration', durationPercent: 25, description: 'Gentle exploration' },
+        { type: 'ambience_only', durationPercent: 10, description: 'Peaceful pause' },
+        { type: 'narration', durationPercent: 20, description: 'Finding rest' },
+        { type: 'ambience_only', durationPercent: 15, description: 'Drift into sleep' },
+        { type: 'narration', durationPercent: 10, description: 'Soft dissolution' },
+    ],
+    breathwork: [
+        { type: 'narration', durationPercent: 10, description: 'Introduction' },
+        { type: 'breathing_guide', durationPercent: 25, description: 'First breathing cycle' },
+        { type: 'silence', durationPercent: 10, description: 'Integration' },
+        { type: 'breathing_guide', durationPercent: 25, description: 'Second breathing cycle' },
+        { type: 'silence', durationPercent: 10, description: 'Deep rest' },
+        { type: 'narration', durationPercent: 10, description: 'Closing' },
+        { type: 'ambience_only', durationPercent: 10, description: 'Final integration' },
+    ],
+};
+
+export async function generatePhasedScript(brief: StoryBrief, conceptOverride?: StoryConcept): Promise<GeneratedScript> {
+    console.log('\n🏭 AUDIO FACTORY V6 - PHASED NARRATION MODE');
+    console.log(`   Category: ${brief.category}`);
+    console.log(`   Duration: ${brief.duration} minutes`);
+
+    const totalSeconds = brief.duration * 60;
+    const template = PHASE_TEMPLATES[brief.category] || PHASE_TEMPLATES['sleep'];
+
+    // Build phase structure from template
+    const phases: NarrationPhase[] = template.map((t, idx) => ({
+        id: idx + 1,
+        type: t.type,
+        durationSeconds: Math.round(totalSeconds * (t.durationPercent / 100)),
+        transitionNote: t.description,
+    }));
+
+    console.log(`   📊 Phase structure: ${phases.length} phases`);
+    phases.forEach(p => console.log(`      Phase ${p.id}: ${p.type} (${p.durationSeconds}s) - ${p.transitionNote}`));
+
+    // Generate content ONLY for narration phases
+    const narrationPhases = phases.filter(p => p.type === 'narration');
+    console.log(`   🎙️ Generating content for ${narrationPhases.length} narration phases...`);
+
+    for (const phase of narrationPhases) {
+        const targetWords = Math.round((phase.durationSeconds / 60) * (CATEGORY_WPM[brief.category] || 130));
+
+        const phasePrompt = CATEGORY_PROMPTS[brief.category] || CATEGORY_PROMPTS['meditation'];
+        const systemPrompt = phasePrompt + `
+
+**PHASE CONTEXT:**
+This is Phase ${phase.id} of a ${phases.length}-phase ${brief.category} experience.
+Phase purpose: ${phase.transitionNote}
+Duration: ${phase.durationSeconds} seconds
+Target words: ${targetWords} words
+${brief.description ? `\n**STORY CONTEXT/IDEA**:\n${brief.description}\nIncorporate this thematic idea into the narration.\n` : ''}
+**CRITICAL**: Write EXACTLY ${targetWords} words for this phase only.
+Do NOT include opening/closing if this is a middle phase.
+Maintain continuity with previous phases.`;
+
+        const userPrompt = `Write the narration for Phase ${phase.id}: "${phase.transitionNote}"
+Target: ${targetWords} words.
+
+Return JSON only:
+{
+    "content": "The narration text with [pause] markers",
+    "wordCount": number
+}`;
+
+        const response = await callClaude(systemPrompt, userPrompt, 2000);
+        const jsonMatch = response.text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const result = JSON.parse(jsonMatch[0]);
+            phase.content = result.content;
+            console.log(`      ✅ Phase ${phase.id}: ${result.wordCount || 'N/A'} words`);
+        }
+    }
+
+    // Set breathing patterns for breathing_guide phases
+    const breathingPhases = phases.filter(p => p.type === 'breathing_guide');
+    for (const phase of breathingPhases) {
+        phase.breathPattern = brief.category === 'breathwork' ? '4-7-8' : '4-4-4-4';
+    }
+
+    // Build combined script for backward compatibility
+    const combinedScript = phases
+        .filter(p => p.type === 'narration')
+        .map(p => p.content)
+        .join('\n\n[pause]\n\n');
+
+    // Fetch stock loops and generate assets
+    const stockLoops = await fetchStockLoops();
+    const storyDesign: StoryDesign = {
+        title: brief.title || `${brief.category} Experience`,
+        narrativeArc: phases.map(p => p.transitionNote).join(' → '),
+        keyScenes: phases.filter(p => p.type === 'narration').map((p, i) => ({
+            name: p.transitionNote || `Phase ${p.id}`,
+            percent: Math.round((i / narrationPhases.length) * 100),
+            mood: brief.mood || 'Calm',
+        })),
+        signatureMotif: 'Gentle transitions',
+        targetWordCount: combinedScript.split(/\s+/).length,
+        perspective: 'second_person',
+        sensoryFocus: 'breath',
+    };
+
+    const p3 = await generatePhase3_Assets(storyDesign, stockLoops, brief.category);
+
+    return {
+        title: storyDesign.title,
+        category: brief.category,
+        duration: brief.duration,
+        script: combinedScript,
+        musicCues: [],
+        ambientCues: [],
+        signatureMotif: storyDesign.signatureMotif,
+        coverPrompt: p3.design.coverPrompt,
+        musicPrompt: p3.design.musicPrompt,
+        voiceIdOverride: brief.voiceId,
+        musicFile: brief.musicFile,
+        backingCategory: p3.design.backingCategory,
+        backingTitle: p3.design.backingTitle,
+        backingCoverPrompt: p3.design.backingCoverPrompt,
+        createdAt: new Date().toISOString(),
+        ambiencePrompt: p3.design.ambiencePrompt,
+        pacingMode: brief.pacingMode,
+        warmupDuration: brief.warmupDuration,
+        // V6 Phased fields
+        generationMode: 'phased',
+        phases: phases,
     };
 }
 
@@ -901,10 +1089,108 @@ export async function generateVoice(script: GeneratedScript): Promise<{ path: st
 }
 
 // =====================================================
+// V6: Phased Voice Generation
+// =====================================================
+
+interface PhasedVoiceResult {
+    phasePaths: Map<number, string>; // phase.id -> audio path
+    totalCharacters: number;
+}
+
+export async function generatePhasedVoice(script: GeneratedScript): Promise<PhasedVoiceResult> {
+    console.log('🎙️ Generating phased voice (V6)...');
+
+    if (!script.phases || script.generationMode !== 'phased') {
+        throw new Error('generatePhasedVoice requires a phased script');
+    }
+
+    const narrationPhases = script.phases.filter(p => p.type === 'narration' && p.content);
+    console.log(`   📊 ${narrationPhases.length} narration phases to generate`);
+
+    // Get voice configuration (reuse existing logic)
+    const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
+    if (!elevenLabsKey) throw new Error('Missing ELEVENLABS_API_KEY');
+
+    // Select voice - default to female for meditation/sleep
+    let voiceId = script.voiceIdOverride;
+    if (!voiceId) {
+        // For meditation/sleep, default to female voice unless explicitly male
+        const isSoftCategory = ['meditation', 'sleep', 'breathwork'].includes(script.category);
+        const explicitlyMale = script.voiceStyle?.includes('male') && !script.voiceStyle?.includes('female');
+        const targetGender = explicitlyMale ? 'male' : (isSoftCategory ? 'female' : (script.voiceStyle?.includes('female') ? 'female' : 'male'));
+        console.log(`   🎯 Voice style: ${script.voiceStyle || 'undefined'} → Target: ${targetGender}`);
+        const voice = await voiceService.pickVoice({ gender: targetGender });
+        voiceId = voice?.voice_id || (targetGender === 'male' ? 'NOpBlnGInO9m6vDvFkFC' : 'mZ3kbJNnKRWI4YzJXA9j');
+        console.log(`   🗣️ Selected Voice: ${voice?.name || 'Fallback'} (${voiceId})`);
+    }
+
+    const phasePaths = new Map<number, string>();
+    let totalCharacters = 0;
+
+    for (const phase of narrationPhases) {
+        const cleanContent = phase.content!
+            .replace(/\[breathe.*?\]/gi, " ... ")
+            .replace(/\[.*?\]/g, (match) => match.toLowerCase().includes('pause') ? " ... " : "")
+            .replace(/\(.*?\)/g, "")
+            .replace(/\*.*?\*/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        if (!cleanContent) continue;
+
+        const outputPath = path.join(
+            OUTPUT_DIR,
+            `${script.title.replace(/\s+/g, '_')}_voice_phase_${phase.id}.mp3`
+        );
+
+        console.log(`      Phase ${phase.id}: Generating ${cleanContent.length} chars...`);
+
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'audio/mpeg',
+                'Content-Type': 'application/json',
+                'xi-api-key': elevenLabsKey,
+            },
+            body: JSON.stringify({
+                text: cleanContent,
+                model_id: 'eleven_multilingual_v2',
+                voice_settings: {
+                    stability: 0.65,
+                    similarity_boost: 0.70,
+                    use_speaker_boost: false,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`ElevenLabs error for phase ${phase.id}: ${response.statusText}`);
+        }
+
+        const buffer = Buffer.from(await response.arrayBuffer());
+        fs.writeFileSync(outputPath, buffer);
+
+        phasePaths.set(phase.id, outputPath);
+        totalCharacters += cleanContent.length;
+
+        console.log(`      ✅ Phase ${phase.id} saved: ${(buffer.length / 1024).toFixed(0)} KB`);
+    }
+
+    console.log(`   ✅ Phased voice complete: ${phasePaths.size} files, ${totalCharacters} total chars`);
+    return { phasePaths, totalCharacters };
+}
+
+// =====================================================
 // Music/Loop Generation (Harvest Engine)
 // =====================================================
 
 export async function generateOrFetchLoop(script: GeneratedScript): Promise<string> {
+    // V5: Skip if disabled by layers
+    if (script.layers && !script.layers.music) {
+        console.log('   🚫 Skipping Music/Loop (Disabled in layers)');
+        return '';
+    }
+
     console.log('🎵 Processing music/loop...');
 
     const musicPrompt = script.musicPrompt || '';
@@ -1271,39 +1557,45 @@ export async function mixAudio(voicePath: string, loopPath: string, script: Gene
 
     // --- Voice Processing ---
     // Mix Profiles
-    const mixLevel = script.mixLevel || 'balanced';
-    let voiceVol = 1.9;
-    let musicVol = 0.5;
-    let ambVol = 0.5;
+    let voiceVol = 3.2;
+    let musicVol = 0.12;
+    let ambVol = 0.12;
 
-    switch (mixLevel) {
-        case 'voice_focus':
-            voiceVol = 2.5;
-            musicVol = 0.3;
-            ambVol = 0.3;
-            break;
-        case 'high_immersion':
-            voiceVol = 1.5;
-            musicVol = 0.8;
-            ambVol = 0.8;
-            break;
-        case 'background_only':
-            voiceVol = 0;
-            musicVol = 1.0;
-            ambVol = 1.0;
-            break;
-        case 'balanced':
-        default:
-            voiceVol = 1.9;
-            musicVol = 0.5;
-            ambVol = 0.5;
-            break;
+    if (script.mixSettings) {
+        console.log(`   🎚️  Using Custom Mix Settings: Voice=${script.mixSettings.voice}, Music=${script.mixSettings.music}, Amb=${script.mixSettings.ambience}`);
+        voiceVol = script.mixSettings.voice;
+        musicVol = script.mixSettings.music;
+        ambVol = script.mixSettings.ambience;
+    } else {
+        const mixLevel = script.mixLevel || 'balanced';
+        switch (mixLevel) {
+            case 'voice_focus':
+                voiceVol = 3.5;
+                musicVol = 0.05;
+                ambVol = 0.1;
+                break;
+            case 'high_immersion':
+                voiceVol = 2.5;
+                musicVol = 0.25;
+                ambVol = 0.25;
+                break;
+            case 'background_only':
+                voiceVol = 0;
+                musicVol = 1.0;
+                ambVol = 1.0;
+                break;
+            case 'balanced':
+            default:
+                voiceVol = 3.2;
+                musicVol = 0.12;
+                ambVol = 0.12;
+                break;
+        }
+        console.log(`   🎚️  Using Mix Profile: ${mixLevel} (Voice:${voiceVol}, Music:${musicVol}, Amb:${ambVol})`);
     }
 
-    console.log(`   🎚️  Mixing Profile: ${mixLevel} (Voice:${voiceVol}, Music:${musicVol}, Amb:${ambVol})`);
-
-    // Override voice if background only
-    const actualHasVoice = hasVoice && mixLevel !== 'background_only';
+    const effectiveMixLevel = script.mixSettings ? (script.mixSettings.voice === 0 ? 'background_only' : 'custom') : (script.mixLevel || 'balanced');
+    const actualHasVoice = hasVoice && effectiveMixLevel !== 'background_only';
 
     if (actualHasVoice) {
         // [0:a] -> adelay -> volume -> [voice_proc]
@@ -1383,6 +1675,166 @@ export async function mixAudio(voicePath: string, loopPath: string, script: Gene
 }
 
 // =====================================================
+// V6: Phased Audio Mixing
+// =====================================================
+
+export async function mixPhasedAudio(
+    script: GeneratedScript,
+    voicePaths: Map<number, string>,
+    ambiencePath: string
+): Promise<string> {
+    console.log('🎛️ Mixing Phased Audio (V6)...');
+
+    if (!script.phases || script.generationMode !== 'phased') {
+        throw new Error('mixPhasedAudio requires a phased script');
+    }
+
+    const ffmpegCmd = ffmpegPath;
+    if (!ffmpegCmd) {
+        throw new Error('FFmpeg not found');
+    }
+
+    // Calculate total duration and voice positions
+    const totalDuration = script.phases.reduce((sum, p) => sum + p.durationSeconds, 0);
+    const voiceOverlays: Array<{ path: string, startTime: number, duration: number }> = [];
+
+    let currentTime = 0;
+    for (const phase of script.phases) {
+        if (phase.type === 'narration' && voicePaths.has(phase.id)) {
+            voiceOverlays.push({
+                path: voicePaths.get(phase.id)!,
+                startTime: currentTime,
+                duration: phase.durationSeconds
+            });
+        }
+        currentTime += phase.durationSeconds;
+    }
+
+    console.log(`   📊 Total duration: ${totalDuration}s, ${voiceOverlays.length} voice overlays`);
+    voiceOverlays.forEach((v, i) => console.log(`      Voice ${i + 1}: starts at ${v.startTime}s`));
+
+    const outputPath = path.join(OUTPUT_DIR, `mixed_phased_${Date.now()}.mp3`);
+
+    // Build FFmpeg command with continuous ambience + voice overlays
+    // Strategy: Loop ambience for full duration, then overlay each voice segment at its timestamp
+
+    let inputArgs = `-stream_loop -1 -i "${ambiencePath}" `; // Input 0: Ambience (looped)
+    let inputIndex = 1;
+    const inputMap: Map<string, number> = new Map();
+
+    // Add each unique voice file as input
+    for (const overlay of voiceOverlays) {
+        if (!inputMap.has(overlay.path)) {
+            inputArgs += `-i "${overlay.path}" `;
+            inputMap.set(overlay.path, inputIndex);
+            inputIndex++;
+        }
+    }
+
+    // Build filter complex
+    let filterComplex = `[0:a]volume=0.20,afade=t=out:st=${totalDuration - 3}:d=3[ambience];`;
+
+    if (voiceOverlays.length === 0) {
+        // No voice, just ambience
+        filterComplex += `[ambience]anull[out]`;
+    } else {
+        // Overlay voices on ambience
+        let currentStream = 'ambience';
+
+        for (let i = 0; i < voiceOverlays.length; i++) {
+            const overlay = voiceOverlays[i];
+            const voiceInputIdx = inputMap.get(overlay.path)!;
+            const nextStream = i === voiceOverlays.length - 1 ? 'out' : `mix${i}`;
+
+            // Delay voice to correct position, apply volume, then overlay
+            const delayMs = overlay.startTime * 1000;
+            filterComplex += `[${voiceInputIdx}:a]adelay=${delayMs}|${delayMs},volume=3.0[voice${i}];`;
+            filterComplex += `[${currentStream}][voice${i}]amix=inputs=2:duration=first:normalize=0[${nextStream}];`;
+
+            currentStream = nextStream;
+        }
+
+        // Remove trailing semicolon from last filter
+        filterComplex = filterComplex.replace(/;\[out\];$/, '[out]').replace(/;$/, '');
+    }
+
+    const cmd = `"${ffmpegCmd}" -y ${inputArgs}-filter_complex "${filterComplex}" -map "[out]" -t ${totalDuration} -c:a libmp3lame -q:a 2 "${outputPath}"`;
+
+    console.log(`   🔊 Mixing with continuous ambience...`);
+    // console.log('   CMD:', cmd); // Debug
+
+    try {
+        await execPromise(cmd);
+
+        if (fs.existsSync(outputPath)) {
+            const stats = fs.statSync(outputPath);
+            console.log(`   ✅ Phased Mix Complete: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+            return outputPath;
+        } else {
+            throw new Error('Phased mix output not found');
+        }
+    } catch (e: any) {
+        console.error(`   ❌ Mix Error: ${e.message}`);
+        // Fallback: return ambience
+        return ambiencePath;
+        return ambiencePath;
+    }
+}
+
+// =====================================================
+// V6: Backing Audio Harvesting
+// =====================================================
+
+async function harvestBackingAudio(parentStoryId: string, script: GeneratedScript, ambiencePath: string): Promise<void> {
+    if (!fs.existsSync(ambiencePath)) {
+        console.log('      ⚠️ Ambience file not found, skipping harvest');
+        return;
+    }
+
+    const backingSlug = (script.backingTitle || script.title).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const dateFolder = new Date().toISOString().split('T')[0];
+    const storagePath = `${dateFolder}/${backingSlug}-backing`;
+
+    // Upload backing audio
+    const audioBuffer = fs.readFileSync(ambiencePath);
+    const audioFileName = `${storagePath}/audio.mp3`;
+
+    console.log(`      📤 Uploading backing audio: ${audioFileName}`);
+    const { error: audioError } = await supabase.storage.from('audio').upload(audioFileName, audioBuffer, { contentType: 'audio/mpeg', upsert: true });
+
+    if (audioError) {
+        console.log(`      ⚠️ Backing audio upload failed: ${audioError.message}`);
+        return;
+    }
+
+    const { data: urlData } = supabase.storage.from('audio').getPublicUrl(audioFileName);
+    const backingAudioUrl = urlData.publicUrl;
+    console.log(`      ✅ Backing audio harvested: ${backingAudioUrl}`);
+
+    // Create a separate story entry for the backing track (as a soundscape)
+    const backingStoryData = {
+        title: script.backingTitle || `${script.title} (Soundscape)`,
+        slug: `${backingSlug}-soundscape`,
+        description: script.ambiencePrompt || `Ambient soundscape extracted from ${script.title}`,
+        category: script.backingCategory || 'soundscape',
+        duration: script.duration * 60,
+        audio_url: backingAudioUrl,
+        is_premium: false,
+        is_published: false // Draft until reviewed
+    };
+
+    const { error: insertError } = await supabase
+        .from('stories')
+        .upsert(backingStoryData, { onConflict: 'slug' });
+
+    if (insertError) {
+        console.log(`      ⚠️ Backing story creation failed: ${insertError.message}`);
+    } else {
+        console.log(`      ✅ Backing track saved as separate soundscape`);
+    }
+}
+
+// =====================================================
 // Supabase Upload
 // =====================================================
 
@@ -1423,11 +1875,17 @@ export async function uploadStory(
     if (audioPath && fs.existsSync(audioPath)) {
         const audioBuffer = fs.readFileSync(audioPath);
         const audioFileName = `${storagePath}/audio.mp3`;
+        console.log(`      📤 Uploading audio: ${audioFileName} (${(audioBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
         const { error: audioError } = await supabase.storage.from('audio').upload(audioFileName, audioBuffer, { contentType: 'audio/mpeg', upsert: true });
         if (!audioError) {
             const { data: urlData } = supabase.storage.from('audio').getPublicUrl(audioFileName);
             audioUrl = urlData.publicUrl;
+            console.log(`      ✅ Audio uploaded: ${audioUrl}`);
+        } else {
+            console.error(`      ❌ Audio upload failed: ${audioError.message}`);
         }
+    } else {
+        console.warn(`      ⚠️ No audio file to upload (path: ${audioPath})`);
     }
 
     // Upload Voice Source (Stems) - Silent Backup
@@ -1509,9 +1967,59 @@ export async function uploadStory(
 // Helpers
 // =====================================================
 
-async function generateStory(brief: any): Promise<string> {
+export async function generateStory(brief: any, conceptOverride?: StoryConcept): Promise<string> {
     console.log(`🎬 Generating Story: ${brief.title || brief.category} (${brief.duration}min)`);
+    // console.log('DEBUG: brief V5 fields:', { amb: brief.ambiencePrompt, mix: brief.mixSettings, layers: brief.layers });
 
+    // V6: Check if this category should use phased generation
+    const usePhasedMode = brief.generationMode === 'phased' ||
+        (PHASED_CATEGORIES.includes(brief.category) && brief.generationMode !== 'continuous');
+
+    if (usePhasedMode) {
+        console.log('   🔀 PHASED GENERATION MODE (V6)');
+
+        // Generate phased script
+        const script = await generatePhasedScript(brief);
+        if (!script) throw new Error("Phased script generation failed");
+
+        const safeTitle = script.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        const scriptPath = path.join(OUTPUT_DIR, `${safeTitle}.json`);
+        fs.writeFileSync(scriptPath, JSON.stringify(script, null, 2));
+        console.log(`   📄 Phased Script saved: ${scriptPath}`);
+
+        // Generate voice for each narration phase
+        const voiceResult = await generatePhasedVoice(script);
+
+        // Generate ambience (single track for the whole story)
+        const ambiencePath = await generateOrFetchAmbience(script);
+
+        // Generate asset pack
+        const assetResult = await generateAssetPack(script);
+
+        // Mix all phases together
+        const mixedPath = await mixPhasedAudio(script, voiceResult.phasePaths, ambiencePath);
+
+        // Upload to Supabase
+        const storyId = await uploadStory(script, mixedPath, assetResult);
+
+        // V6: Auto-tag the story after upload
+        if (storyId) {
+            console.log('🏷️ Auto-tagging story...');
+            const { AutoTagger } = await import('./AutoTagger.js');
+            await AutoTagger.tagStory({ id: storyId, title: script.title, category: script.category, description: `A ${script.duration}-minute ${script.category} experience` });
+        }
+
+        // V6: Harvest backing audio as reusable asset
+        if (ambiencePath && script.backingTitle && storyId) {
+            console.log('🎹 Harvesting backing audio...');
+            await harvestBackingAudio(storyId, script, ambiencePath);
+        }
+
+        console.log(`   ✅ Story Complete! ID: ${storyId}`);
+        return storyId;
+    }
+
+    // CONTINUOUS MODE (Original V5 flow)
     const script = await generateScript(brief);
     if (!script) throw new Error("Script generation failed");
 
@@ -1520,7 +2028,38 @@ async function generateStory(brief: any): Promise<string> {
     fs.writeFileSync(scriptPath, JSON.stringify(script, null, 2));
     console.log(`   📄 Script saved: ${scriptPath}`);
 
-    // Determine if voice is needed
+    // V5: Inject Brief Options (e.g. from Tests or UI)
+    if (brief.ambiencePrompt) {
+        script.ambiencePrompt = brief.ambiencePrompt;
+        console.log(`   🌧️ Injected Ambience Prompt: "${script.ambiencePrompt}"`);
+    }
+
+    if (brief.mixSettings) script.mixSettings = brief.mixSettings;
+    if (brief.layers) script.layers = brief.layers;
+    if (brief.warmupDuration !== undefined) script.warmupDuration = brief.warmupDuration;
+    if (brief.pacingMode) script.pacingMode = brief.pacingMode;
+
+    // V5.1: Auto-detect layers from RECIPE_MATRIX if not provided
+    if (!script.layers) {
+        const recipe = RECIPE_MATRIX[script.category];
+        if (recipe) {
+            script.layers = {
+                voice: recipe.voice,
+                music: recipe.backing === 'music',
+                ambience: recipe.backing === 'soundscape' || recipe.backing === 'frequency'
+            };
+            console.log(`   🧩 Auto-layers from RECIPE_MATRIX: ${JSON.stringify(script.layers)}`);
+        }
+    }
+
+    // V5.1: Fallback ambiencePrompt from musicPrompt for Pure Audio categories
+    const isPureAudio = PURE_AUDIO_CATEGORIES.includes(script.category);
+    if (!script.ambiencePrompt && isPureAudio && script.musicPrompt) {
+        script.ambiencePrompt = script.musicPrompt.replace(/^NEW:\s*/i, '').trim();
+        console.log(`   🌧️ Derived ambiencePrompt from musicPrompt: "${script.ambiencePrompt}"`);
+    }
+
+    // Determine if voice is needed (uses layers or category fallback)
     const NO_VOICE_CATEGORIES = ['music_instrumental', 'soundscape', 'binaural'];
     const isInstrumental = NO_VOICE_CATEGORIES.includes(script.category.toLowerCase()) || script.category.toLowerCase().includes('instrumental');
 
@@ -1589,6 +2128,25 @@ async function backfillAssets(storyIdOrScriptFile: string) {
 export async function buildStoryFromConcept(rawConcept: any): Promise<string> {
     console.log(`🏗️ Building from Concept: "${rawConcept.title}"`);
 
+    const newBrief: StoryBrief = {
+        title: rawConcept.title,
+        category: rawConcept.category || 'sleep',
+        duration: rawConcept.intendedDuration || 10,
+        theme: rawConcept.theme || 'Relaxation',
+        mood: rawConcept.mood || 'Calm',
+        description: rawConcept.logline || rawConcept.title,
+        voiceStyle: rawConcept.audioIdentity?.voiceStyle as any || 'soft_female',
+        generationMode: rawConcept.generationMode || 'auto',
+        pacingMode: rawConcept.pacingMode,
+        warmupDuration: rawConcept.warmupDuration,
+        ambiencePrompt: rawConcept.audioIdentity?.ambienceLayer,
+        mixSettings: rawConcept.mixSettings,
+        layers: rawConcept.layers,
+    };
+
+    return await generateStory(newBrief, rawConcept);
+
+    /* LEGACY EXECUTION SKIPPED */
     // ----------------------------------------
     // SAFETY ADAPTER: Normalize Concept Data
     // ----------------------------------------
@@ -1620,6 +2178,7 @@ export async function buildStoryFromConcept(rawConcept: any): Promise<string> {
     const script = await generateScript(brief, concept);
     script.mixLevel = concept.mixLevel || 'balanced';
     script.voiceStyle = brief.voiceStyle;
+    script.layers = concept.layers; // Pass V5 Layers Config
 
     // Continue standard pipeline
     const safeTitle = script.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');

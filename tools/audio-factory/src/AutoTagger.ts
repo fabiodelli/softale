@@ -106,7 +106,7 @@ Example: ["Sleep", "Night", "Rain", "Piano", "Slow"]
             const resp = await callClaude("You are a Metadata Expert. Return only JSON array.", prompt, 1500);
 
             // Extract JSON array
-            const jsonMatch = resp.match(/\[[\s\S]*\]/);
+            const jsonMatch = resp.text.match(/\[[\s\S]*\]/);
             if (jsonMatch) {
                 const tags = JSON.parse(jsonMatch[0]);
                 console.log(`   ✨ Generated: [${tags.join(', ')}]`);
@@ -121,7 +121,7 @@ Example: ["Sleep", "Night", "Rain", "Piano", "Slow"]
                 else console.log(`   💾 Saved!`);
 
             } else {
-                console.warn(`   ⚠️ No JSON found in response: ${resp.substring(0, 50)}...`);
+                console.warn(`   ⚠️ No JSON found in response: ${resp.text.substring(0, 50)}...`);
             }
         } catch (e: any) {
             console.error("   ❌ Error:", e.message);

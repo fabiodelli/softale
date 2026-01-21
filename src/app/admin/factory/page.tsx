@@ -17,11 +17,19 @@ export default function FactoryStudio() {
     const [idea, setIdea] = useState('');
     const [category, setCategory] = useState('sleep');
     const [duration, setDuration] = useState(10);
-    const [mixLevel, setMixLevel] = useState('balanced');
+    const [mixSettings, setMixSettings] = useState({
+        voice: 80,
+        music: 12,
+        ambience: 12
+    });
+
+    // V6 Generation Mode
+    const [generationMode, setGenerationMode] = useState<'auto' | 'continuous' | 'phased'>('auto');
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
     // V5 Feature Controls
-    const [pacingMode, setPacingMode] = useState('immersive'); // standard, immersive, breathwork
-    const [warmupDuration, setWarmupDuration] = useState(0); // seconds
+    const [pacingMode, setPacingMode] = useState('immersive');
+    const [warmupDuration, setWarmupDuration] = useState(0);
     const [ambiencePrompt, setAmbiencePrompt] = useState('');
 
     const [generatedConcept, setGeneratedConcept] = useState<any>(null);
@@ -30,6 +38,21 @@ export default function FactoryStudio() {
     // Production State
     const [productionLogs, setProductionLogs] = useState('');
     const [builtStoryId, setBuiltStoryId] = useState('');
+
+    // Quick Presets
+    const QUICK_PRESETS = [
+        { label: '🧘 Meditation', category: 'meditation', mode: 'phased' as const, duration: 5, voice: 80, music: 0, ambience: 20 },
+        { label: '😴 Sleep Story', category: 'sleep', mode: 'phased' as const, duration: 20, voice: 70, music: 15, ambience: 15 },
+        { label: '🎵 Instrumental', category: 'music_instrumental', mode: 'continuous' as const, duration: 30, voice: 0, music: 100, ambience: 0 },
+        { label: '🌧️ Soundscape', category: 'soundscape', mode: 'continuous' as const, duration: 60, voice: 0, music: 0, ambience: 100 },
+    ];
+
+    const applyPreset = (preset: typeof QUICK_PRESETS[0]) => {
+        setCategory(preset.category);
+        setGenerationMode(preset.mode);
+        setDuration(preset.duration);
+        setMixSettings({ voice: preset.voice, music: preset.music, ambience: preset.ambience });
+    };
 
     const handleGenerateConcept = async () => {
         if (!idea) return;
@@ -46,10 +69,20 @@ export default function FactoryStudio() {
                     idea,
                     category,
                     duration,
-                    mixLevel,
+                    generationMode, // V6
                     pacingMode,
                     warmupDuration,
-                    ambiencePrompt
+                    ambiencePrompt,
+                    mixSettings: {
+                        voice: mixSettings.voice / 25.0,
+                        music: mixSettings.music / 100.0,
+                        ambience: mixSettings.ambience / 100.0
+                    },
+                    layers: {
+                        voice: mixSettings.voice > 0,
+                        music: mixSettings.music > 0,
+                        ambience: mixSettings.ambience > 0
+                    }
                 })
             });
 
@@ -106,10 +139,10 @@ export default function FactoryStudio() {
                 title={
                     <div className="flex items-center gap-3">
                         Factory Studio
-                        <span className="text-indigo-400 text-xs px-2 py-0.5 bg-indigo-500/10 rounded-full border border-indigo-500/20 font-mono">V5.0</span>
+                        <span className="text-emerald-400 text-xs px-2 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20 font-mono">V6</span>
                     </div>
                 }
-                subtitle="Generate AI-powered audio stories with the V5 engine"
+                subtitle="Generate AI-powered audio with phased narration support"
                 backLink={{ href: '/admin', label: 'Dashboard' }}
             >
                 {/* Status Bar */}
@@ -147,6 +180,46 @@ export default function FactoryStudio() {
                                     1. The Spark
                                 </h2>
                                 <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Input</div>
+                            </div>
+
+                            {/* Quick Presets */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Quick Start</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {QUICK_PRESETS.map(preset => (
+                                        <button
+                                            key={preset.label}
+                                            onClick={() => applyPreset(preset)}
+                                            className="px-3 py-2 rounded-lg text-xs font-medium transition border bg-slate-950 border-white/5 text-gray-400 hover:border-indigo-500/50 hover:text-indigo-300 hover:bg-indigo-500/5 text-left"
+                                        >
+                                            {preset.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Generation Mode Toggle */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Generation Mode</label>
+                                <div className="flex gap-1 p-1 bg-slate-950 rounded-lg border border-white/5">
+                                    {(['auto', 'continuous', 'phased'] as const).map(mode => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setGenerationMode(mode)}
+                                            className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition ${generationMode === mode
+                                                ? mode === 'phased' ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-white'
+                                                : 'text-gray-500 hover:text-white'
+                                                }`}
+                                        >
+                                            {mode === 'auto' ? '🔄 Auto' : mode === 'continuous' ? '📜 Full' : '🔀 Phased'}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-[10px] text-gray-600 mt-1 ml-1">
+                                    {generationMode === 'auto' && 'Phased for meditation/sleep, continuous for others'}
+                                    {generationMode === 'continuous' && 'Full narration throughout (V5)'}
+                                    {generationMode === 'phased' && 'Breaks into silence phases (V6) - 40% cost savings'}
+                                </p>
                             </div>
 
                             {/* Title Input */}
@@ -219,17 +292,48 @@ export default function FactoryStudio() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Mix Level</label>
-                                    <select
-                                        value={mixLevel}
-                                        onChange={(e) => setMixLevel(e.target.value)}
-                                        className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-white text-xs h-[52px] focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    >
-                                        <option value="balanced">Balanced (Default)</option>
-                                        <option value="voice_focus">Voice Focus</option>
-                                        <option value="high_immersion">High Immersion</option>
-                                        <option value="background_only">Background Only (No Voice)</option>
-                                    </select>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Mix Levels (%)</label>
+                                    <div className="bg-slate-950 p-3 rounded-lg border border-white/5 space-y-3">
+                                        {/* Voice Slider */}
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-gray-400">🎤 Voice</span>
+                                                <span className="text-indigo-400 font-mono">{Math.round(mixSettings.voice)}%</span>
+                                            </div>
+                                            <input
+                                                type="range" min="0" max="100" step="5"
+                                                value={mixSettings.voice}
+                                                onChange={(e) => setMixSettings({ ...mixSettings, voice: parseInt(e.target.value) })}
+                                                className="w-full h-1 bg-slate-800 rounded-full appearance-none accent-indigo-500"
+                                            />
+                                        </div>
+                                        {/* Music Slider */}
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-gray-400">🎹 Music</span>
+                                                <span className="text-indigo-400 font-mono">{Math.round(mixSettings.music)}%</span>
+                                            </div>
+                                            <input
+                                                type="range" min="0" max="100" step="5"
+                                                value={mixSettings.music}
+                                                onChange={(e) => setMixSettings({ ...mixSettings, music: parseInt(e.target.value) })}
+                                                className="w-full h-1 bg-slate-800 rounded-full appearance-none accent-purple-500"
+                                            />
+                                        </div>
+                                        {/* Ambience Slider */}
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-gray-400">🌧️ Ambience</span>
+                                                <span className="text-indigo-400 font-mono">{Math.round(mixSettings.ambience)}%</span>
+                                            </div>
+                                            <input
+                                                type="range" min="0" max="100" step="5"
+                                                value={mixSettings.ambience}
+                                                onChange={(e) => setMixSettings({ ...mixSettings, ambience: parseInt(e.target.value) })}
+                                                className="w-full h-1 bg-slate-800 rounded-full appearance-none accent-cyan-500"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

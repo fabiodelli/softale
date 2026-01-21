@@ -10,9 +10,15 @@ export interface StoryConcept {
     mood?: string;
     targetAudience?: string;
     pacingMode?: 'continuous' | 'immersive' | 'breathwork'; // V5: Controls pause density
+    generationMode?: 'auto' | 'continuous' | 'phased'; // V6: Controls generation pipeline (Single vs Phased)
     warmupDuration?: number; // V5: Seconds of intro music before voice
     intendedDuration?: number; // User preference for build length (minutes)
     mixLevel?: string; // balanced, voice_focus, high_immersion, background_only
+    mixSettings?: {
+        voice: number;
+        music: number;
+        ambience: number;
+    };
 
     protagonist?: {
         name?: string;
@@ -33,6 +39,11 @@ export interface StoryConcept {
         climax?: string;
         resolution?: string;
     };
+    layers?: {
+        voice: boolean;
+        music: boolean;
+        ambience: boolean;
+    };
     audioIdentity?: {
         voiceStyle?: 'soft_female' | 'soft_male' | 'neutral';
         voicePacing?: string;
@@ -52,9 +63,20 @@ export interface ConceptOptions {
     duration?: number;
     mixLevel?: string;
     title?: string;
+    generationMode?: 'auto' | 'continuous' | 'phased';
     pacingMode?: string;
     warmupDuration?: number;
     ambiencePrompt?: string;
+    mixSettings?: {
+        voice: number;
+        music: number;
+        ambience: number;
+    };
+    layers?: {
+        voice: boolean;
+        music: boolean;
+        ambience: boolean;
+    };
 }
 
 export class ConceptEngine {
@@ -75,6 +97,11 @@ Focus on:
    - **Ambience**: Constant texture (rain, wind, hum).
    - **Music**: Emotional underscore.
    - **Pacing**: Decide if the story needs frequent pauses (Immersive) or steady flow (Continuous).
+   - **Layering**: DECIDE WHICH LAYERS ARE CRITICAL. Avoid muddy mixes.
+     - *Sleep Story*: Voice + Ambience (Music optional).
+     - *Meditation*: Voice + Ambience.
+     - *Fantasy*: Voice + Music + Ambience.
+     - *Soundscape*: Ambience ONLY (No Voice, No Music).
 
 CATEGORY GUIDELINES:
 - **Sleep**: Low conflict, hypnotic, cozy. Use 'immersive' pacing with long pauses.
@@ -105,6 +132,11 @@ RETURN JSON OBJECT EXACTLY LIKE THIS:
     "tags": ["SystemTag", "DescriptiveTag"],
     "pacingMode": "continuous" OR "immersive" OR "breathwork",
     "warmupDuration": 8,
+    "layers": {
+        "voice": true/false,
+        "music": true/false,
+        "ambience": true/false
+    },
     "theme": "Core theme",
     "mood": "Emotional atmosphere",
     "targetAudience": "e.g. Kids 5-8",
@@ -130,8 +162,8 @@ RETURN JSON OBJECT EXACTLY LIKE THIS:
     "audioIdentity": {
         "voiceStyle": "soft_female" (OR "soft_male" OR "neutral"),
         "voicePacing": "Adjectives",
-        "musicStyle": "Musical Genre/Instruments (Emotional Layer)",
-        "ambienceLayer": "Constant background texture description (e.g. Heavy Rain on Roof, Spaceship Hum, Forest Wind)",
+        "musicStyle": "Musical Genre/Instruments (Emotional Layer) - Leave empty if layers.music is false",
+        "ambienceLayer": "Constant background texture description (e.g. Heavy Rain on Roof, Spaceship Hum, Forest Wind) - Leave empty if layers.ambience is false",
         "keySoundEffects": ["SFX1", "SFX2"],
         "tempo": "e.g. 60 BPM"
     },
@@ -145,7 +177,7 @@ RETURN JSON OBJECT EXACTLY LIKE THIS:
         const response = await callClaude(systemPrompt, userPrompt, 2000);
 
         // Extract JSON
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        const jsonMatch = response.text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
             throw new Error('Failed to generate valid JSON concept');
         }
@@ -157,6 +189,7 @@ RETURN JSON OBJECT EXACTLY LIKE THIS:
             concept.mixLevel = mixLevel;
 
             if (options.title) concept.title = options.title;
+            if (options.generationMode) concept.generationMode = options.generationMode;
             if (options.pacingMode) concept.pacingMode = options.pacingMode as any;
             if (options.warmupDuration !== undefined) concept.warmupDuration = options.warmupDuration;
             if (options.ambiencePrompt) concept.audioIdentity = { ...concept.audioIdentity, ambienceLayer: options.ambiencePrompt };

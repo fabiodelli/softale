@@ -26,14 +26,17 @@ export async function POST(req: NextRequest) {
         const cleanCategory = body.category.replace(/[^a-zA-Z0-9_]/g, '');
         const cleanIdea = body.idea.replace(/"/g, '\\"'); // Escape quotes for shell arg
 
-        // Bundle V5 Options
+        // Bundle V5/V6 Options
         const options = {
             duration: body.duration || 10,
             mixLevel: body.mixLevel || 0.25,
-            title: body.title, // V5
-            pacingMode: body.pacingMode, // V5
-            warmupDuration: body.warmupDuration, // V5
-            ambiencePrompt: body.ambiencePrompt // V5
+            title: body.title,
+            pacingMode: body.pacingMode,
+            warmupDuration: body.warmupDuration,
+            ambiencePrompt: body.ambiencePrompt,
+            mixSettings: body.mixSettings,
+            layers: body.layers,
+            generationMode: body.generationMode // V6
         };
 
         // Base64 Encode Options safely for CLI
