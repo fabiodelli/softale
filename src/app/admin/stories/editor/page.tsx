@@ -58,6 +58,10 @@ export default function StoryEditor() {
     const [tallFile, setTallFile] = useState<File | null>(null);
 
     const [existingAudioUrl, setExistingAudioUrl] = useState('');
+    // V6 Stems (Read Only for now)
+    const [voiceUrl, setVoiceUrl] = useState('');
+    const [musicUrl, setMusicUrl] = useState('');
+    const [ambientUrl, setAmbientUrl] = useState('');
     const [existingCoverUrl, setExistingCoverUrl] = useState('');
     const [existingWideUrl, setExistingWideUrl] = useState('');
     const [existingTallUrl, setExistingTallUrl] = useState('');
@@ -195,6 +199,9 @@ export default function StoryEditor() {
             setIsLoop(data.is_loop || false);
 
             setExistingAudioUrl(data.audio_url || '');
+            setVoiceUrl(data.voice_url || '');
+            setMusicUrl(data.music_url || '');
+            setAmbientUrl(data.ambient_url || '');
             setExistingCoverUrl(data.cover_url || '');
             setExistingWideUrl(data.cover_landscape_url || '');
             setExistingTallUrl(data.cover_portrait_url || '');
@@ -221,8 +228,8 @@ export default function StoryEditor() {
             if (!supabase) throw new Error('Supabase not configured');
             if (!title.trim()) throw new Error('Title is required');
 
-            let audioUrl = existingAudioUrl;
-            let coverUrl = existingCoverUrl;
+            let finalAudioUrl = existingAudioUrl;
+            let finalCoverUrl = existingCoverUrl;
             let wideUrl = existingWideUrl;
             let tallUrl = existingTallUrl;
 
@@ -242,13 +249,13 @@ export default function StoryEditor() {
             // Upload Audio
             if (audioFile) {
                 setStatus('Uploading audio...');
-                audioUrl = await uploadFile('audio', `stories/${newId}/audio.mp3`, audioFile, 'audio/mpeg');
+                finalAudioUrl = await uploadFile('audio', `stories/${newId}/audio.mp3`, audioFile, 'audio/mpeg');
             }
 
             // Upload Images
             if (coverFile) {
                 setStatus('Uploading square cover...');
-                coverUrl = await uploadFile('audio', `stories/${newId}/cover.png`, coverFile, 'image/png');
+                finalCoverUrl = await uploadFile('audio', `stories/${newId}/cover.png`, coverFile, 'image/png');
             }
             if (wideFile) {
                 setStatus('Uploading wide cover...');
@@ -277,13 +284,16 @@ export default function StoryEditor() {
                 is_premium: isPremium,
                 is_published: isPublished,
                 is_loop: isLoop,
-                audio_url: audioUrl,
-                cover_url: coverUrl,
+                audio_url: finalAudioUrl,
+                voice_url: voiceUrl,
+                music_url: musicUrl,
+                ambient_url: ambientUrl,
+                audio_phases: audioPhases,
+                cover_url: finalCoverUrl,
                 cover_landscape_url: wideUrl,
                 cover_portrait_url: tallUrl,
                 script_text: scriptText,
                 voice_id: voiceId || null,
-                audio_phases: audioPhases,
                 updated_at: new Date().toISOString()
             };
 
@@ -481,6 +491,41 @@ export default function StoryEditor() {
                                     <audio ref={audioPlayerRef} controls src={existingAudioUrl} className="w-full h-10 rounded-lg" />
                                 </div>
                             )}
+
+                            {/* V6 Stems (Read Only) */}
+                            <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6 bg-zinc-950/30 p-4 rounded-xl border border-zinc-700/50">
+                                <div className="md:col-span-3">
+                                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">V6 Audio Stems (Generated)</h3>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-zinc-400 mb-1">Voice Stem</label>
+                                    {voiceUrl ? (
+                                        <audio controls src={voiceUrl} className="w-full h-8 rounded-md" />
+                                    ) : (
+                                        <div className="text-xs text-zinc-600 italic px-2 py-1">Not available</div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-zinc-400 mb-1">Music Stem</label>
+                                    {musicUrl ? (
+                                        <audio controls src={musicUrl} className="w-full h-8 rounded-md" />
+                                    ) : (
+                                        <div className="text-xs text-zinc-600 italic px-2 py-1">Not available</div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-zinc-400 mb-1">Ambient Stem</label>
+                                    {ambientUrl ? (
+                                        <audio controls src={ambientUrl} className="w-full h-8 rounded-md" />
+                                    ) : (
+                                        <div className="text-xs text-zinc-600 italic px-2 py-1">Not available</div>
+                                    )}
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 gap-8">
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-400 mb-2">Access & Voice</label>
@@ -798,63 +843,65 @@ export default function StoryEditor() {
             </AdminLayout>
 
             {/* Generation Modal */}
-            {genModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
-                        <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                <Sparkles className="text-indigo-400" size={20} />
-                                Generate Artwork
-                            </h3>
-                            <button onClick={() => setGenModalOpen(false)} className="text-zinc-500 hover:text-white transition">
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="p-6 space-y-6">
-                            <div>
-                                <label className="block text-sm font-bold text-zinc-400 mb-2 uppercase tracking-wider">Prompt</label>
-                                <textarea
-                                    value={genPrompt}
-                                    onChange={(e) => setGenPrompt(e.target.value)}
-                                    rows={4}
-                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 resize-none placeholder-zinc-700"
-                                    placeholder="Describe the image you want..."
-                                    autoFocus
-                                />
-                                <p className="text-xs text-zinc-500 mt-2">Target Aspect Ratio: <span className="text-indigo-400 font-bold uppercase">{genType}</span></p>
+            {
+                genModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
+                            <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <Sparkles className="text-indigo-400" size={20} />
+                                    Generate Artwork
+                                </h3>
+                                <button onClick={() => setGenModalOpen(false)} className="text-zinc-500 hover:text-white transition">
+                                    <X size={20} />
+                                </button>
                             </div>
 
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating || !genPrompt.trim()}
-                                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isGenerating ? (
-                                        <>
-                                            <Loader2 className="animate-spin" size={18} />
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles size={18} />
-                                            Generate
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => setGenModalOpen(false)}
-                                    disabled={isGenerating}
-                                    className="px-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-3 rounded-xl font-bold transition disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
+                            <div className="p-6 space-y-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-zinc-400 mb-2 uppercase tracking-wider">Prompt</label>
+                                    <textarea
+                                        value={genPrompt}
+                                        onChange={(e) => setGenPrompt(e.target.value)}
+                                        rows={4}
+                                        className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 resize-none placeholder-zinc-700"
+                                        placeholder="Describe the image you want..."
+                                        autoFocus
+                                    />
+                                    <p className="text-xs text-zinc-500 mt-2">Target Aspect Ratio: <span className="text-indigo-400 font-bold uppercase">{genType}</span></p>
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        onClick={handleGenerate}
+                                        disabled={isGenerating || !genPrompt.trim()}
+                                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isGenerating ? (
+                                            <>
+                                                <Loader2 className="animate-spin" size={18} />
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Sparkles size={18} />
+                                                Generate
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => setGenModalOpen(false)}
+                                        disabled={isGenerating}
+                                        className="px-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-3 rounded-xl font-bold transition disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </AdminGuard>
+                )
+            }
+        </AdminGuard >
     );
 }

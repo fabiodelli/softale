@@ -19,6 +19,7 @@ interface PlayerContextType {
     currentTime: number;
     duration: number;
     voiceVolume: number;
+    musicVolume: number; // New V6 Stem
     ambientVolume: number;
     playbackRate: number;
     queue: Story[];
@@ -28,6 +29,8 @@ interface PlayerContextType {
     // Collection context
     collectionSlug: string | null;
     isLoopable: boolean;
+    // V6: Flag to know if we are in stem mode
+    hasStems: boolean;
     loopDuration: LoopDuration;
     totalLoopTime: number; // Total time played in loop mode (in seconds)
 
@@ -45,6 +48,7 @@ interface PlayerContextType {
     previous: () => void;
     seek: (time: number) => void;
     setVoiceVolume: (val: number) => void;
+    setMusicVolume: (val: number) => void; // New V6
     setAmbientVolume: (val: number) => void;
     setPlaybackRate: (val: number) => void;
     setLoopDuration: (duration: LoopDuration) => void;
@@ -83,12 +87,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [voiceVolume, setVoiceVolume] = useState(1.0);
+    const [musicVolume, setMusicVolume] = useState(0.5); // New V6
     const [ambientVolume, setAmbientVolume] = useState(0.5);
     const [playbackRate, setPlaybackRate] = useState(1.0);
 
     // --- Refs ---
-    const audioRef = useRef<HTMLAudioElement>(null);
-    const ambientRefA = useRef<HTMLAudioElement | null>(null);
+    const audioRef = useRef<HTMLAudioElement>(null); // Voice (or Master Legacy)
+    const musicRef = useRef<HTMLAudioElement | null>(null); // Music Stem
+    const ambientRefA = useRef<HTMLAudioElement | null>(null); // Ambience A
     const ambientRefB = useRef<HTMLAudioElement | null>(null);
     const activeAmbientRef = useRef<'A' | 'B'>('A');
     const currentPhaseRef = useRef<string>('');
@@ -102,6 +108,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // --- Initialization ---
     useEffect(() => {
         if (typeof window !== 'undefined') {
+            musicRef.current = new Audio();
+            musicRef.current.loop = true; // Music always loops in stem mode
             ambientRefA.current = new Audio();
             ambientRefB.current = new Audio();
             ambientRefA.current.loop = true;
@@ -109,6 +117,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }
 
         return () => {
+            musicRef.current?.pause();
             ambientRefA.current?.pause();
             ambientRefB.current?.pause();
             if (crossfadeIntervalRef.current) {
@@ -122,8 +131,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         if (user) {
             const savedVoice = localStorage.getItem(`softale_voice_vol_${user.id}`);
             const savedAmbient = localStorage.getItem(`softale_ambient_vol_${user.id}`);
+            const savedMusic = localStorage.getItem(`softale_music_vol_${user.id}`);
             if (savedVoice) setVoiceVolume(parseFloat(savedVoice));
             if (savedAmbient) setAmbientVolume(parseFloat(savedAmbient));
+            if (savedMusic) setMusicVolume(parseFloat(savedMusic));
         }
     }, [user]);
 
@@ -133,6 +144,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }
         if (audioRef.current) audioRef.current.volume = voiceVolume;
     }, [voiceVolume, user]);
+
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem(`softale_music_vol_${user.id}`, musicVolume.toString());
+        }
+        if (musicRef.current) musicRef.current.volume = musicVolume;
+    }, [musicVolume, user]);
 
     useEffect(() => {
         if (user) {
@@ -221,12 +239,35 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         if (!currentStory || status !== 'PLAYING') {
             // If paused or idle, pause ambients
             if (status === 'PAUSED' || status === 'IDLE') {
+                musicRef.current?.pause();
                 ambientRefA.current?.pause();
                 ambientRefB.current?.pause();
             }
             return;
         }
 
+        // V6 STEM LOGIC
+        if (currentStory.voice_url && currentStory.music_url) {
+            // Ensure Music is Playing
+            if (musicRef.current && musicRef.current.paused) {
+                musicRef.current.src = currentStory.music_url;
+                musicRef.current.volume = musicVolume;
+                musicRef.current.play().catch(e => console.warn("Music play failed", e));
+            }
+
+            // Ensure Ambience is Playing (Simple Loop Mode for Stems)
+            if (currentStory.ambient_url) {
+                const active = activeAmbientRef.current === 'A' ? ambientRefA.current : ambientRefB.current;
+                if (active && (active.paused || active.src !== currentStory.ambient_url)) {
+                    active.src = currentStory.ambient_url;
+                    active.volume = ambientVolume;
+                    active.play().catch(e => console.warn("Stem Ambience play failed", e));
+                }
+            }
+            return; // Skip Legacy Logic
+        }
+
+        // LEGACY INTENT LOGIC (For V5 stories without stems)
         const currentAudio = getCurrentAudioIntent();
         const phaseKey = `${currentAudio.phase}-${currentAudio.intent}`;
 
@@ -263,7 +304,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                 active.volume = targetVolume;
             }
         }
-    }, [currentStory, status, currentTime, getCurrentAudioIntent, getAmbientUrl, crossfadeTo, ambientVolume]);
+    }, [currentStory, status, currentTime, getCurrentAudioIntent, getAmbientUrl, crossfadeTo, ambientVolume, musicVolume]);
 
     // --- Core Actions ---
 
@@ -321,8 +362,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             setStatus('LOADING');
         } else {
             // Same story, from start?
+            // V6: Determine which source to use
+            const hasStems = !!(story.voice_url && story.music_url); // Basic check
+
             setStatus('PLAYING');
             audioRef.current?.play();
+            if (hasStems) {
+                musicRef.current?.play();
+                const active = activeAmbientRef.current === 'A' ? ambientRefA.current : ambientRefB.current;
+                active?.play();
+            }
         }
 
     }, [currentStory, status, user]);
@@ -357,6 +406,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         audioRef.current?.pause();
         // Resume mood background when story is paused
         ambience.resumeIfWasPlaying();
+
+        // Pause Stems
+        musicRef.current?.pause();
+        const active = activeAmbientRef.current === 'A' ? ambientRefA.current : ambientRefB.current;
+        active?.pause();
+
     }, [ambience]);
 
     const toggle = useCallback(() => {
@@ -400,6 +455,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const seek = useCallback((time: number) => {
         if (audioRef.current) {
             audioRef.current.currentTime = time;
+            // No need to seek loops (Music/Ambient), they just loop
             setCurrentTime(time);
         }
     }, []);
@@ -415,6 +471,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             if (playPromise !== undefined) {
                 playPromise.then(() => {
                     setStatus('PLAYING');
+                    // Sync Stems if needed
+                    if (currentStory?.voice_url && currentStory.music_url) {
+                        if (musicRef.current) {
+                            musicRef.current.src = currentStory.music_url;
+                            musicRef.current.volume = musicVolume;
+                            musicRef.current.play().catch(e => console.warn("Music autoplay failed", e));
+                        }
+                    }
                 }).catch(e => {
                     console.error("Autoplay failed", e);
                     // Usually AbortError if replaced quickly
@@ -505,19 +569,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return (
         <PlayerContext.Provider value={{
             currentStory, status, isPlaying, error,
-            currentTime, duration, voiceVolume, ambientVolume, playbackRate,
+            currentTime, duration,
+            voiceVolume, musicVolume, ambientVolume,
+            playbackRate,
             queue, queueIndex,
             collectionSlug, isLoopable, loopDuration, totalLoopTime,
+            hasStems: !!(currentStory?.voice_url), // Expose flag
             isMobilePlayerOpen, toggleMobilePlayer, setMobilePlayerOpen: setIsMobilePlayerOpen,
             play, playQueue, next, previous, pause, toggle, seek,
-            setVoiceVolume, setAmbientVolume, setPlaybackRate, setLoopDuration,
+            setVoiceVolume, setMusicVolume, setAmbientVolume, setPlaybackRate, setLoopDuration,
             audioRef: audioRef as React.RefObject<HTMLAudioElement>
         }}>
             {children}
-            {currentStory?.audio_url && (
+            {(currentStory?.audio_url || currentStory?.voice_url) && (
                 <audio
                     ref={audioRef}
-                    src={currentStory.audio_url}
+                    // V6: Prefer voice_url, fall back to mixed audio_url
+                    src={currentStory?.voice_url || currentStory?.audio_url}
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={handleEnded}
                     onError={handleError}

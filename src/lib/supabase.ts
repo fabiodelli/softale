@@ -140,6 +140,10 @@ export interface Story {
     social_status?: 'draft' | 'generated' | 'approved' | 'posted';
     cost_metadata?: any; // JSONB for detailed cost breakdown
     created_at: string;
+    // V6 Audio Stems (Optional - not all stories have them yet)
+    voice_url?: string | null;
+    ambient_url?: string | null;
+    music_url?: string | null;
 }
 
 export interface Collection {

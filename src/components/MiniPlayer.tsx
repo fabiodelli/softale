@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 
+import MixerControl from './MixerControl';
+
 export default function MiniPlayer() {
     const router = useRouter();
     const pathname = usePathname();
@@ -20,6 +22,7 @@ export default function MiniPlayer() {
         queueIndex,
         collectionSlug,
         isLoopable,
+        hasStems, // New V6 Check
         loopDuration,
         totalLoopTime,
         setLoopDuration,
@@ -28,13 +31,15 @@ export default function MiniPlayer() {
     } = usePlayer();
 
     const [showDurationDropdown, setShowDurationDropdown] = useState(false);
+    const [showMixer, setShowMixer] = useState(false); // New Mixer State
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Close dropdown when clicking outside
+    // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowDurationDropdown(false);
+                // setShowMixer(false); // Optional: if we want click outside to close mixer too
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -74,10 +79,6 @@ export default function MiniPlayer() {
             // If loopable, toggle the duration dropdown
             setShowDurationDropdown(!showDurationDropdown);
         }
-        // Disabled navigation to story page as requested
-        // else {
-        //    router.push(`/story/${currentStory.id}`);
-        // }
     };
 
     // Context-aware navigation: if on collection page, go home; otherwise go to collection
@@ -170,66 +171,33 @@ export default function MiniPlayer() {
                             </button>
                         </div>
 
-                        {/* Mobile & Desktop Loop Duration Dropdown (Portal/Overlay style) */}
-                        {isLoopable && (
-                            <AnimatePresence>
-                                {showDurationDropdown && (
-                                    <>
-                                        {/* Backdrop for Mobile */}
-                                        <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            onClick={(e) => { e.stopPropagation(); setShowDurationDropdown(false); }}
-                                            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55] md:hidden"
-                                        />
-
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            className={`
-                                                fixed bottom-24 left-4 right-4 md:absolute md:bottom-20 md:right-4 md:left-auto md:w-48
-                                                bg-white rounded-2xl md:rounded-lg shadow-2xl md:shadow-xl border border-slate-200 
-                                                py-2 px-1 z-[60] overflow-hidden
-                                            `}
-                                        >
-                                            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between md:hidden">
-                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Duration</span>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setShowDurationDropdown(false); }}
-                                                    className="p-1 bg-slate-100 rounded-full text-slate-500"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                            {durationOptions.map((option) => (
-                                                <button
-                                                    key={option.value}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setLoopDuration(option.value);
-                                                        setShowDurationDropdown(false);
-                                                    }}
-                                                    className={`w-full px-4 py-3 md:py-2 text-left text-sm rounded-xl md:rounded-md transition flex items-center justify-between
-                                                        ${loopDuration === option.value ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700 hover:bg-slate-50'}
-                                                    `}
-                                                >
-                                                    <span>{option.label}</span>
-                                                    {loopDuration === option.value && <span className="text-indigo-500">✓</span>}
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    </>
-                                )}
-                            </AnimatePresence>
-                        )}
-
-                        {/* Right Side Controls - Loop Duration Button (Desktop Only) & Collection Back */}
+                        {/* Right Side Controls & Config */}
                         <div className="hidden md:flex items-center gap-3 flex-1 justify-end relative">
-                            {/* Desktop Trigger Button */}
+
+                            {/* Mixer Toggle (Only V6) */}
+                            {hasStems && (
+                                <div className="relative">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setShowMixer(!showMixer); }}
+                                        className={`flex items-center justify-center w-10 h-10 rounded-full transition ${showMixer ? 'bg-indigo-100 text-indigo-600 ring-2 ring-indigo-500/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                        title="Audio Mixer"
+                                    >
+                                        <span className="text-lg">🎚️</span>
+                                    </button>
+                                    {/* Desktop Popover */}
+                                    {showMixer && (
+                                        <div
+                                            className="absolute bottom-full right-0 mb-4 z-[60]"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <MixerControl onClose={() => setShowMixer(false)} />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+
+                            {/* Desktop Duration Button */}
                             {isLoopable && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setShowDurationDropdown(!showDurationDropdown); }}
@@ -248,7 +216,7 @@ export default function MiniPlayer() {
                                 </button>
                             )}
 
-                            {/* Context Navigation Button */}
+                            {/* Collection/Home Button */}
                             {collectionSlug && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleContextNavigation(); }}
@@ -264,7 +232,93 @@ export default function MiniPlayer() {
                     </div>
                 </div>
 
+                {/* Mobile Mixer Modal (Separate from layout to ensure z-index) */}
+                {showMixer && hasStems && (
+                    <div
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] md:hidden flex items-end justify-center pb-8 p-4"
+                        onClick={() => setShowMixer(false)}
+                    >
+                        <motion.div
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 20, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full"
+                        >
+                            <MixerControl onClose={() => setShowMixer(false)} className="mx-auto" />
+                        </motion.div>
+                    </div>
+                )}
 
+                {/* Mobile Header Mixer Button (Absolute Positioned for Mobile Layout) */}
+                {hasStems && (
+                    <div className="md:hidden absolute top-[-50px] right-4 z-40">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setShowMixer(!showMixer); }}
+                            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur shadow-lg flex items-center justify-center text-xl border border-white/20"
+                        >
+                            🎚️
+                        </button>
+                    </div>
+                )}
+
+
+                {/* Mobile Loop Duration Dropdown (Portal/Overlay style) */}
+                {isLoopable && (
+                    <AnimatePresence>
+                        {showDurationDropdown && (
+                            <>
+                                {/* Backdrop for Mobile */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    onClick={(e) => { e.stopPropagation(); setShowDurationDropdown(false); }}
+                                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55] md:hidden"
+                                />
+
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    className={`
+                                        fixed bottom-24 left-4 right-4 md:absolute md:bottom-20 md:right-4 md:left-auto md:w-48
+                                        bg-white rounded-2xl md:rounded-lg shadow-2xl md:shadow-xl border border-slate-200 
+                                        py-2 px-1 z-[60] overflow-hidden
+                                    `}
+                                >
+                                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between md:hidden">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Duration</span>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setShowDurationDropdown(false); }}
+                                            className="p-1 bg-slate-100 rounded-full text-slate-500"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    {durationOptions.map((option) => (
+                                        <button
+                                            key={option.value}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLoopDuration(option.value);
+                                                setShowDurationDropdown(false);
+                                            }}
+                                            className={`w-full px-4 py-3 md:py-2 text-left text-sm rounded-xl md:rounded-md transition flex items-center justify-between
+                                                ${loopDuration === option.value ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700 hover:bg-slate-50'}
+                                            `}
+                                        >
+                                            <span>{option.label}</span>
+                                            {loopDuration === option.value && <span className="text-indigo-500">✓</span>}
+                                        </button>
+                                    ))}
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
+                )}
             </motion.div>
         </AnimatePresence >
     );
