@@ -15,18 +15,18 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
         if (loading) return;
 
         // Debug log
-        console.log('AdminGuard Check:', { user: !!user, profile, loading });
+
 
         // No user = redirect to login
         if (!user) {
-            console.log('AdminGuard: No user, redirect to login');
+
             router.push('/login?redirect=/admin');
             return;
         }
 
         // User exists but profile not yet loaded - wait more
         if (!profile) {
-            console.log('AdminGuard: User exists but no profile yet, waiting...');
+
             // Set a timeout to check again
             const timer = setTimeout(() => {
                 setCheckComplete(true);
@@ -35,12 +35,12 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
         }
 
         // Profile loaded - check role
-        console.log('AdminGuard: Profile loaded, role =', profile.role);
+
         if (profile.role === 'admin') {
             setAuthorized(true);
             setCheckComplete(true);
         } else {
-            console.log('AdminGuard: Not admin, redirecting to home');
+
             router.push('/');
         }
     }, [user, profile, loading, router]);
@@ -48,7 +48,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     // Second check after timeout if profile never loaded
     useEffect(() => {
         if (checkComplete && !authorized && user && !profile) {
-            console.log('AdminGuard: Profile never loaded after timeout, redirecting');
+
             router.push('/');
         }
     }, [checkComplete, authorized, user, profile, router]);

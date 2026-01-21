@@ -49,7 +49,7 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
         if (!user?.email || !supabase) return;
         setResetStatus('loading');
         const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-            redirectTo: `${window.location.origin}/auth/callback?next=/account/reset-password`,
+            redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
         });
 
         if (!error) {

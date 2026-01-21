@@ -55,7 +55,7 @@ function normalizeTags(tags: string[] | null): string[] {
 export async function getRecommendedStories(userId: string): Promise<Story[]> {
     if (!supabase) return [];
 
-    console.log(`[Recommender] Starting for user ${userId}...`);
+
 
     // 1. Fetch User History (Favorites & Progress)
     const [favoritesRes, progressRes, allStoriesRes] = await Promise.all([
@@ -104,7 +104,7 @@ export async function getRecommendedStories(userId: string): Promise<Story[]> {
     const timeContext = getTimeContext();
     const contextTags = TIME_CONTEXT_MAP[timeContext].map(t => t.toLowerCase());
 
-    console.log(`[Recommender] Context: ${timeContext}, Top Tags:`, tagScores);
+
 
     // 4. Score Candidate Stories
     const scoredStories = allStories.map(story => {

@@ -7,7 +7,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-console.log('Checking Supabase config:', { url: !!supabaseUrl, key: !!supabaseAnonKey });
+
 
 // Create client only if both env vars are set
 import { createBrowserClient } from '@supabase/ssr';
