@@ -46,8 +46,9 @@ export async function POST(req: NextRequest) {
         console.log('✅ CLI Build Output:', stdout);
         if (stderr) console.error('⚠️ CLI Build Stderr:', stderr);
 
-        // Parse logic: Find the "Build Complete! ID: [uuid]" line
-        const match = stdout.match(/Build Complete! ID: ([a-f0-9-]+)/);
+        // Parse logic: Find the "Build Complete! ID: [uuid]" or "Story Complete! ID: [uuid]" line
+        const cleanStdout = stdout.replace(/\u001b\[[0-9;]*m/g, ''); // Remove ANSI colors
+        const match = cleanStdout.match(/(?:Build|Story) Complete! ID: ([a-f0-9-]+)/);
 
         if (!match || !match[1]) {
             // Output stderr in the error for debugging

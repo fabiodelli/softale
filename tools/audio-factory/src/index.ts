@@ -27,18 +27,27 @@ import { voiceService } from './VoiceService.js';
 import { AutoTagger } from './AutoTagger.js';
 
 // ENIVORNMENT CONFIGURATION - CENTRALIZED
-const rootEnvLocal = path.resolve(process.cwd(), '.env.local');
-const rootEnv = path.resolve(process.cwd(), '.env');
+// ENIVORNMENT CONFIGURATION - CENTRALIZED
+// Check current dir (if running from root) and up two levels (if running from tools/audio-factory)
+const pathsToCheck = [
+    path.resolve(process.cwd(), '.env.local'),
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), '../../.env.local'),
+    path.resolve(process.cwd(), '../../.env')
+];
 
-// Prioritize .env.local, fallback to .env
-if (fs.existsSync(rootEnvLocal)) {
-    console.log(`🔧 Loading environment from: .env.local`);
-    dotenv.config({ path: rootEnvLocal });
-} else if (fs.existsSync(rootEnv)) {
-    console.log(`🔧 Loading environment from: .env`);
-    dotenv.config({ path: rootEnv });
-} else {
-    console.warn('⚠️  No .env.local or .env found in project root!');
+let envLoaded = false;
+for (const p of pathsToCheck) {
+    if (fs.existsSync(p)) {
+        console.log(`🔧 Loading environment from: ${p}`);
+        dotenv.config({ path: p });
+        envLoaded = true;
+        break;
+    }
+}
+
+if (!envLoaded) {
+    console.warn('⚠️  No .env.local or .env found!');
 }
 
 // =====================================================
