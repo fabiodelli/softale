@@ -182,15 +182,15 @@ export default function LandingPage({ onEnterApp, showNav = true, minimalHeader 
     const currentStory = activeMood.category ? storiesByCategory[activeMood.category] : undefined;
 
     return (
-        <div className="font-sans text-slate-900 relative bg-slate-50 overscroll-none">
+        <div className="font-sans text-slate-900 relative bg-slate-50 overscroll-none min-h-screen-dynamic">
             {/* --- FIXED BACKGROUND LAYER --- */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
                 <motion.div
                     key={activeMood.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.8 }}
+                    transition={{ duration: 0.6, ease: "easeInOut" }}
                     className="fixed inset-0 z-0"
                     style={{
                         background: `linear-gradient(180deg, ${activeMood.colors[0]} 0%, ${activeMood.colors[1]} 50%, ${activeMood.colors[2]} 100%)`
