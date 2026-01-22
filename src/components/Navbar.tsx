@@ -10,11 +10,13 @@ import AmbienceSelector from './AmbienceSelector';
 import MoodToggleButton from './MoodToggleButton';
 import { useMood } from '@/context/MoodContext';
 import { useAmbience } from '@/context/AmbienceContext';
+import { useLanding } from '@/context/LandingContext';
 
 export default function Navbar() {
     const { user, profile } = useAuth();
     const { activeMood, setActiveMood } = useMood();
     const { isPlaying } = useAmbience();
+    const { isShowingLanding } = useLanding();
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -95,7 +97,7 @@ export default function Navbar() {
 
     const isHiddenRoute = pathname === '/vision' || pathname === '/login' || pathname === '/signup';
 
-    if (isHiddenRoute) return null;
+    if (isHiddenRoute || isShowingLanding) return null;
 
     return (
         <header className={`hidden md:block fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-in-out ${glassClass}`}>

@@ -10,6 +10,7 @@ import MoodToggleButton from '@/components/MoodToggleButton';
 import { usePlayer } from '@/context/PlayerContext';
 import { useAmbience } from '@/context/AmbienceContext';
 import { useMood } from '@/context/MoodContext';
+import { useLanding } from '@/context/LandingContext';
 import { Layers } from 'lucide-react';
 import { getLayoutForMood } from '@/config/home-layout';
 import ContentSection from '@/components/ContentSection';
@@ -45,6 +46,7 @@ export default function HomeClient({ initialStories, initialCollections }: HomeC
     const [showLanding, setShowLanding] = useState(true);
     const [showBreathing, setShowBreathing] = useState(false);
     const [appReady, setAppReady] = useState(false);
+    const { setIsShowingLanding } = useLanding();
 
     // DATA STATE (Initialized from server props)
     const [allStories] = useState<Story[]>(initialStories);
@@ -104,6 +106,11 @@ export default function HomeClient({ initialStories, initialCollections }: HomeC
             setShowLanding(true);
         }
     }, [user, authLoading]);
+
+    // Sync landing state with context for Navbar visibility
+    useEffect(() => {
+        setIsShowingLanding(showLanding && !user);
+    }, [showLanding, user, setIsShowingLanding]);
 
     // Transition Handler
     const handleEnterApp = () => {
@@ -215,7 +222,7 @@ export default function HomeClient({ initialStories, initialCollections }: HomeC
     // --- RENDER ---
 
     if (showLanding && !user) {
-        return <LandingPage onEnterApp={handleEnterApp} />;
+        return <LandingPage onEnterApp={handleEnterApp} showNav={false} />;
     }
 
     if (showBreathing) {
