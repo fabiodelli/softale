@@ -12,5 +12,5 @@ export default function VisionPage() {
         router.push('/');
     };
 
-    return <LandingPage onEnterApp={handleEnterApp} showNav={true} minimalHeader={true} />;
+    return <LandingPage onEnterApp={handleEnterApp} showNav={false} />;
 }
