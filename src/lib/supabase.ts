@@ -116,6 +116,8 @@ export interface UserProfile {
     stories_completed?: number;
     current_streak?: number;
     last_active_date?: string;
+    // Waitlist
+    waitlist_joined_at?: string | null;
 }
 
 export interface Story {

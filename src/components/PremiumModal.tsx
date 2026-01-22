@@ -64,7 +64,7 @@ export default function PremiumModal() {
                                     className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2"
                                 >
                                     <Sparkles className="w-5 h-5" />
-                                    Unlock Premium Access
+                                    Join Waitlist
                                 </button>
 
                                 <button

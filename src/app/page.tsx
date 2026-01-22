@@ -1,9 +1,10 @@
 import { getStories, getCollections } from '@/lib/supabase';
+import { Suspense } from 'react';
 import HomeClient from '@/components/home/HomeClient';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Softale - Sleep Stories & Meditation',
+  title: 'Softale',
   description: 'Drift off to sleep with calming audio stories, meditations, and ambient sounds.',
 };
 
@@ -22,10 +23,12 @@ export default async function HomePage() {
 
   return (
     <main>
-      <HomeClient
-        initialStories={stories}
-        initialCollections={collections}
-      />
+      <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
+        <HomeClient
+          initialStories={stories}
+          initialCollections={collections}
+        />
+      </Suspense>
     </main>
   );
 }

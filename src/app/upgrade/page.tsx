@@ -17,38 +17,29 @@ export default function UpgradePage() {
     const [portalLoading, setPortalLoading] = useState(false);
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [joinSuccess, setJoinSuccess] = useState(false);
 
     const handleSubscribe = async () => {
         if (!user) {
-            router.push('/login');
+            router.push('/login?redirect=/upgrade');
             return;
         }
 
         setLoading(true);
         try {
-            const priceId = billingCycle === 'monthly'
-                ? process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY
-                : process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY;
-
-            const response = await fetch('/api/create-checkout-session', {
+            const res = await fetch('/api/waitlist/join', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user.id,
-                    email: user.email,
-                    priceId,
-                }),
+                body: JSON.stringify({ userId: user.id })
             });
 
-            const { url, error } = await response.json();
-
-            if (url) {
-                window.location.href = url;
+            if (res.ok) {
+                setJoinSuccess(true);
             } else {
-                alert(`Error: ${error || 'Unable to create checkout session'}`);
+                alert('Failed to join waitlist. Please try again.');
             }
         } catch (error) {
-            console.error('Upgrade error:', error);
+            console.error('Waitlist error:', error);
             alert('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -270,21 +261,10 @@ export default function UpgradePage() {
                         </p>
                     </motion.div>
 
-                    {/* Billing Toggle */}
+                    {/* Waitlist Badge */}
                     <div className="flex items-center justify-center gap-4 mb-12">
-                        <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-slate-900' : 'text-slate-500'}`}>Monthly</span>
-                        <button
-                            onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-                            className="w-14 h-8 bg-indigo-600 rounded-full p-1 relative transition-colors"
-                        >
-                            <motion.div
-                                className="w-6 h-6 bg-white rounded-full shadow-md"
-                                animate={{ x: billingCycle === 'monthly' ? 0 : 24 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            />
-                        </button>
-                        <span className={`text-sm font-bold ${billingCycle === 'yearly' ? 'text-slate-900' : 'text-slate-500'}`}>
-                            Yearly <span className="text-emerald-500 text-xs ml-1 font-black uppercase tracking-wide">Save 20%</span>
+                        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold">
+                            🚀 Early Access Opening Soon
                         </span>
                     </div>
 
@@ -301,55 +281,41 @@ export default function UpgradePage() {
                         <div className="p-8">
                             <div className="mb-4">
                                 <h2 className="text-2xl font-bold text-slate-900">Softale Premium</h2>
-                                <span className="inline-block px-2 py-0.5 rounded-md bg-green-100 text-green-700 text-[10px] font-bold tracking-wide uppercase mt-1">
-                                    Launch Price Locked Forever
+                                <span className="inline-block px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold tracking-wide uppercase mt-1">
+                                    Limited Spots
                                 </span>
                             </div>
 
-                            <div className="flex items-baseline justify-center gap-1 mb-2">
-                                {/* Strikethrough Anchor Price */}
-                                <span className="text-2xl text-slate-400 line-through decoration-slate-400/50 decoration-2 mr-2">
-                                    {billingCycle === 'monthly' ? '€6.99' : '€59.99'}
-                                </span>
-
-                                {/* Actual Price */}
-                                <span className="text-5xl font-black text-slate-900">
-                                    {billingCycle === 'monthly' ? '€4.99' : '€39.99'}
-                                </span>
-                                <span className="text-slate-500 font-medium">
-                                    /{billingCycle === 'monthly' ? 'mo' : 'yr'}
-                                </span>
-                            </div>
-
-                            {/* Free Trial Badge */}
-                            <div className="flex items-center justify-center gap-2 mb-4">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
-                                    ✨ 14 Days FREE
-                                </span>
-                            </div>
-
-                            <p className="text-center text-sm text-slate-500 mb-6">
-                                Try free for 14 days. Cancel anytime.<br />
-                                <strong>Price locked</strong> as long as you stay subscribed.
+                            <p className="text-center text-slate-500 mb-8 leading-relaxed">
+                                We are strictly limiting access to ensure the highest quality experience for our founding members.
                             </p>
-
-
 
                             <button
                                 onClick={handleSubscribe}
-                                disabled={loading}
-                                className={`w-full py-4 rounded-xl text-lg font-bold mb-6 transition-all transform active:scale-95 shadow-lg
-                                ${loading
-                                        ? 'bg-slate-100 text-slate-400 cursor-wait shadow-none'
-                                        : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:shadow-indigo-500/40 shadow-amber-500/20'
+                                disabled={loading || joinSuccess}
+                                className={`w-full py-4 rounded-xl text-lg font-bold mb-6 transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2
+                                ${joinSuccess
+                                        ? 'bg-emerald-500 text-white cursor-default hover:scale-100 shadow-emerald-500/20'
+                                        : loading
+                                            ? 'bg-slate-100 text-slate-400 cursor-wait'
+                                            : 'bg-slate-900 text-white hover:bg-slate-800 hover:shadow-slate-500/20'
                                     }`}
                             >
-                                {loading ? 'Processing...' : 'Start 14-Day Free Trial'}
+                                {joinSuccess ? (
+                                    <>
+                                        <Check className="w-5 h-5" />
+                                        You're on the list!
+                                    </>
+                                ) : loading ? (
+                                    'Joining...'
+                                ) : (
+                                    'Join the Waitlist'
+                                )}
                             </button>
 
                             <p className="text-xs text-slate-400 mb-8 border-t border-slate-100 pt-4 mt-4">
-                                No charge today. After 14 days: {billingCycle === 'monthly' ? '€4.99/mo' : '€39.99/yr'}.<br />
-                                <strong>Cancel anytime before trial ends.</strong>
+                                You'll receive an email invitation as soon as a spot opens up.<br />
+                                <strong>No payment required to join.</strong>
                             </p>
 
                             <div className="space-y-4 text-left">

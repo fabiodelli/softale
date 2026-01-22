@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -17,7 +18,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Softale - Audio Stories",
+  title: "Softale",
   description: "Sleep stories, meditations, and immersive audio experiences",
   keywords: ["sleep stories", "meditation", "audio", "relaxation", "ASMR"],
   manifest: "/manifest.json",
@@ -53,7 +54,9 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`} style={{ '--font-serif': 'Playfair Display, serif' } as React.CSSProperties}>
         <Providers><div className="flex flex-col min-h-screen">
-          <Navbar />
+          <Suspense fallback={<div className="h-16 bg-slate-900/50 backdrop-blur-md" />}>
+            <Navbar />
+          </Suspense>
           <div className="flex-grow">
             {children}
           </div>
