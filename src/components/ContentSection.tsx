@@ -252,7 +252,7 @@ export default function ContentSection({
                 // Horizontal Carousel with proper margin handling + drag scroll
                 <div
                     ref={scrollRef}
-                    className="flex gap-4 overflow-x-auto pb-6 -mx-6 md:-mx-12 px-6 md:px-12 scrollbar-hide cursor-grab"
+                    className="flex gap-4 overflow-x-auto pb-6 -mx-6 md:-mx-12 px-6 md:px-12 scrollbar-hide cursor-grab w-[calc(100%+3rem)] md:w-[calc(100%+6rem)]"
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
