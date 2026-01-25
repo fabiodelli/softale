@@ -132,7 +132,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                     >
 
                         {/* Text Section (Centered on Desktop, High on Mobile) */}
-                        <div className="flex-1 flex flex-col items-center justify-center text-center drop-shadow-sm pt-32 md:pt-0">
+                        <div className="flex-1 flex flex-col items-center justify-start md:justify-center text-center drop-shadow-sm pt-24 md:pt-0">
                             <motion.h2
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
