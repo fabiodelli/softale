@@ -168,7 +168,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                                                 whileTap={{ scale: 0.95 }}
                                                 onClick={() => onSelect(m.id as Mood)}
                                                 className={`
-                                                    w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border-2
+                                                    w-11 h-11 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border-2
                                                     ${isActive
                                                         ? `${m.activeClass} scale-110 shadow-xl`
                                                         : `${m.colorClass} ${m.borderClass} opacity-90 hover:opacity-100`
@@ -179,7 +179,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                                                     w-full h-full rounded-full flex items-center justify-center
                                                     ${isActive ? '' : 'hover:scale-105 transition-transform'}
                                                 `}>
-                                                    <Icon className="w-6 h-6 md:w-7 md:h-7" />
+                                                    <Icon className="w-5 h-5 md:w-7 md:h-7" />
                                                 </div>
                                             </motion.button>
                                             <span className={`

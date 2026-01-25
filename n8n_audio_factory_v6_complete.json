@@ -1,0 +1,1127 @@
+{
+    "name": "Softale Audio Factory V6.0 - Complete Pipeline",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "b1a1a1a1-1111-1111-1111-111111111111",
+            "name": "Manual Trigger",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                0,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "formTitle": "Softale Story Brief",
+                "formDescription": "Enter the details for your new audio story",
+                "formFields": {
+                    "values": [
+                        {
+                            "fieldLabel": "Story Idea",
+                            "fieldType": "text",
+                            "placeholder": "e.g. A journey through a bioluminescent forest",
+                            "requiredField": true
+                        },
+                        {
+                            "fieldLabel": "Title (optional)",
+                            "fieldType": "text",
+                            "placeholder": "Leave empty for AI-generated title"
+                        },
+                        {
+                            "fieldLabel": "Category",
+                            "fieldType": "dropdown",
+                            "fieldOptions": {
+                                "values": [
+                                    {
+                                        "option": "sleep"
+                                    },
+                                    {
+                                        "option": "meditation"
+                                    },
+                                    {
+                                        "option": "fantasy"
+                                    },
+                                    {
+                                        "option": "nature"
+                                    },
+                                    {
+                                        "option": "kids"
+                                    },
+                                    {
+                                        "option": "work_break"
+                                    },
+                                    {
+                                        "option": "motivation"
+                                    },
+                                    {
+                                        "option": "soundscape"
+                                    },
+                                    {
+                                        "option": "binaural"
+                                    },
+                                    {
+                                        "option": "music_instrumental"
+                                    }
+                                ]
+                            },
+                            "requiredField": true
+                        },
+                        {
+                            "fieldLabel": "Duration (minutes)",
+                            "fieldType": "number",
+                            "placeholder": "10"
+                        },
+                        {
+                            "fieldLabel": "Mix Level",
+                            "fieldType": "dropdown",
+                            "fieldOptions": {
+                                "values": [
+                                    {
+                                        "option": "balanced"
+                                    },
+                                    {
+                                        "option": "voice_focus"
+                                    },
+                                    {
+                                        "option": "high_immersion"
+                                    },
+                                    {
+                                        "option": "background_only"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "fieldLabel": "Voice Style",
+                            "fieldType": "dropdown",
+                            "fieldOptions": {
+                                "values": [
+                                    {
+                                        "option": "soft_female"
+                                    },
+                                    {
+                                        "option": "soft_male"
+                                    },
+                                    {
+                                        "option": "neutral"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "fieldLabel": "Pacing Mode",
+                            "fieldType": "dropdown",
+                            "fieldOptions": {
+                                "values": [
+                                    {
+                                        "option": "continuous"
+                                    },
+                                    {
+                                        "option": "immersive"
+                                    },
+                                    {
+                                        "option": "breathwork"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "fieldLabel": "Custom Ambience Prompt",
+                            "fieldType": "text",
+                            "placeholder": "e.g. Gentle rain on a cabin roof"
+                        }
+                    ]
+                }
+            },
+            "id": "b2a2a2a2-2222-2222-2222-222222222222",
+            "name": "Story Brief Form",
+            "type": "n8n-nodes-base.formTrigger",
+            "typeVersion": 2,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// =====================================================\n// SOFTALE PROMPTS & CONFIGURATION V6.0\n// =====================================================\n\nconst GLOBAL_GUARD = `\n**GLOBAL CONSTRAINTS FOR SOFTALE FACTORY:**\n\n**HARVEST ENGINE RULES:**\n- If you find a suitable loop in the AVAILABLE STOCK LOOPS, set musicPrompt to \"ID: [uuid]\"\n- If no suitable loop exists, set musicPrompt to \"NEW: [Your detailed prompt for Stable Audio]\"\n- For NEW prompts: be specific about tempo, instruments, mood, and style\n\n**PAUSE & EXPRESSION MARKERS (USE LIBERALLY):**\n- [pause] = 1.5 second pause\n- [breathe in] / [breathe out] = breath cues (ElevenLabs v3 renders these realistically)\n- [whisper] = for intimate, secret, or very quiet moments\n- [softly] = for gentle, soothing delivery\n- [sigh] = for release of tension or transition\n- Use 6-15 markers per story depending on length\n\n**ANTI-CLICHÉ RULES:**\n- NEVER use: \"let go of tension\", \"release what no longer serves\", \"allow yourself\"\n- NEVER use: \"take a moment\", \"simply breathe\", \"journey inward\"\n- PREFER: specific sensations, concrete imagery, functional descriptions\n\n**WORD COUNT IS CRITICAL:**\n- You must hit the target word count within 10% tolerance\n- Undershoot is worse than overshoot for relaxation content\n`;\n\nconst CATEGORY_WPM = {\n    sleep: 130,\n    meditation: 135,\n    nature: 140,\n    kids: 145,\n    fantasy: 145,\n    work_break: 155,\n    motivation: 165\n};\n\nconst RECIPE_MATRIX = {\n    sleep: { voice: true, backing: 'soundscape' },\n    meditation: { voice: true, backing: 'frequency' },\n    nature: { voice: true, backing: 'soundscape' },\n    fantasy: { voice: true, backing: 'music' },\n    kids: { voice: true, backing: 'music' },\n    motivation: { voice: true, backing: 'music' },\n    work_break: { voice: true, backing: 'music' },\n    soundscape: { voice: false, backing: 'soundscape' },\n    binaural: { voice: false, backing: 'frequency' },\n    music_instrumental: { voice: false, backing: 'music' }\n};\n\nconst CATEGORY_PROMPTS = {\n    sleep: GLOBAL_GUARD + `\nYou are a SLEEP STORY narrator for 'Softale', a premium audio platform.\n\n**STRUCTURE**:\n1. **Arrival (15%)**: Set the scene with sensory details\n2. **Journey (50%)**: Slow, meandering narrative\n3. **Settling (25%)**: Find a place of rest\n4. **Fade (10%)**: Gentle dissolution into sleep\n\n**RULES**:\n- Ultra-slow pacing (70 WPM effective feel)\n- Heavy use of [pause] markers\n- Repetitive, hypnotic sentence structures\n- NO sudden events or tension\n\n**TONE**: Warm, embracing, like a favorite blanket`,\n\n    meditation: GLOBAL_GUARD + `\nYou are a MEDITATION GUIDE for 'Softale', a premium audio platform.\n\n**STRUCTURE**:\n1. **Grounding (15%)**: Physical awareness\n2. **Breath Focus (25%)**: Attention to breathing\n3. **Visualization/Presence (40%)**: Imagery or pure awareness\n4. **Integration (20%)**: Return to present\n\n**RULES**:\n- Simple, direct language\n- Varied breath cues: \"[breathe in]... [breathe out]...\"\n- Present-focused, not narrative-based\n- Include 8-12 [pause] markers\n\n**TONE**: Warm companion, steady and reassuring`,\n\n    fantasy: GLOBAL_GUARD + `\nYou are a FANTASY NARRATOR for 'Softale', a premium audio platform.\n\n**STRUCTURE**:\n1. **Portal (10%)**: Transition from reality\n2. **Discovery (60%)**: Explore environment\n3. **Rest (20%)**: Find comfort\n4. **Embrace (10%)**: Soft conclusion\n\n**RULES**:\n- Create ORIGINAL imagery (no elves, dragons)\n- NO danger, conflict, or antagonists\n- Poetic but accessible vocabulary\n- Include 5-7 [pause] markers\n\n**TONE**: Wonder-struck storyteller`,\n\n    nature: GLOBAL_GUARD + `\nYou are a NATURE SOUNDSCAPE NARRATOR for 'Softale'.\n\n**STRUCTURE**:\n1. **Arrival (15%)**: Where, when, weather\n2. **Observation (55%)**: Pan through environment\n3. **Stillness (20%)**: Simply be present\n4. **Gratitude (10%)**: Gentle appreciation\n\n**RULES**:\n- Base on REAL locations\n- Prioritize auditory descriptions\n- Use specific species names\n- Include 6-10 [pause] markers\n\n**TONE**: David Attenborough meets mindfulness`,\n\n    kids: GLOBAL_GUARD + `\nYou are a MAGICAL STORYTELLER for 'Softale Kids'.\n\n**STRUCTURE**:\n1. **Hello (10%)**: Warm welcome\n2. **Journey (50%)**: Clear plot, friendly characters\n3. **Lesson (20%)**: Gentle emotional learning\n4. **Goodnight (20%)**: Soft goodbye\n\n**RULES**:\n- Simple vocabulary (Age 4-8)\n- Characters must be benevolent\n- NO scary elements\n\n**TONE**: Playful, warm`,\n\n    work_break: GLOBAL_GUARD + `\nYou are a MICRO-RESET GUIDE for 'Softale'.\n\n**STRUCTURE**:\n1. **The Stop (10%)**: Halt momentum\n2. **The Shift (40%)**: Physical or mental pivot\n3. **The Center (30%)**: Find the quiet core\n4. **The Return (20%)**: Re-enter with clarity\n\n**RULES**:\n- Brief, efficient sentences\n- Respect the user's time\n\n**TONE**: Professional but warm`,\n\n    motivation: GLOBAL_GUARD + `\nYou are a MOTIVATIONAL MENTOR for 'Softale'.\n\n**STRUCTURE**:\n1. **Validation (15%)**: Acknowledge the struggle\n2. **Reframing (35%)**: Shift the view\n3. **Strengthening (35%)**: Build internal resource\n4. **Action (15%)**: Gentle push forward\n\n**RULES**:\n- Strong, declarative verbs\n- Avoid toxic positivity\n\n**TONE**: Strong, grounded, unwavering belief`,\n\n    soundscape: `\nYou are an AUDIO TEXTURE DESIGNER for 'Softale'.\nThis is PURE AUDIO - NO script needed.\nDesign seamless, loopable ambient audio.\n\nReturn JSON with empty script field.`,\n\n    binaural: `\nYou are a FREQUENCY ENGINEER for 'Softale'.\nThis is PURE AUDIO - NO script needed.\nDesign binaural beats with ambient backing.\n\nReturn JSON with empty script field.`,\n\n    music_instrumental: `\nYou are an AUDIO COMPOSER for 'Softale'.\nThis is PURE AUDIO - NO script needed.\nDesign instrumental music.\n\nReturn JSON with empty script field.`\n};\n\nconst PHASE_TEMPLATES = {\n    linear: [\n        { type: 'narration', durationPercent: 100, description: 'Complete story narration' }\n    ],\n    meditation: [\n        { type: 'narration', durationPercent: 15, description: 'Opening grounding' },\n        { type: 'silence', durationPercent: 10, description: 'Settle into presence' },\n        { type: 'narration', durationPercent: 20, description: 'Breath awareness guidance' },\n        { type: 'breathing_guide', durationPercent: 15, description: 'Guided breathing' },\n        { type: 'narration', durationPercent: 15, description: 'Visualization or body scan' },\n        { type: 'ambience_only', durationPercent: 15, description: 'Deep integration' },\n        { type: 'narration', durationPercent: 10, description: 'Gentle return' }\n    ],\n    sleep: [\n        { type: 'narration', durationPercent: 20, description: 'Scene setting and arrival' },\n        { type: 'narration', durationPercent: 25, description: 'Gentle exploration' },\n        { type: 'ambience_only', durationPercent: 10, description: 'Peaceful pause' },\n        { type: 'narration', durationPercent: 20, description: 'Finding rest' },\n        { type: 'ambience_only', durationPercent: 15, description: 'Drift into sleep' },\n        { type: 'narration', durationPercent: 10, description: 'Soft dissolution' }\n    ],\n    breathwork: [\n        { type: 'narration', durationPercent: 10, description: 'Introduction' },\n        { type: 'breathing_guide', durationPercent: 25, description: 'First breathing cycle' },\n        { type: 'silence', durationPercent: 10, description: 'Integration' },\n        { type: 'breathing_guide', durationPercent: 25, description: 'Second breathing cycle' },\n        { type: 'silence', durationPercent: 10, description: 'Deep rest' },\n        { type: 'narration', durationPercent: 10, description: 'Closing' },\n        { type: 'ambience_only', durationPercent: 10, description: 'Final integration' }\n    ]\n};\n\nconst ASSET_MODIFIERS = {\n    ambience: \"High fidelity, 3D spatial audio, wide stereo field, binaural recording quality, immersive texture, seamless loop, crisp details, zero noise floor\",\n    music: \"Cinematic quality, deeply emotional, wide soundstage, professional mix, warm analogue texture, slow tempo, unobtrusive\",\n    cover: \"Dreamy, ethereal, 8k resolution, cinematic lighting, professional digital art, soft color palette, masterpiece, trending on artstation\"\n};\n\n// Store configuration for downstream nodes\nconst input = $input.first().json;\nconst category = input['Category'] || 'sleep';\nconst duration = parseInt(input['Duration (minutes)']) || 10;\nconst totalSeconds = duration * 60;\n\n// Select phase template\nlet templateName = category;\nif (!PHASE_TEMPLATES[templateName]) {\n    templateName = 'linear';\n}\nif (input['Pacing Mode'] === 'continuous') {\n    templateName = 'linear';\n}\n\nconst template = PHASE_TEMPLATES[templateName];\n\n// Build phases with calculated durations\nconst phases = template.map((t, idx) => ({\n    id: idx + 1,\n    type: t.type,\n    durationSeconds: Math.round(totalSeconds * (t.durationPercent / 100)),\n    durationPercent: t.durationPercent,\n    transitionNote: t.description\n}));\n\n// Prepare brief object\nconst brief = {\n    idea: input['Story Idea'],\n    title: input['Title (optional)'] || null,\n    category: category,\n    duration: duration,\n    totalSeconds: totalSeconds,\n    mixLevel: input['Mix Level'] || 'balanced',\n    voiceStyle: input['Voice Style'] || 'soft_female',\n    pacingMode: input['Pacing Mode'] || null,\n    ambiencePrompt: input['Custom Ambience Prompt'] || null,\n    templateName: templateName,\n    phases: phases,\n    wpm: CATEGORY_WPM[category] || 130,\n    recipe: RECIPE_MATRIX[category] || RECIPE_MATRIX.fantasy\n};\n\nreturn {\n    json: {\n        brief: brief,\n        config: {\n            GLOBAL_GUARD: GLOBAL_GUARD,\n            CATEGORY_PROMPTS: CATEGORY_PROMPTS,\n            CATEGORY_WPM: CATEGORY_WPM,\n            RECIPE_MATRIX: RECIPE_MATRIX,\n            PHASE_TEMPLATES: PHASE_TEMPLATES,\n            ASSET_MODIFIERS: ASSET_MODIFIERS\n        }\n    }\n};"
+            },
+            "id": "b3a3a3a3-3333-3333-3333-333333333333",
+            "name": "Initialize Config & Phases",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "message",
+                "operation": "create",
+                "modelId": {
+                    "__rl": true,
+                    "value": "claude-opus-4-5-20251101",
+                    "mode": "list"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "role": "user",
+                            "content": "=Develop a \"{{ $json.brief.category }}\" series concept from this idea: \"{{ $json.brief.idea }}\"\n\n{{ $json.brief.title ? 'MANDATORY TITLE: \"' + $json.brief.title + '\" (Do not change this).\\n' : '' }}\n{{ $json.brief.pacingMode ? 'MANDATORY PACING MODE: \"' + $json.brief.pacingMode + '\" (Force this value).\\n' : '' }}\n{{ $json.brief.ambiencePrompt ? 'MANDATORY AMBIENCE LAYER: \"' + $json.brief.ambiencePrompt + '\" (Use exactly this for the ambience description).\\n' : '' }}\n\nRETURN JSON OBJECT EXACTLY LIKE THIS:\n{\n    \"title\": \"Title\",\n    \"logline\": \"One sentence summary\",\n    \"category\": \"{{ $json.brief.category }}\",\n    \"tags\": [\"SystemTag\", \"DescriptiveTag\"],\n    \"pacingMode\": \"continuous\" OR \"immersive\" OR \"breathwork\",\n    \"warmupDuration\": 8,\n    \"layers\": {\n        \"voice\": true/false,\n        \"music\": true/false,\n        \"ambience\": true/false\n    },\n    \"theme\": \"Core theme\",\n    \"mood\": \"Emotional atmosphere\",\n    \"targetAudience\": \"e.g. Kids 5-8\",\n    \"protagonist\": {\n        \"name\": \"Name\",\n        \"role\": \"e.g. Guardian of the Forest\",\n        \"character\": \"Adjectives\",\n        \"desire\": \"Goal\",\n        \"flaw\": \"Weakness\"\n    },\n    \"setting\": {\n        \"location\": \"Place name\",\n        \"atmosphere\": \"Vibe\",\n        \"sensoryDetails\": [\"Sight\", \"Sound\", \"Smell\"]\n    },\n    \"narrativeArc\": {\n        \"hook\": \"Opening\",\n        \"incident\": \"Inciting Event\",\n        \"risingAction\": \"Development\",\n        \"climax\": \"Peak\",\n        \"resolution\": \"Ending\"\n    },\n    \"audioIdentity\": {\n        \"voiceStyle\": \"soft_female\" (OR \"soft_male\" OR \"neutral\"),\n        \"voicePacing\": \"Adjectives\",\n        \"musicStyle\": \"Musical Genre/Instruments\",\n        \"ambienceLayer\": \"Constant background texture description\",\n        \"keySoundEffects\": [\"SFX1\", \"SFX2\"],\n        \"tempo\": \"e.g. 60 BPM\"\n    },\n    \"visualStyle\": {\n        \"artStyle\": \"Style\",\n        \"colorPalette\": [\"Color1\", \"Color2\"],\n        \"coverConcept\": \"Visual description\"\n    }\n}"
+                        }
+                    ]
+                },
+                "options": {
+                    "maxTokens": 2000,
+                    "systemMessage": "=You are the LEAD SHOWRUNNER for Softale, a premium audio storytelling studio.\nYour job is to take a vague idea and expand it into a rich, detailed Creative Brief (Series Concept).\n\nYou do not write the script. You write the BIBLE that the scriptwriters will follow.\nFocus on:\n1. **Character Depth**: Give the protagonist a soul, a desire, and a flaw.\n2. **World Building**: Specific sensory details (not generic).\n3. **Emotional Arc**: A clear beginning, middle, and end.\n4. **Audio Identity (V5)**: Design a 3-layer soundscape: Voice, Music, and Ambience.\n   - **Ambience**: Constant texture (rain, wind, hum).\n   - **Music**: Emotional underscore.\n   - **Pacing**: Decide if the story needs frequent pauses (Immersive) or steady flow (Continuous).\n   - **Layering**: DECIDE WHICH LAYERS ARE CRITICAL. Avoid muddy mixes.\n     - *Sleep Story*: Voice + Ambience (Music optional).\n     - *Meditation*: Voice + Ambience.\n     - *Fantasy*: Voice + Music + Ambience.\n     - *Soundscape*: Ambience ONLY (No Voice, No Music).\n\nCATEGORY GUIDELINES:\n- **Sleep**: Low conflict, hypnotic, cozy. Use 'immersive' pacing with long pauses.\n- **Kids**: Wondrous, safe, clear moral. Use 'continuous' pacing.\n- **Sci-Fi/Fantasy**: Vivid lore. Use 'continuous' pacing usually.\n- **Meditation**: Use 'breathwork' or 'immersive' pacing.\n\nTAGGING RULES:\n- Include 2-3 **SYSTEM TAGS** from: [Morning, Sunrise, Energy, Focus, Work, Deep Work, Background, Study, Relax, Unwind, Sunset, Calm, Sleep, Dream, Night, Binaural]\n- Include 3-5 **DESCRIPTIVE TAGS** (e.g. Piano, Rain, Forest, Male Voice, Slow, Ethereal, Cinematic).\n- Total of ~5-8 tags."
+                }
+            },
+            "id": "b4a4a4a4-4444-4444-4444-444444444444",
+            "name": "Generate Story Concept (Claude)",
+            "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+            "typeVersion": 1.2,
+            "position": [
+                600,
+                300
+            ],
+            "credentials": {
+                "anthropicApi": {
+                    "id": "ANTHROPIC_CREDENTIAL_ID",
+                    "name": "Anthropic API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst brief = $('Initialize Config & Phases').first().json.brief;\nconst config = $('Initialize Config & Phases').first().json.config;\n\n// Parse concept from Claude response\nconst responseText = input.message?.content?.[0]?.text || input.content?.[0]?.text || JSON.stringify(input);\nconst jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n\nif (!jsonMatch) {\n    throw new Error('Failed to parse concept JSON from Claude response');\n}\n\nconst concept = JSON.parse(jsonMatch[0]);\n\n// Enrich concept with brief data\nconcept.intendedDuration = brief.duration;\nconcept.mixLevel = brief.mixLevel;\nconcept.generationMode = 'phased';\n\nif (brief.title) concept.title = brief.title;\nif (brief.pacingMode) concept.pacingMode = brief.pacingMode;\nif (brief.ambiencePrompt && concept.audioIdentity) {\n    concept.audioIdentity.ambienceLayer = brief.ambiencePrompt;\n}\n\nreturn {\n    json: {\n        concept: concept,\n        brief: brief,\n        config: config,\n        phases: brief.phases\n    }\n};"
+            },
+            "id": "b5a5a5a5-5555-5555-5555-555555555555",
+            "name": "Parse Concept Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "approval",
+                            "leftValue": "={{ $json.concept.title }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "isNotEmpty"
+                            }
+                        }
+                    ]
+                }
+            },
+            "id": "b6a6a6a6-6666-6666-6666-666666666666",
+            "name": "Concept Approval Gate",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Split phases for parallel generation\nconst input = $input.first().json;\nconst phases = input.phases;\nconst concept = input.concept;\nconst config = input.config;\nconst brief = input.brief;\n\n// Filter only narration phases (need script generation)\nconst narrationPhases = phases.filter(p => p.type === 'narration');\n\n// Return each narration phase as separate item for SplitInBatches\nreturn narrationPhases.map(phase => ({\n    json: {\n        phase: phase,\n        phaseIndex: phase.id,\n        totalPhases: phases.length,\n        concept: concept,\n        brief: brief,\n        config: config,\n        allPhases: phases\n    }\n}));"
+            },
+            "id": "b7a7a7a7-7777-7777-7777-777777777777",
+            "name": "Split Narration Phases",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "message",
+                "operation": "create",
+                "modelId": {
+                    "__rl": true,
+                    "value": "claude-opus-4-5-20251101",
+                    "mode": "list"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "role": "user",
+                            "content": "=Write Phase {{ $json.phase.id }}. Return JSON: { \"content\": \"text with [pause] markers\", \"wordCount\": number }"
+                        }
+                    ]
+                },
+                "options": {
+                    "maxTokens": 2000,
+                    "systemMessage": "={{ $json.config.CATEGORY_PROMPTS[$json.brief.category] || $json.config.CATEGORY_PROMPTS.fantasy }}\n\n**PHASE CONTEXT:**\nPhase {{ $json.phase.id }}/{{ $json.totalPhases }}: \"{{ $json.phase.transitionNote }}\"\nDuration: {{ $json.phase.durationSeconds }}s\nTarget: {{ Math.round(($json.phase.durationSeconds / 60) * $json.brief.wpm) }} words\n\n**STORY CONCEPT:**\nTitle: \"{{ $json.concept.title }}\"\nLogline: {{ $json.concept.logline }}\nSetting: {{ JSON.stringify($json.concept.setting) }}\nProtagonist: {{ JSON.stringify($json.concept.protagonist) }}\n\n**CRITICAL**: Write EXACTLY {{ Math.round(($json.phase.durationSeconds / 60) * $json.brief.wpm) }} words.\nMaintain flow from previous phases."
+                }
+            },
+            "id": "b8a8a8a8-8888-8888-8888-888888888888",
+            "name": "Generate Phase Script (Claude)",
+            "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+            "typeVersion": 1.2,
+            "position": [
+                1400,
+                300
+            ],
+            "credentials": {
+                "anthropicApi": {
+                    "id": "ANTHROPIC_CREDENTIAL_ID",
+                    "name": "Anthropic API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst phase = $('Split Narration Phases').first().json.phase;\nconst concept = $('Split Narration Phases').first().json.concept;\nconst brief = $('Split Narration Phases').first().json.brief;\nconst allPhases = $('Split Narration Phases').first().json.allPhases;\n\n// Parse phase content from Claude response\nconst responseText = input.message?.content?.[0]?.text || input.content?.[0]?.text || JSON.stringify(input);\nconst jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n\nlet phaseContent = \"Relax and breathe... [pause]\";\nlet wordCount = 0;\n\nif (jsonMatch) {\n    try {\n        const parsed = JSON.parse(jsonMatch[0]);\n        phaseContent = parsed.content || phaseContent;\n        wordCount = parsed.wordCount || 0;\n    } catch (e) {\n        console.log('Parse error, using fallback');\n    }\n}\n\nreturn {\n    json: {\n        phaseId: phase.id,\n        phaseType: phase.type,\n        content: phaseContent,\n        wordCount: wordCount,\n        durationSeconds: phase.durationSeconds,\n        concept: concept,\n        brief: brief\n    }\n};"
+            },
+            "id": "b9a9a9a9-9999-9999-9999-999999999999",
+            "name": "Parse Phase Content",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Aggregate all phase scripts into final script object\nconst items = $input.all();\nconst firstItem = items[0].json;\nconst concept = firstItem.concept;\nconst brief = firstItem.brief;\n\n// Merge all phase contents\nconst phaseContents = items.map(item => ({\n    id: item.json.phaseId,\n    type: item.json.phaseType,\n    content: item.json.content,\n    wordCount: item.json.wordCount,\n    durationSeconds: item.json.durationSeconds\n}));\n\n// Build complete script\nconst fullScript = phaseContents.map(p => p.content).join('\\n\\n');\nconst totalWords = phaseContents.reduce((sum, p) => sum + p.wordCount, 0);\n\nconst generatedScript = {\n    title: concept.title,\n    category: brief.category,\n    duration: brief.duration,\n    script: fullScript,\n    phases: phaseContents,\n    totalWords: totalWords,\n    concept: concept,\n    mixSettings: { voice: 3.2, music: 0.12, ambience: 0.12 },\n    voiceStyle: concept.audioIdentity?.voiceStyle || brief.voiceStyle,\n    generationMode: 'phased',\n    createdAt: new Date().toISOString()\n};\n\nreturn {\n    json: {\n        script: generatedScript,\n        concept: concept,\n        brief: brief\n    }\n};"
+            },
+            "id": "c1a1a1a1-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "name": "Aggregate Script Phases",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1800,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "message",
+                "operation": "create",
+                "modelId": {
+                    "__rl": true,
+                    "value": "claude-opus-4-5-20251101",
+                    "mode": "list"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "role": "user",
+                            "content": "=Story: \"{{ $json.concept.title }}\" ({{ $json.brief.category }})\nPhases: {{ $json.script.phases.map(p => p.id + ': ' + p.type).join(' -> ') }}\n\nReturn JSON:\n{\n    \"coverPrompt\": \"DALL-E prompt for story cover art - {{ $json.config.ASSET_MODIFIERS.cover }}\",\n    \"musicPrompt\": \"NEW: [Stable Audio prompt for background music - {{ $json.config.ASSET_MODIFIERS.music }}]\",\n    \"ambiencePrompt\": \"Stable Audio prompt for background texture - {{ $json.config.ASSET_MODIFIERS.ambience }}\",\n    \"backingCategory\": \"soundscape\",\n    \"backingTitle\": \"Title for backing track\"\n}"
+                        }
+                    ]
+                },
+                "options": {
+                    "maxTokens": 1500,
+                    "systemMessage": "You are an Audio Director for Softale. Design high-fidelity assets for this story.\n\n**ASSET QUALITY KEYWORDS:**\n- Ambience: High fidelity, 3D spatial audio, wide stereo field, binaural recording quality, immersive texture, seamless loop, crisp details, zero noise floor\n- Music: Cinematic quality, deeply emotional, wide soundstage, professional mix, warm analogue texture, slow tempo, unobtrusive\n- Cover: Dreamy, ethereal, 8k resolution, cinematic lighting, professional digital art, soft color palette, masterpiece, trending on artstation"
+                }
+            },
+            "id": "c2a2a2a2-bbbb-bbbb-bbbb-bbbbbbbbbbbbb",
+            "name": "Design Assets (Claude)",
+            "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+            "typeVersion": 1.2,
+            "position": [
+                2000,
+                300
+            ],
+            "credentials": {
+                "anthropicApi": {
+                    "id": "ANTHROPIC_CREDENTIAL_ID",
+                    "name": "Anthropic API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst prevData = $('Aggregate Script Phases').first().json;\n\n// Parse asset design from Claude response\nconst responseText = input.message?.content?.[0]?.text || input.content?.[0]?.text || JSON.stringify(input);\nconst jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n\nlet assetDesign = {\n    coverPrompt: `Dreamy ethereal artwork for \"${prevData.concept.title}\" - ${prevData.brief.category} audio experience, 8k resolution, cinematic lighting`,\n    musicPrompt: 'NEW: Gentle ambient piano with soft pads, 60 BPM, cinematic quality, warm analogue texture',\n    ambiencePrompt: 'High fidelity rain sounds with distant thunder, binaural recording quality, seamless loop',\n    backingCategory: 'soundscape',\n    backingTitle: prevData.concept.title + ' Ambience'\n};\n\nif (jsonMatch) {\n    try {\n        const parsed = JSON.parse(jsonMatch[0]);\n        assetDesign = { ...assetDesign, ...parsed };\n    } catch (e) {\n        console.log('Asset design parse error, using defaults');\n    }\n}\n\nreturn {\n    json: {\n        assetDesign: assetDesign,\n        script: prevData.script,\n        concept: prevData.concept,\n        brief: prevData.brief\n    }\n};"
+            },
+            "id": "c3a3a3a3-cccc-cccc-cccc-cccccccccccc",
+            "name": "Parse Asset Design",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Prepare voice generation items (one per narration phase)\nconst input = $input.first().json;\nconst script = input.script;\nconst voiceStyle = script.voiceStyle || 'soft_female';\n\n// Default voice IDs from VoiceService.ts\nconst DEFAULT_VOICES = {\n    soft_female: 'mZ3kbJNnKRWI4YzJXA9j',\n    soft_male: 'NOpBlnGInO9m6vDvFkFC',\n    neutral: 'mZ3kbJNnKRWI4YzJXA9j'\n};\n\nconst voiceId = DEFAULT_VOICES[voiceStyle] || DEFAULT_VOICES.soft_female;\n\n// Filter narration phases with content\nconst narrationPhases = script.phases.filter(p => p.type === 'narration' && p.content);\n\nreturn narrationPhases.map(phase => {\n    // Clean text for TTS (from index.ts generatePhasedVoice)\n    const cleanText = phase.content\n        .replace(/\\[breathe.*?\\]/gi, ' ... ')\n        .replace(/\\[.*?\\]/g, (m) => m.includes('pause') ? ' ... ' : '')\n        .replace(/\\(.*?\\)/g, '').trim();\n    \n    return {\n        json: {\n            phaseId: phase.id,\n            text: cleanText,\n            voiceId: voiceId,\n            voiceStyle: voiceStyle,\n            script: script,\n            assetDesign: input.assetDesign,\n            concept: input.concept,\n            brief: input.brief\n        }\n    };\n});"
+            },
+            "id": "c4a4a4a4-dddd-dddd-dddd-dddddddddddd",
+            "name": "Prepare Voice Generation",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $json.voiceId }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "xi-api-key",
+                            "value": "={{ $credentials.elevenlabsApi.apiKey }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": []
+                },
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"text\": {{ JSON.stringify($json.text) }},\n  \"model_id\": \"eleven_multilingual_v2\",\n  \"voice_settings\": {\n    \"stability\": 0.65,\n    \"similarity_boost\": 0.75\n  }\n}",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "file"
+                        }
+                    }
+                }
+            },
+            "id": "c5a5a5a5-eeee-eeee-eeee-eeeeeeeeeeee",
+            "name": "ElevenLabs TTS",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2600,
+                300
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "ELEVENLABS_CREDENTIAL_ID",
+                    "name": "ElevenLabs API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "command": "npx tsx src/index.ts stitch \"stem_voice.mp3\" {{ $input.all().map(i => i.binary.data.fileName).join(' ') }}",
+                "cwd": "/home/node/app/tools/audio-factory"
+            },
+            "id": "c6a6a6a6-ffff-ffff-ffff-ffffffffffff",
+            "name": "Stitch Voice Files (CLI)",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                2800,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $credentials.stabilityApi.apiKey }}"
+                        },
+                        {
+                            "name": "Accept",
+                            "value": "audio/*"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "multipart-form-data",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "prompt",
+                            "value": "={{ $json.assetDesign.musicPrompt.replace(/^NEW:\\s*/i, '') }}"
+                        },
+                        {
+                            "name": "duration",
+                            "value": "180"
+                        },
+                        {
+                            "name": "model",
+                            "value": "stable-audio-2.5"
+                        }
+                    ]
+                },
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "file"
+                        }
+                    }
+                }
+            },
+            "id": "d1a1a1a1-1111-2222-3333-444444444444",
+            "name": "Generate Music (Stable Audio)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3000,
+                200
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "STABILITY_CREDENTIAL_ID",
+                    "name": "Stability AI API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $credentials.stabilityApi.apiKey }}"
+                        },
+                        {
+                            "name": "Accept",
+                            "value": "audio/*"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "multipart-form-data",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "prompt",
+                            "value": "={{ $json.assetDesign.ambiencePrompt }}"
+                        },
+                        {
+                            "name": "duration",
+                            "value": "180"
+                        },
+                        {
+                            "name": "model",
+                            "value": "stable-audio-2.5"
+                        }
+                    ]
+                },
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "file"
+                        }
+                    }
+                }
+            },
+            "id": "d2a2a2a2-2222-3333-4444-555555555555",
+            "name": "Generate Ambience (Stable Audio)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3000,
+                400
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "STABILITY_CREDENTIAL_ID",
+                    "name": "Stability AI API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "https://api.openai.com/v1/images/generations",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $credentials.openaiApi.apiKey }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"dall-e-3\",\n  \"prompt\": \"{{ $json.assetDesign.coverPrompt }} --ar 1:1\",\n  \"n\": 1,\n  \"size\": \"1024x1024\",\n  \"quality\": \"hd\"\n}",
+                "options": {}
+            },
+            "id": "d3a3a3a3-3333-4444-5555-666666666666",
+            "name": "Generate Cover Art 1:1 (DALL-E 3)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3200,
+                100
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "OPENAI_CREDENTIAL_ID",
+                    "name": "OpenAI API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "https://api.openai.com/v1/images/generations",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $credentials.openaiApi.apiKey }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"dall-e-3\",\n  \"prompt\": \"{{ $json.assetDesign.coverPrompt }} --ar 16:9\",\n  \"n\": 1,\n  \"size\": \"1792x1024\",\n  \"quality\": \"hd\"\n}",
+                "options": {}
+            },
+            "id": "d4a4a4a4-4444-5555-6666-777777777777",
+            "name": "Generate Cover Art 16:9 (DALL-E 3)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3200,
+                300
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "OPENAI_CREDENTIAL_ID",
+                    "name": "OpenAI API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "https://api.openai.com/v1/images/generations",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $credentials.openaiApi.apiKey }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"dall-e-3\",\n  \"prompt\": \"{{ $json.assetDesign.coverPrompt }} --ar 9:16\",\n  \"n\": 1,\n  \"size\": \"1024x1792\",\n  \"quality\": \"hd\"\n}",
+                "options": {}
+            },
+            "id": "d5a5a5a5-5555-6666-7777-888888888888",
+            "name": "Generate Cover Art 9:16 (DALL-E 3)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3200,
+                500
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "OPENAI_CREDENTIAL_ID",
+                    "name": "OpenAI API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Merge all generated assets including stitched voice\nconst stitchedVoice = $('Stitch Voice Files (CLI)').first().binary;\nconst musicData = $('Generate Music (Stable Audio)').first();\nconst ambienceData = $('Generate Ambience (Stable Audio)').first();\nconst cover1x1 = $('Generate Cover Art 1:1 (DALL-E 3)').first().json;\nconst cover16x9 = $('Generate Cover Art 16:9 (DALL-E 3)').first().json;\nconst cover9x16 = $('Generate Cover Art 9:16 (DALL-E 3)').first().json;\nconst scriptData = $('Prepare Voice Generation').first().json.script;\nconst concept = $('Prepare Voice Generation').first().json.concept;\n\n// Build slug\nconst slug = scriptData.title.toLowerCase().replace(/[^a-z0-9]/g, '-');\nconst datePrefix = new Date().toISOString().split('T')[0];\nconst storageRoot = `${datePrefix}/${slug}`;\n\nreturn {\n    json: {\n        storyData: {\n            title: scriptData.title,\n            slug: slug,\n            category: scriptData.category,\n            duration: scriptData.duration * 60,\n            script_text: scriptData.script,\n            audio_phases: scriptData.phases,\n            tags: concept.tags || [],\n            is_published: false\n        },\n        assetUrls: {\n            cover_1x1_url: cover1x1.data?.[0]?.url || null,\n            cover_16x9_url: cover16x9.data?.[0]?.url || null,\n            cover_9x16_url: cover9x16.data?.[0]?.url || null\n        },\n        storageRoot: storageRoot,\n        script: scriptData,\n        concept: concept\n    },\n    binary: {\n        voice: stitchedVoice,\n        music: musicData.binary?.data || null,\n        ambience: ambienceData.binary?.data || null\n    }\n};"
+            },
+            "id": "e1a1a1a1-1111-1111-1111-111111111111",
+            "name": "Merge All Assets",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                3400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/storage/v1/object/audio/{{ $json.storageRoot }}/stem_music.mp3",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "audio/mpeg"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "binaryData",
+                "inputDataFieldName": "music",
+                "options": {}
+            },
+            "id": "e2a2a2a2-2222-2222-2222-222222222222",
+            "name": "Upload Music to Supabase",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3600,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/storage/v1/object/audio/{{ $json.storageRoot }}/stem_ambience.mp3",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "audio/mpeg"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "binaryData",
+                "inputDataFieldName": "ambience",
+                "options": {}
+            },
+            "id": "e3a3a3a3-3333-3333-3333-333333333333",
+            "name": "Upload Ambience to Supabase",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3600,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/storage/v1/object/audio/{{ $json.storageRoot }}/stem_voice.mp3",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "audio/mpeg"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "binaryData",
+                "inputDataFieldName": "voice",
+                "options": {}
+            },
+            "id": "e4a4a4a4-eeee-eeee-eeee-eeeeeeeeeeee",
+            "name": "Upload Voice to Supabase",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3600,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/stories",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_ANON_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "resolution=merge-duplicates"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"title\": {{ JSON.stringify($json.storyData.title) }},\n  \"slug\": {{ JSON.stringify($json.storyData.slug) }},\n  \"category\": {{ JSON.stringify($json.storyData.category) }},\n  \"duration\": {{ $json.storyData.duration }},\n  \"script_text\": {{ JSON.stringify($json.storyData.script_text) }},\n  \"audio_phases\": {{ JSON.stringify($json.storyData.audio_phases) }},\n  \"tags\": {{ JSON.stringify($json.storyData.tags) }},\n  \"cover_url\": {{ JSON.stringify($json.assetUrls.cover_1x1_url) }},\n  \"cover_landscape_url\": {{ JSON.stringify($json.assetUrls.cover_16x9_url) }},\n  \"cover_portrait_url\": {{ JSON.stringify($json.assetUrls.cover_9x16_url) }},\n  \"music_url\": \"{{ $env.NEXT_PUBLIC_SUPABASE_URL }}/storage/v1/object/public/audio/{{ $json.storageRoot }}/stem_music.mp3\",\n  \"ambient_url\": \"{{ $env.NEXT_PUBLIC_SUPABASE_URL }}/storage/v1/object/public/audio/{{ $json.storageRoot }}/stem_ambience.mp3\",\n  \"voice_url\": \"{{ $env.NEXT_PUBLIC_SUPABASE_URL }}/storage/v1/object/public/audio/{{ $json.storageRoot }}/stem_voice.mp3\",\n  \"is_published\": false\n}",
+                "options": {}
+            },
+            "id": "e5a5a5a5-4444-4444-4444-444444444444",
+            "name": "Upsert Story to Supabase",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3800,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Final summary\nconst input = $input.first().json;\nconst mergeData = $('Merge All Assets').first().json;\n\nconst storyId = input.id || 'generated-' + Date.now();\n\nreturn {\n    json: {\n        success: true,\n        storyId: storyId,\n        title: mergeData.storyData.title,\n        slug: mergeData.storyData.slug,\n        category: mergeData.storyData.category,\n        duration: mergeData.storyData.duration,\n        phasesGenerated: mergeData.script.phases.length,\n        totalWords: mergeData.script.totalWords,\n        assetsGenerated: {\n            voiceFiles: mergeData.voiceFiles.length,\n            musicGenerated: true,\n            ambienceGenerated: true,\n            coverVariants: 3\n        },\n        message: `✅ Story \"${mergeData.storyData.title}\" generated successfully!`\n    }\n};"
+            },
+            "id": "f1a1a1a1-1111-1111-1111-111111111111",
+            "name": "Final Summary",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                4000,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Manual Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Story Brief Form",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Story Brief Form": {
+            "main": [
+                [
+                    {
+                        "node": "Initialize Config & Phases",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Initialize Config & Phases": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Story Concept (Claude)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Story Concept (Claude)": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Concept Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Concept Response": {
+            "main": [
+                [
+                    {
+                        "node": "Concept Approval Gate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Concept Approval Gate": {
+            "main": [
+                [
+                    {
+                        "node": "Split Narration Phases",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Narration Phases": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Phase Script (Claude)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Phase Script (Claude)": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Phase Content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Phase Content": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate Script Phases",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate Script Phases": {
+            "main": [
+                [
+                    {
+                        "node": "Design Assets (Claude)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Design Assets (Claude)": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Asset Design",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Asset Design": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Voice Generation",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Voice Generation": {
+            "main": [
+                [
+                    {
+                        "node": "ElevenLabs TTS",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ElevenLabs TTS": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate Voice Files",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate Voice Files": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Music (Stable Audio)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Generate Ambience (Stable Audio)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Generate Cover Art 1:1 (DALL-E 3)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Generate Cover Art 16:9 (DALL-E 3)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Generate Cover Art 9:16 (DALL-E 3)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Music (Stable Audio)": {
+            "main": [
+                [
+                    {
+                        "node": "Merge All Assets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Ambience (Stable Audio)": {
+            "main": [
+                [
+                    {
+                        "node": "Merge All Assets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Cover Art 1:1 (DALL-E 3)": {
+            "main": [
+                [
+                    {
+                        "node": "Merge All Assets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Cover Art 16:9 (DALL-E 3)": {
+            "main": [
+                [
+                    {
+                        "node": "Merge All Assets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Cover Art 9:16 (DALL-E 3)": {
+            "main": [
+                [
+                    {
+                        "node": "Merge All Assets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Merge All Assets": {
+            "main": [
+                [
+                    {
+                        "node": "Upload Music to Supabase",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Upload Ambience to Supabase",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upload Music to Supabase": {
+            "main": [
+                [
+                    {
+                        "node": "Upsert Story to Supabase",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upload Ambience to Supabase": {
+            "main": [
+                [
+                    {
+                        "node": "Upsert Story to Supabase",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upsert Story to Supabase": {
+            "main": [
+                [
+                    {
+                        "node": "Final Summary",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "id": "1",
+            "name": "audio-factory"
+        },
+        {
+            "id": "2",
+            "name": "softale"
+        }
+    ],
+    "meta": {
+        "instanceId": "softale-audio-factory-v6"
+    }
+}

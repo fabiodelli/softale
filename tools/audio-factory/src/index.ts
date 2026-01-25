@@ -396,7 +396,7 @@ export async function generatePhasedVoice(script: GeneratedScript): Promise<{ pa
     return { paths, chars: totalChars };
 }
 
-async function generateStableAudio(prompt: string, filename: string, duration: number = 180): Promise<string> {
+export async function generateStableAudio(prompt: string, filename: string, duration: number = 180): Promise<string> {
     const key = process.env.STABILITY_API_KEY || process.env.STABLE_AUDIO_API_KEY;
     if (!key || !prompt || prompt.startsWith('ID:')) return '';
 
@@ -593,7 +593,7 @@ interface AssetPack {
     imageCount?: number;
 }
 
-async function generateAssetPack(script: GeneratedScript): Promise<AssetPack & { imageCount: number }> {
+export async function generateAssetPack(script: GeneratedScript): Promise<AssetPack & { imageCount: number }> {
     const openaiKey = process.env.OPENAI_API_KEY;
 
     if (!openaiKey) {
@@ -714,5 +714,38 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const args = process.argv.slice(2);
     if (args[0] === 'full') {
         generateStory({ category: args[1] || 'sleep', duration: parseInt(args[2]) || 5 }).catch(console.error);
+    }
+    if (args[0] === 'stitch') {
+        // Usage: npx tsx src/index.ts stitch <outputFilename> <file1> <file2> ...
+        const outputFilename = args[1];
+        const inputFiles = args.slice(2);
+        stitchVoicePhases(inputFiles, outputFilename).then(path => console.log(path)).catch(console.error);
+    }
+}
+
+export async function stitchVoicePhases(filePaths: string[], outputFilename: string): Promise<string> {
+    console.log(`🧵 Stitching ${filePaths.length} voice segments...`);
+
+    // Create a temporary file list for ffmpeg concat demuxer
+    const listPath = path.join(OUTPUT_DIR, `concat_list_${Date.now()}.txt`);
+    const fileContent = filePaths.map(f => {
+        // Fix for Windows paths in ffmpeg concat file
+        const safePath = f.replace(/\\/g, '/');
+        return `file '${safePath}'`;
+    }).join('\n');
+
+    fs.writeFileSync(listPath, fileContent);
+
+    const outputPath = path.join(OUTPUT_DIR, outputFilename);
+    const cmd = `"${ffmpegPath}" -f concat -safe 0 -i "${listPath}" -c copy "${outputPath}" -y`;
+
+    try {
+        await execPromise(cmd);
+        // Clean up list file
+        fs.unlinkSync(listPath);
+        return outputPath;
+    } catch (e: any) {
+        console.error('Stitch failed:', e.message);
+        throw e;
     }
 }

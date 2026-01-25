@@ -1,0 +1,53 @@
+# 📖 Softale Application Bible
+*The definitive guide to the Softale application architecture, design, and workflows.*
+
+> **Last Updated:** January 2026
+> **Version:** 2.0 (Post-n8n Migration)
+
+---
+
+## 🏗️ Architecture & Documentation
+
+This directory contains the single source of truth for the application.
+
+| Section | Description |
+| :--- | :--- |
+| **[01. Brand & Vision](./01_BRAND_AND_VISION.md)** | Design system, typography, color palette, and core mission. |
+| **[02. Tech Stack](./02_TECH_STACK.md)** | Frameworks, libraries, database schema, and key dependencies. |
+| **[03. Authentication](./03_AUTHENTICATION.md)** | User flows, Supabase Auth implementation, and protected routes. |
+| **[04. Payments](./04_PAYMENTS.md)** | Stripe integration, subscription models, and webhook handling. |
+| **[05. Audio Factory](./05_AUDIO_FACTORY_V7.md)** | The n8n-based Hybrid Pipeline (3-Stem Architecture). |
+| **[06. Social Studio](./06_SOCIAL_STUDIO.md)** | Social media automation, reel management, and caption generation. |
+| **[07. Deployment](./07_DEPLOYMENT.md)** | Vercel deployment, environment variables, and production checks. |
+
+---
+
+## 🚀 Quick Start for Developers
+
+1.  **Clone & Install**:
+    ```bash
+    git clone ...
+    npm install
+    ```
+
+2.  **Environment Setup**:
+    Copy `.env.example` to `.env.local` and populate keys (Supabase, Stripe, etc.).
+
+3.  **Run Dev Server**:
+    ```bash
+    npm run dev
+    ```
+    Access at `http://localhost:3000`.
+
+4.  **Audio Factory**:
+    The factory now runs on **n8n**. See [Section 05](./05_AUDIO_FACTORY_V7.md) for details. Do not run the old CLI tools manually unless debugging.
+
+---
+
+## 📂 Project Structure
+
+*   **/src/app**: Next.js App Router pages.
+*   **/src/components**: React components (atomic designish).
+*   **/src/lib**: Utilities, database clients, shared logic.
+*   **/tools**: Legacy CLI tools and helper scripts.
+*   **/supabase**: SQL migrations and types.

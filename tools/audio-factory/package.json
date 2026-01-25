@@ -12,7 +12,11 @@
         "mix": "npx tsx src/index.ts mix",
         "upload": "npx tsx src/index.ts upload",
         "full": "npx tsx src/index.ts full",
-        "custom": "npx tsx src/index.ts custom"
+        "custom": "npx tsx src/index.ts custom",
+        "step:draft": "npx tsx src/steps.ts draft",
+        "step:voice": "npx tsx src/steps.ts voice",
+        "step:backgrounds": "npx tsx src/steps.ts backgrounds",
+        "step:mix": "npx tsx src/steps.ts mix"
     },
     "dependencies": {
         "@anthropic-ai/sdk": "^0.50.0",
