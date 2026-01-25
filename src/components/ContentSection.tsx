@@ -232,7 +232,7 @@ export default function ContentSection({
                             {/* Optional Sub-header for the slider part */}
                             <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 px-1">More in this section</h4>
                             <div
-                                className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide w-full cursor-grab"
+                                className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide cursor-grab w-screen ml-[calc(50%-50vw)] px-6 md:px-12"
                                 ref={scrollRef}
                                 onMouseDown={handleMouseDown}
                                 onMouseMove={handleMouseMove}
