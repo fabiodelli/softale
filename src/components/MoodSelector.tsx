@@ -128,7 +128,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -40 }}
                         transition={{ duration: 0.5, ease: "easeOut" }}
-                        className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center md:items-end justify-between gap-8 md:gap-16"
+                        className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-12 flex flex-col md:flex-row items-center md:items-end justify-between gap-6 md:gap-16"
                     >
 
                         {/* Text Section (Left) - On top relative to container */}
@@ -144,7 +144,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
-                                className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-none drop-shadow-2xl [-webkit-text-stroke:1.5px_rgba(0,0,0,0.4)] [paint-order:stroke_fill]"
+                                className="text-4xl md:text-7xl font-bold text-white tracking-tight leading-none drop-shadow-2xl [-webkit-text-stroke:1.5px_rgba(0,0,0,0.4)] [paint-order:stroke_fill]"
                             >
                                 How do you want<br />to feel?
                             </motion.h1>
@@ -155,9 +155,9 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="flex-shrink-0 bg-white/30 backdrop-blur-xl border border-white/40 p-6 md:p-8 rounded-3xl shadow-2xl"
+                            className="flex-shrink-0 bg-white/30 backdrop-blur-xl border border-white/40 p-4 md:p-8 rounded-3xl shadow-2xl"
                         >
-                            <div className="flex gap-4 md:gap-6">
+                            <div className="flex gap-2.5 md:gap-6">
                                 {moods.map((m, i) => {
                                     const isActive = activeMood === m.id;
                                     const Icon = m.icon;
@@ -168,7 +168,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                                                 whileTap={{ scale: 0.95 }}
                                                 onClick={() => onSelect(m.id as Mood)}
                                                 className={`
-                                                    w-11 h-11 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border-2
+                                                    w-10 h-10 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border-2
                                                     ${isActive
                                                         ? `${m.activeClass} scale-110 shadow-xl`
                                                         : `${m.colorClass} ${m.borderClass} opacity-90 hover:opacity-100`
