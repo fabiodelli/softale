@@ -258,7 +258,7 @@ export default function HomeClient({ initialStories, initialCollections }: HomeC
             </div>
 
             <div
-                className="relative z-10 mt-[35vh] md:mt-[70vh] bg-slate-50/60 backdrop-blur-2xl min-h-screen pb-20 md:pb-12 shadow-none transition-all duration-75 ease-out"
+                className="relative z-10 mt-[25vh] md:mt-[70vh] bg-slate-50/60 backdrop-blur-2xl min-h-screen pb-20 md:pb-12 shadow-none transition-all duration-75 ease-out"
                 style={{
                     maskImage: `linear-gradient(to bottom, transparent, black ${maskSize})`,
                     WebkitMaskImage: `linear-gradient(to bottom, transparent, black ${maskSize})`

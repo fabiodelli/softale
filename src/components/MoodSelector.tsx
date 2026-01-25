@@ -75,7 +75,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
     const currentMood = moods.find(m => m.id === activeMood) || moods[0];
 
     return (
-        <div className="relative w-full h-[100svh] flex items-center justify-center overflow-hidden">
+        <div className="relative w-full h-[100svh] flex items-start md:items-center justify-center overflow-hidden">
 
             {/* Mobile Logo - Fixed in Hero (Top-4 to align with global header) */}
             <Link href="/" className="absolute top-4 left-1/2 -translate-x-1/2 z-10 md:hidden flex items-center gap-2 group drop-shadow-lg">
@@ -93,12 +93,6 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                     Softale
                 </span>
             </Link>
-
-            {/* Background Image Layer */}
-
-
-
-
 
             {/* Background Image Layer */}
             <div className="absolute inset-0 z-0">
@@ -132,7 +126,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                     >
 
                         {/* Text Section (Centered on Desktop, High on Mobile) */}
-                        <div className="flex-1 flex flex-col items-center justify-start md:justify-center text-center drop-shadow-sm pt-24 md:pt-0">
+                        <div className="flex-1 flex flex-col items-center justify-start md:justify-center text-center drop-shadow-sm pt-32 md:pt-0">
                             <motion.h2
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
