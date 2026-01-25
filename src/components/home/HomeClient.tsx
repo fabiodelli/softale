@@ -258,7 +258,7 @@ export default function HomeClient({ initialStories, initialCollections }: HomeC
             </div>
 
             <div
-                className="relative z-10 mt-[85vh] md:mt-[70vh] bg-slate-50/60 backdrop-blur-2xl min-h-screen pb-20 md:pb-12 shadow-none transition-all duration-75 ease-out"
+                className="relative z-10 mt-[45vh] md:mt-[70vh] bg-slate-50/60 backdrop-blur-2xl min-h-screen pb-20 md:pb-12 shadow-none transition-all duration-75 ease-out"
                 style={{
                     maskImage: `linear-gradient(to bottom, transparent, black ${maskSize})`,
                     WebkitMaskImage: `linear-gradient(to bottom, transparent, black ${maskSize})`
@@ -289,7 +289,7 @@ export default function HomeClient({ initialStories, initialCollections }: HomeC
                             {/* 0. Featured Hero Card */}
                             {layout.featured && (
                                 <div className="mb-16">
-                                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 px-1">Featured for {activeMood}</h3>
+                                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-4 px-1">Featured for {activeMood}</h3>
                                     <FeaturedCard story={layout.featured} />
                                 </div>
                             )}

@@ -131,8 +131,8 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                         className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-12 flex flex-col md:flex-row items-center md:items-end justify-between gap-6 md:gap-16"
                     >
 
-                        {/* Text Section (Left) - On top relative to container */}
-                        <div className="flex-1 text-center md:text-left drop-shadow-sm">
+                        {/* Text Section (Centered on Desktop, High on Mobile) */}
+                        <div className="flex-1 flex flex-col items-center justify-center text-center drop-shadow-sm pt-32 md:pt-0">
                             <motion.h2
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -150,50 +150,7 @@ export default function MoodSelector({ onSelect, activeMood, greeting, isControl
                             </motion.h1>
                         </div>
 
-                        {/* Mood Selector (Right - Pastel Circles in Glass Card) */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="flex-shrink-0 bg-white/30 backdrop-blur-xl border border-white/40 p-3 md:p-8 rounded-2xl md:rounded-3xl shadow-2xl"
-                        >
-                            <div className="flex gap-2 md:gap-6">
-                                {moods.map((m, i) => {
-                                    const isActive = activeMood === m.id;
-                                    const Icon = m.icon;
-                                    return (
-                                        <div key={m.id} className="flex flex-col items-center gap-3 group">
-                                            <motion.button
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => onSelect(m.id as Mood)}
-                                                className={`
-                                                    w-9 h-9 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border-2
-                                                    ${isActive
-                                                        ? `${m.activeClass} scale-110 shadow-xl`
-                                                        : `${m.colorClass} ${m.borderClass} opacity-90 hover:opacity-100`
-                                                    }
-                                                `}
-                                            >
-                                                <div className={`
-                                                    w-full h-full rounded-full flex items-center justify-center
-                                                    ${isActive ? '' : 'hover:scale-105 transition-transform'}
-                                                `}>
-                                                    <Icon className="w-5 h-5 md:w-7 md:h-7" />
-                                                </div>
-                                            </motion.button>
-                                            <span className={`
-                                                text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all duration-300 mt-2
-                                                text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]
-                                                ${isActive ? 'scale-110 opacity-100' : 'opacity-80 hover:opacity-100'}
-                                            `}>
-                                                {m.label}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </motion.div>
+                        {/* Mood Selector Bubbles REMOVED as per redesign request */}
                     </motion.div>
                 )}
             </AnimatePresence>
