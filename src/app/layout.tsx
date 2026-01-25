@@ -64,10 +64,10 @@ export default function RootLayout({
             <Footer />
           </div>
         </div>
-          <CookieConsent />
           <MiniPlayer />
           <PremiumModal />
           <BottomNav />
+          <CookieConsent />
         </Providers>
       </body>
     </html>
