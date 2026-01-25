@@ -101,7 +101,7 @@ export default function MiniPlayer() {
                 exit={{ y: 100 }}
                 className={`fixed left-0 right-0 z-50 transition-all duration-300
                     md:bottom-0 
-                    ${isMobilePlayerOpen ? 'bottom-[calc(82px+env(safe-area-inset-bottom))] opacity-100 translate-y-0' : 'bottom-[calc(82px+env(safe-area-inset-bottom))] opacity-0 translate-y-10 pointer-events-none md:opacity-100 md:translate-y-0 md:pointer-events-auto'}
+                    ${isMobilePlayerOpen ? 'bottom-[calc(81px+env(safe-area-inset-bottom))] opacity-100 translate-y-0' : 'bottom-[calc(81px+env(safe-area-inset-bottom))] opacity-0 translate-y-10 pointer-events-none md:opacity-100 md:translate-y-0 md:pointer-events-auto'}
                 `}
             >
 
