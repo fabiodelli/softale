@@ -1,0 +1,10 @@
+torch
+transformers
+scipy
+soundfile
+accelerate
+librosa
+tiktoken
+einops
+transformers_stream_generator
+matplotlib

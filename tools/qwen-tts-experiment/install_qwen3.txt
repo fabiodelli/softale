@@ -1,0 +1,17 @@
+# Clone the official repo
+git clone https://github.com/QwenLM/Qwen3-TTS.git qwen3_tts_repo
+
+# Go into the repo
+cd qwen3_tts_repo
+
+# Install requirements
+pip install -r requirements.txt
+
+# Install the package itself in editable mode
+pip install -e .
+
+# Go back to experiment folder
+cd ..
+
+# Run the updated test script (which I will provide next)
+python test_qwen_v2.py

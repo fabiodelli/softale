@@ -1,0 +1,22 @@
+# Ignore virtual environment
+venv/
+.venv/
+env/
+
+# Ignore downloaded repositories and heavy dependencies
+qwen3_tts_repo/
+__pycache__/
+
+# Ignore generated outputs
+output_audio/
+*.wav
+*.mp3
+
+# Ignore model cache if present locally
+model_cache/
+*.safetensors
+*.bin
+*.pt
+
+# Ignore IDE specific
+.vscode/
