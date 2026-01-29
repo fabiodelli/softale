@@ -1,44 +1,61 @@
-# 🏭 05. Audio Factory (n8n Hybrid)
+# 🏭 05. Audio Factory (V6.1 Phased Architecture)
 
-> **Status**: Active (Migrated Jan 2026)
-> **Engine**: n8n Cloud + Local Stitching (Hybrid)
-> **Workflow**: `n8n_audio_factory_v6_complete.json`
+> **Status**: Active (Updated Jan 2026)
+> **Engine**: Local TS/Python Hybrid (Qwen TTS + Stable Audio + FFmpeg)
+> **Architecture**: Phased Generation + 3-Stem Delivery
 
 ## 🧠 Overview
-The **Audio Factory** has been migrated from a monolithic CLI to a **Hybrid n8n Workflow**. It combines the orchestrating power of n8n (for AI calls) with the raw processing speed of local tools (for audio stitching).
+The **Audio Factory V6.1** uses a **Phased Architecture** to generate high-quality, structured audio stories. It moves away from monolithic files to a flexible "Stem-Based" approach, allowing the frontend to control mixing and pacing dynamically.
 
-## 🌊 The Pipeline (Hybrid Stitching Strategy)
+## 🌊 Core Architecture
 
-We use a **"Solid Stem"** approach to ensure professional, gapless playback on the frontend while enabling the "Mixer" feature.
+### 1. The 3-Stem System 🎚️
+Instead of a single baked MP3, every story generates four assets:
 
-### 1. The 3-Stem Architecture 🎚️
-Instead of a single mixed MP3, we generate three synchronized "stems" that are uploaded separately to Supabase:
+1.  **Full Mix** (`audio_url`): A complete, pre-mixed MP3 (Fallback/Download). Contains physical silence for warm-up.
+2.  **Voice Stem** (`voice_url`): The isolated narration track using Qwen 2.5 TTS.
+3.  **Music Stem** (`music_url`): A loopable background music track (Stable Audio / Harvested).
+4.  **Ambience Stem** (`ambient_url`): A loopable texture track (Stable Audio / Harvested).
 
-1.  **Voice Stem** (`stem_voice.mp3`): The complete, stitched narration track. Zero gaps.
-2.  **Music Stem** (`stem_music.mp3`): A loopable background music track (Stable Audio).
-3.  **Ambience Stem** (`stem_ambience.mp3`): A high-fidelity loopable texture (Stable Audio).
+The Frontend `PlayerContext` loads the stems to enable real-time volume control and dynamic warm-up delays.
 
-The Frontend `PlayerContext` loads all three and allows the user to adjust their volumes independently.
+### 2. The Pipelines 🔄
 
-### 2. The Workflow Steps 🔄
+#### A. Generation Pipeline (`index.ts`)
+1.  **Concept**: Claude generates a `StoryConcept` (Title, Phases, Prompts).
+2.  **Script**: Claude expands phases into narration text.
+3.  **Voice**: `LocalTTSService` (Python Qwen Server) generates audio for each phase.
+4.  **Backgrounds**: Stable Audio generates Music/Ambience (or reusing existing loops).
+5.  **Harvesting**: New Backgrounds are saved as **Loops** in Supabase for future re-use.
+6.  **Mixing**: `ffmpeg` combines everything into the Full Mix (respecting `warmupDuration`).
 
-1.  **Form Trigger**: User inputs story idea, category, and preferences.
-2.  **Concept & Script**: Claude AI writes the "Story Bible" and then the script in phases.
-3.  **Asset Design**: Claude generates prompts for DALL-E 3 (Covers) and Stable Audio (Backgrounds).
-4.  **Voice Generation (Parallel)**: ElevenLabs generates audio for each phase fragment.
-5.  **Local Stitching (The Hybrid Part)**:
-    *   n8n calls the local CLI: `npx tsx src/index.ts stitch ...`
-    *   `ffmpeg-static` runs locally to concatenate fragments into one seamless `stem_voice.mp3`.
-6.  **Upload**: All assets (stems + covers) are uploaded to Supabase Storage.
-7.  **Database**: A new record is created in `stories` with `voice_url`, `music_url`, and `ambient_url`.
+#### B. The "Warm-up" Logic ⏳
+- **Backend**: The Full Mix MP3 has *physical silence* added at the start (`TotalDuration = Phases + Warmup`).
+- **Frontend**: The Player uses a `useAudioWarmup` hook to visually indicate the warm-up phase, playing only Music/Ambience before the Voice stem begins.
 
-## 🛠️ How to Run
+## 🛠️ Key Components
 
-1.  **Start n8n**: Ensure your n8n instance is running and has access to the project directory.
-2.  **Import Workflow**: Load `n8n_audio_factory_v6_complete.json`.
-3.  **Run**: Use the "Test Workflow" button or the Manual Trigger.
+| Component | Function | Status |
+| :--- | :--- | :--- |
+| **`tools/qwen-api`** | Python FastAPI server hosting Qwen 2.5 TTS (1.7B). | ✅ Active |
+| **`LocalTTSService.ts`** | TS Client for Qwen. Handles voice mapping & ID resolution. | ✅ Active |
+| **`ConceptEngine.ts`** | Generating creative briefs and phase structures. | ✅ Active |
+| **`index.ts`**| Orchestrator. Handles stable-audio, ffmpeg mixing, upload. | ✅ Active |
 
-## 🧩 Key Components
+## 🌾 Harvesting Engine
+To optimize costs and consistency, the engine "harvests" generated assets:
+- **Input**: "Forest Rain" prompt.
+- **Action**: Generates MP3 -> Uploads as Story Loop -> Tags `is_loop: true`.
+- **Future**: Next story needing "Forest Rain" can simply link to this Loop ID instead of regenerating.
 
-- **`tools/audio-factory/src/index.ts`**: Contains the `stitch` command logic.
-- **`manifest`**: *Deprecated*. We do not use client-side sequencing manifests anymore. We use server-side stitching.
+## 🚀 How to Run
+
+```bash
+# 1. Start Qwen Server (Terminal 1)
+cd tools/qwen-api
+python -m uvicorn server:app --host 0.0.0.0 --port 8000
+
+# 2. Run Audio Factory (Terminal 2)
+cd tools/audio-factory
+npx tsx src/manual_test_run.ts
+```

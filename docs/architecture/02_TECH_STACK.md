@@ -31,11 +31,12 @@
 *   Webhooks handles status updates (Active/PastDue/Canceled).
 *   **Critical**: `STRIPE_SECRET_KEY` is required for the build process (even if disabled).
 
-## 🧩 Key Libraries
-| Package | Purpose |
+## 🧩 Key Libraries & Services
+| Package / Service | Purpose |
 | :--- | :--- |
-| `n8n` | Workflow automation & AI orchestration (Audio Factory). |
-| `ffmpeg-static` | Local audio stitching (Hybrid Pipeline). |
-| `fluent-ffmpeg` | Audio processing. |
-| `openai`, `@anthropic-ai/sdk` | AI Client SDKs. |
+| **Qwen 2.5 (Python)** | Local TTS Server (FastAPI). Replaces external TTS limits. |
+| **Stable Audio** | API for high-fidelity background music & ambience. |
+| `ffmpeg-static` | Local audio mixing (Stems & Warmup injection). |
+| `fluent-ffmpeg` | Audio processing wrapper. |
+| `openai`, `@anthropic-ai` | AI Clients for Concept & Script generation. |
 | `zod` | Schema validation. |
