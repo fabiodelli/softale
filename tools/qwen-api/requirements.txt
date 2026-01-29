@@ -1,0 +1,13 @@
+# Qwen TTS dependencies
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.0.0
+
+# Qwen TTS model requirements
+torch>=2.1.0
+transformers>=4.37.0
+scipy>=1.11.0
+soundfile>=0.12.1
+
+# Reference the local qwen_tts package (installed via pip install -e from qwen3_tts_repo)
+# qwen-tts  # Uncomment if available on PyPI, otherwise install from local repo

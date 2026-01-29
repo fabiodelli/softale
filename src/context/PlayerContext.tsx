@@ -464,28 +464,35 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     // Auto-play when source changes and status is LOADING
     useEffect(() => {
-        if (status === 'LOADING' && currentStory?.audio_url && audioRef.current) {
-            // Double check we are ready
-            // We rely on onCanPlay or similar, but simplified:
+        // V6.1: Support both legacy audio_url and new voice_url
+        const hasAudio = currentStory?.audio_url || currentStory?.voice_url;
+
+        if (status === 'LOADING' && hasAudio && audioRef.current) {
             const playPromise = audioRef.current.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
                     setStatus('PLAYING');
-                    // Sync Stems if needed
-                    if (currentStory?.voice_url && currentStory.music_url) {
-                        if (musicRef.current) {
-                            musicRef.current.src = currentStory.music_url;
-                            musicRef.current.volume = musicVolume;
-                            musicRef.current.play().catch(e => console.warn("Music autoplay failed", e));
-                        }
+
+                    // V6.1: Sync all stems when using 3-stem architecture
+                    // Music stem
+                    if (currentStory?.music_url && musicRef.current) {
+                        musicRef.current.src = currentStory.music_url;
+                        musicRef.current.volume = musicVolume;
+                        musicRef.current.play().catch(e => console.warn("Music autoplay failed", e));
+                    }
+
+                    // Ambient stem (new)
+                    if (currentStory?.ambient_url && ambientRefA.current) {
+                        ambientRefA.current.src = currentStory.ambient_url;
+                        ambientRefA.current.volume = ambientVolume;
+                        ambientRefA.current.play().catch(e => console.warn("Ambient autoplay failed", e));
                     }
                 }).catch(e => {
                     console.error("Autoplay failed", e);
-                    // Usually AbortError if replaced quickly
                 });
             }
         }
-    }, [currentStory, status]);
+    }, [currentStory, status, musicVolume, ambientVolume]);
 
     const handleTimeUpdate = (e: React.SyntheticEvent<HTMLAudioElement>) => {
         const time = e.currentTarget.currentTime;

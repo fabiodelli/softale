@@ -22,6 +22,7 @@ import { createClient } from '@supabase/supabase-js';
 import { ConceptEngine, StoryConcept } from './ConceptEngine.js';
 import { voiceService } from './VoiceService.js';
 import { AutoTagger } from './AutoTagger.js';
+import { isQwenAvailable, generateWithVoice, getVoiceForCategory, AVAILABLE_VOICES } from './LocalTTSService.js';
 import {
     CATEGORY_PROMPTS,
     CATEGORY_WPM,
@@ -35,24 +36,27 @@ import {
 // Environment Setup
 // =====================================================
 
-const pathsToCheck = [
-    path.resolve(process.cwd(), '.env.local'),
-    path.resolve(process.cwd(), '.env'),
-    path.resolve(process.cwd(), '../../.env.local'),
-    path.resolve(process.cwd(), '../../.env')
+// Load environment files in order of priority (later files override earlier ones)
+// 1. First load root project .env.local (contains API keys)
+// 2. Then load local .env (contains overrides like USE_LOCAL_TTS)
+
+const envFilesToLoad = [
+    path.resolve(process.cwd(), '../../.env.local'),  // Root .env.local (API keys)
+    path.resolve(process.cwd(), '../../.env'),        // Root .env fallback
+    path.resolve(process.cwd(), '.env.local'),        // Local .env.local
+    path.resolve(process.cwd(), '.env')               // Local .env (overrides)
 ];
 
-let envLoaded = false;
-for (const p of pathsToCheck) {
+let envLoadedCount = 0;
+for (const p of envFilesToLoad) {
     if (fs.existsSync(p)) {
         console.log(`🔧 Loading environment from: ${p}`);
-        dotenv.config({ path: p });
-        envLoaded = true;
-        break;
+        dotenv.config({ path: p, override: true });
+        envLoadedCount++;
     }
 }
 
-if (!envLoaded) console.warn('⚠️  No .env file found!');
+if (envLoadedCount === 0) console.warn('⚠️  No .env file found!');
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -89,6 +93,7 @@ export interface StoryBrief {
     };
     ambiencePrompt?: string;
     generationMode?: 'auto' | 'continuous' | 'phased';
+    tags?: string[]; // Auto-generated or passed through
 }
 
 export interface NarrationPhase {
@@ -211,6 +216,36 @@ function formatLoopsForPrompt(loops: LoopAsset[]): string {
     return output;
 }
 
+/**
+ * Download an existing loop from Supabase by ID (Harvesting)
+ */
+async function downloadLoopById(id: string, filename: string): Promise<string> {
+    console.log(`   📥 Harvesting existing loop: ${id}`);
+    const { data } = await supabase
+        .from('stories')
+        .select('audio_url')
+        .eq('id', id)
+        .single();
+
+    if (!data?.audio_url) {
+        console.warn(`   ⚠️ Loop ${id} not found`);
+        return '';
+    }
+
+    try {
+        const response = await fetch(data.audio_url);
+        const buffer = Buffer.from(await response.arrayBuffer());
+        const outPath = path.join(OUTPUT_DIR, filename);
+        fs.writeFileSync(outPath, buffer);
+        console.log(`   ✅ Downloaded: ${outPath}`);
+        return outPath;
+    } catch (e: any) {
+        console.error(`   ❌ Download failed: ${e.message}`);
+        return '';
+    }
+}
+
+
 // =====================================================
 // Unified Script Generation (Phase Engine)
 // =====================================================
@@ -289,11 +324,46 @@ Maintain flow from previous phases.`;
         p.breathPattern = brief.category === 'breathwork' ? '4-7-8' : '4-4-4-4';
     });
 
+    // 6. Auto-generate title if not provided
+    let finalTitle = brief.title;
+    if (!finalTitle || finalTitle === 'Untitled Story' || finalTitle.trim() === '') {
+        console.log('   [TITLE] Generating creative title...');
+        try {
+            const titlePrompt = `Based on this story content, generate a creative, evocative title.
+Category: ${brief.category}
+First phase: "${phases[0]?.content?.substring(0, 200) || brief.description || 'relaxation story'}"
+
+Return ONLY a JSON object: { "title": "The Title" }
+Keep it SHORT (2-5 words), poetic, and memorable.`;
+
+            const titleRes = await callClaude(titlePrompt, 'Generate title', 200);
+            const titleJson = JSON.parse(titleRes.text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+            finalTitle = titleJson.title || `${brief.category.charAt(0).toUpperCase() + brief.category.slice(1)} Journey`;
+            console.log(`   [OK] Generated title: "${finalTitle}"`);
+        } catch (e: any) {
+            // Fallback: generate based on category and timestamp
+            const timestamp = Date.now().toString(36);
+            finalTitle = `${brief.category.charAt(0).toUpperCase() + brief.category.slice(1)} Story ${timestamp}`;
+            console.log(`   [WARN] Title fallback: "${finalTitle}"`);
+        }
+    }
+
+    // 7. Generate unique slug
+    const safeTitle = finalTitle || 'Untitled';
+    const baseSlug = safeTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, '-')
+        .substring(0, 50);
+    const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
+
     return {
-        title: brief.title || 'Untitled Story',
+        id: uniqueSlug,
+        slug: uniqueSlug,
+        title: safeTitle,
         category: brief.category,
         duration: brief.duration,
-        script: phases.map(p => p.content || '').join('\n\n'), // Legacy field
+        script: phases.map(p => p.content || '').join('\n\n'),
         musicCues: [],
         ambientCues: [],
         signatureMotif: 'V6 Unified',
@@ -306,9 +376,9 @@ Maintain flow from previous phases.`;
         generationMode: 'phased',
         phases: phases,
         voiceStyle: brief.voiceStyle,
-        // Default Mix Settings if not provided
-        mixSettings: brief.mixSettings || { voice: 3.2, music: 0.12, ambience: 0.12 }
-    } as any; // Cast generic
+        mixSettings: brief.mixSettings || { voice: 5.0, music: 0.08, ambience: 0.08 },
+        tags: brief.tags || []
+    } as any;
 }
 
 async function generateAssetDesign(brief: StoryBrief, phases: NarrationPhase[], loops: LoopAsset[]): Promise<AssetDesign> {
@@ -345,8 +415,70 @@ Return JSON:
 
 export async function generatePhasedVoice(script: GeneratedScript): Promise<{ paths: Map<number, string>, chars: number }> {
     console.log('🎙️ Generating Phased Voice...');
+
+    // Check if we should use local Qwen TTS
+    const useLocalTTS = process.env.USE_LOCAL_TTS === 'true';
+
+    if (useLocalTTS) {
+        // --- QWEN LOCAL PATH WITH VOICE LIBRARY ---
+        console.log('   🔍 Checking Qwen API availability...');
+        const qwenAvailable = await isQwenAvailable();
+        if (!qwenAvailable) {
+            console.error('   ❌ [ERROR] Qwen API is NOT available or model not loaded.');
+            console.error('   👉 Ensure the API is running: cd tools/qwen-api && uvicorn server:app --host 0.0.0.0 --port 8000');
+            console.error('   👉 Check http://localhost:8000/health returns {"status":"ok","clone_model":"loaded"}');
+            return { paths: new Map(), chars: 0 };
+        }
+        console.log('   ✅ [TTS] Qwen API Connected. Using Voice Library.');
+
+        // Determine voice: use explicit voiceId or derive from category
+        const voiceId = script.voiceStyle || getVoiceForCategory(script.category);
+        console.log(`   [TTS] Voice: "${voiceId}" | Category: ${script.category}`);
+
+        const paths = new Map<number, string>();
+        let totalChars = 0;
+
+        for (const phase of script.phases) {
+            if (phase.type !== 'narration' || !phase.content) continue;
+
+            const text = phase.content
+                .replace(/\[breathe.*?\]/gi, " ... ")
+                .replace(/\[.*?\]/g, (m) => m.includes('pause') ? " ... " : "")
+                .replace(/\(.*?\)/g, "").trim();
+
+            if (!text) continue;
+
+            // Qwen outputs WAV
+            const outPath = path.join(OUTPUT_DIR, `${script.title}_p${phase.id}.wav`.replace(/\s+/g, '_'));
+
+            const result = await generateWithVoice({
+                text,
+                voiceId,
+                category: script.category,
+                language: 'English',
+                outputPath: outPath
+            });
+
+            if (result.success && result.path) {
+                paths.set(phase.id, result.path);
+                totalChars += text.length;
+                console.log(`      [OK] Phase ${phase.id} complete (${result.voiceUsed})`);
+            } else {
+                console.error(`      [ERROR] Phase ${phase.id} failed: ${result.error}`);
+            }
+        }
+
+        return { paths, chars: totalChars };
+    }
+
+    // --- ELEVENLABS CLOUD PATH (Original Logic) ---
     const key = process.env.ELEVENLABS_API_KEY;
-    if (!key) return { paths: new Map(), chars: 0 };
+    if (!key) {
+        console.warn('   ⚠️ No ELEVENLABS_API_KEY found. Set USE_LOCAL_TTS=true to use Qwen.');
+        return { paths: new Map(), chars: 0 };
+    }
+
+    console.log('   ☁️ Using CLOUD ElevenLabs TTS');
 
     // Voice Selection
     let voiceId = script.voiceIdOverride;
@@ -396,31 +528,61 @@ export async function generatePhasedVoice(script: GeneratedScript): Promise<{ pa
     return { paths, chars: totalChars };
 }
 
-export async function generateStableAudio(prompt: string, filename: string, duration: number = 180): Promise<string> {
-    const key = process.env.STABILITY_API_KEY || process.env.STABLE_AUDIO_API_KEY;
-    if (!key || !prompt || prompt.startsWith('ID:')) return '';
 
-    console.log(`   🎵 Generating Audio: ${prompt.substring(0, 30)}...`);
+export async function generateStableAudio(prompt: string, filename: string, duration: number = 180): Promise<string> {
+    // Harvesting: If prompt starts with ID:, download existing asset
+    if (prompt && prompt.startsWith('ID:')) {
+        const id = prompt.replace('ID:', '').trim();
+        return await downloadLoopById(id, filename);
+    }
+
+    const key = process.env.STABILITY_API_KEY || process.env.STABLE_AUDIO_API_KEY;
+    if (!key || !prompt) return '';
+
+    console.log(`   [AUDIO] Generating: ${prompt.substring(0, 40)}...`);
     const formData = new FormData();
     formData.append('prompt', prompt.replace(/^NEW:\s*/i, ''));
     formData.append('duration', duration.toString());
     formData.append('model', 'stable-audio-2.5');
 
-    try {
-        const resp = await fetch('https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${key}`, 'Accept': 'audio/*' },
-            body: formData
-        });
-        if (!resp.ok) throw new Error(await resp.text());
+    // Retry configuration
+    const MAX_RETRIES = 3;
+    const BACKOFF_MS = [1000, 2000, 4000]; // 1s, 2s, 4s
 
-        const outPath = path.join(OUTPUT_DIR, filename);
-        fs.writeFileSync(outPath, Buffer.from(await resp.arrayBuffer()));
-        return outPath;
-    } catch (e: any) {
-        console.error(`   ⚠️ Stable Audio Error: ${e.message}`);
-        return '';
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const resp = await fetch('https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${key}`, 'Accept': 'audio/*' },
+                body: formData,
+                signal: AbortSignal.timeout(120000) // 2 minute timeout
+            });
+
+            if (!resp.ok) {
+                const errorText = await resp.text();
+                throw new Error(`HTTP ${resp.status}: ${errorText}`);
+            }
+
+            const outPath = path.join(OUTPUT_DIR, filename);
+            fs.writeFileSync(outPath, Buffer.from(await resp.arrayBuffer()));
+            console.log(`   [OK] Audio saved: ${filename}`);
+            return outPath;
+
+        } catch (e: any) {
+            console.warn(`   [RETRY ${attempt}/${MAX_RETRIES}] Stable Audio Error: ${e.message}`);
+
+            if (attempt < MAX_RETRIES) {
+                const delay = BACKOFF_MS[attempt - 1];
+                console.log(`   [WAIT] Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                console.error(`   [SKIP] Stable Audio failed after ${MAX_RETRIES} attempts. Continuing without audio.`);
+                return '';
+            }
+        }
     }
+
+    return '';
 }
 
 // =====================================================
@@ -436,12 +598,15 @@ export async function mixUnifiedAudio(
     console.log('🎛️ Unified Mixing (Voice + Music + Ambience)...');
 
     // Calculate total duration
-    const totalDuration = script.phases.reduce((sum, p) => sum + p.durationSeconds, 0);
+    // Calculate total duration (Total Phases + Warmup)
+    const phasesDuration = script.phases.reduce((sum, p) => sum + p.durationSeconds, 0);
+    const totalDuration = phasesDuration + (script.warmupDuration || 0);
     const outputPath = path.join(OUTPUT_DIR, `mixed_${Date.now()}.mp3`);
 
     // Prepare Voice Overlays
     const overlays: { path: string, start: number }[] = [];
-    let currentTime = 0;
+    let currentTime = script.warmupDuration || 0; // Start voice after warmup
+
     for (const p of script.phases) {
         if (voicePaths.has(p.id)) {
             overlays.push({ path: voicePaths.get(p.id)!, start: currentTime });
@@ -559,7 +724,7 @@ export async function uploadStoryPackage(script: GeneratedScript, mixPath: strin
     const coverPortraitUrl = await uploadImg(assets.cover_portrait_url, '_tall');
 
     // DB Upsert
-    await supabase.from('stories').upsert({
+    const { data: storyData, error: storyError } = await supabase.from('stories').upsert({
         title: script.title,
         slug: slug,
         category: script.category,
@@ -567,16 +732,50 @@ export async function uploadStoryPackage(script: GeneratedScript, mixPath: strin
         audio_url: mixUrl,
         voice_url: voiceUrl,
         music_url: musicUrl,
-        ambient_url: ambienceUrl, // New Field
+        ambient_url: ambienceUrl,
         cover_url: coverUrl,
         cover_landscape_url: coverLandscapeUrl,
         cover_portrait_url: coverPortraitUrl,
         audio_phases: script.phases,
-        script_text: script.script, // Restored
+        script_text: script.script,
+        tags: script.tags || [],
         is_published: false
-    }, { onConflict: 'slug' });
+    }, { onConflict: 'slug' }).select().single();
 
-    console.log(`   ✅ Story Uploaded: ${slug}`);
+    if (storyError) {
+        console.error('❌ Failed to save story:', storyError);
+    } else {
+        console.log(`   ✅ Story Uploaded: ${slug}`);
+
+        // --- HARVESTING ENGINE ---
+        // Automatically save generated assets as reusable loops
+
+        const harvestLoop = async (type: 'music' | 'ambience', url: string | null, prompt: string | undefined) => {
+            if (!url || !prompt || prompt.startsWith('ID:')) return;
+
+            const loopTitle = `${script.title} (${type === 'music' ? 'Music' : 'Ambience'})`;
+            const loopSlug = `${slug}-${type}-loop`;
+            const loopCategory = type === 'music' ? 'music_instrumental' : 'soundscape';
+
+            console.log(`   🌾 Harvesting ${type} loop: ${loopTitle}`);
+
+            await supabase.from('stories').upsert({
+                title: loopTitle,
+                slug: loopSlug,
+                category: loopCategory,
+                description: `Harvested ${type} from "${script.title}". Prompt: ${prompt}`,
+                duration: script.duration * 60,
+                audio_url: url,
+                cover_url: coverUrl, // Use main story cover for now
+                is_loop: true,
+                is_published: true, // Auto-publish loops for reuse? Yes.
+                tags: [...(script.tags || []), type, 'harvested']
+            }, { onConflict: 'slug' });
+        };
+
+        if (stems.music) await harvestLoop('music', musicUrl, script.musicPrompt);
+        if (stems.ambience) await harvestLoop('ambience', ambienceUrl, script.ambiencePrompt);
+    }
 }
 
 // =====================================================
@@ -687,14 +886,39 @@ export async function generateStory(brief: StoryBrief) {
     // 1. Script
     const script = await generateScript(brief);
 
-    // 2. Audio Generation
-    const voiceRes = await generatePhasedVoice(script);
+    // Get recipe for conditional generation
+    const recipe = RECIPE_MATRIX[brief.category] || { voice: true, backing: 'soundscape' };
+    console.log(`   📋 Recipe: voice=${recipe.voice}, backing=${recipe.backing}`);
 
-    // 3. Backgrounds (Parallel)
-    const [musicPath, ambiencePath] = await Promise.all([
-        generateStableAudio(script.musicPrompt, `${script.title}_music.mp3`),
-        generateStableAudio(script.ambiencePrompt || "", `${script.title}_ambience.mp3`)
-    ]);
+    // 2. Voice Generation (conditional)
+    let voiceRes: { paths: Map<number, string>, chars: number };
+    if (recipe.voice) {
+        voiceRes = await generatePhasedVoice(script);
+    } else {
+        console.log('   ⏭️ Skipping voice generation (pure audio category)');
+        voiceRes = { paths: new Map(), chars: 0 };
+    }
+
+    // 3. Audio Backgrounds (conditional based on backing type)
+    let musicPath = '';
+    let ambiencePath = '';
+
+    if (recipe.backing === 'soundscape') {
+        // Soundscape: ambience primary, music optional
+        [ambiencePath, musicPath] = await Promise.all([
+            generateStableAudio(script.ambiencePrompt || "", `${script.title}_ambience.mp3`),
+            script.musicPrompt ? generateStableAudio(script.musicPrompt, `${script.title}_music.mp3`) : Promise.resolve('')
+        ]);
+    } else if (recipe.backing === 'music') {
+        // Music-based: both music and optional ambience
+        [musicPath, ambiencePath] = await Promise.all([
+            generateStableAudio(script.musicPrompt, `${script.title}_music.mp3`),
+            script.ambiencePrompt ? generateStableAudio(script.ambiencePrompt, `${script.title}_ambience.mp3`) : Promise.resolve('')
+        ]);
+    } else if (recipe.backing === 'frequency') {
+        // Binaural/frequency: only music (the frequency track)
+        musicPath = await generateStableAudio(script.musicPrompt, `${script.title}_music.mp3`);
+    }
 
     // 4. Assets
     const assets = await generateAssetPack(script);
@@ -702,21 +926,101 @@ export async function generateStory(brief: StoryBrief) {
     // 5. Mix Full
     const mixPath = await mixUnifiedAudio(script, voiceRes.paths, musicPath, ambiencePath);
 
-    // 6. Mix Voice Stem (Silence + Voice)
-    const voiceStemPath = await mixUnifiedAudio(script, voiceRes.paths, '', '');
+    // 6. Mix Voice Stem (only if voice was generated)
+    const voiceStemPath = recipe.voice
+        ? await mixUnifiedAudio(script, voiceRes.paths, '', '')
+        : '';
 
     // 7. Upload
     await uploadStoryPackage(script, mixPath, { music: musicPath, ambience: ambiencePath, voiceMap: voiceRes.paths, voiceStem: voiceStemPath }, assets);
 }
 
 // CLI Entry
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMainModule = import.meta.url.replace(/^file:\/\/\//, '').replace(/\//g, '\\').toLowerCase() ===
+    process.argv[1]?.replace(/\//g, '\\').toLowerCase();
+
+if (isMainModule) {
     const args = process.argv.slice(2);
+    console.log(`🚀 CLI Mode: ${args[0] || 'no command'}`);
+
+    // Full generation (for direct CLI use)
     if (args[0] === 'full') {
-        generateStory({ category: args[1] || 'sleep', duration: parseInt(args[2]) || 5 }).catch(console.error);
+        const category = args[1] || 'sleep';
+        const duration = parseInt(args[2]) || 5;
+        const description = process.env.STORY_DESCRIPTION || args[3] || '';
+        generateStory({ category, duration, description: description || undefined }).catch(console.error);
     }
+
+    // Concept generation only (for API step 1)
+    if (args[0] === 'concept') {
+        const category = args[1] || 'sleep';
+        const idea = args[2] || 'A peaceful relaxation journey';
+        const optionsBase64 = args[3] || '';
+
+        let options: any = {};
+        if (optionsBase64) {
+            try {
+                options = JSON.parse(Buffer.from(optionsBase64, 'base64').toString('utf-8'));
+            } catch (e) {
+                console.error('Failed to parse options:', e);
+            }
+        }
+
+        (async () => {
+            try {
+                const concept = await ConceptEngine.generate(idea, category, options);
+
+                // Save concept to file
+                const slug = (concept.title || 'untitled')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s]/g, '')
+                    .replace(/\s+/g, '_')
+                    .substring(0, 40);
+                const filename = `${slug}_${Date.now()}.json`;
+                const filepath = path.join(OUTPUT_DIR, filename);
+
+                fs.writeFileSync(filepath, JSON.stringify(concept, null, 2));
+                console.log(`Concept Saved: ${filepath}`);
+            } catch (e) {
+                console.error('Concept generation failed:', e);
+                process.exit(1);
+            }
+        })();
+    }
+
+    // Build from existing concept file (for API step 2)
+    if (args[0] === 'build') {
+        const conceptPath = args[1];
+        if (!conceptPath || !fs.existsSync(conceptPath)) {
+            console.error(`Concept file not found: ${conceptPath}`);
+            process.exit(1);
+        }
+
+        (async () => {
+            try {
+                const concept = JSON.parse(fs.readFileSync(conceptPath, 'utf-8'));
+
+                // Convert concept to StoryBrief format
+                const brief: StoryBrief = {
+                    category: concept.category || 'sleep',
+                    duration: concept.intendedDuration || 10,
+                    title: concept.title,
+                    description: concept.logline,
+                    tags: concept.tags,
+                    voiceStyle: concept.audioIdentity?.voiceStyle,
+                    mixSettings: concept.mixSettings
+                };
+
+                await generateStory(brief);
+                console.log(`Story Complete! ID: ${concept.title?.toLowerCase().replace(/\s+/g, '-') || 'generated'}`);
+            } catch (e) {
+                console.error('Build failed:', e);
+                process.exit(1);
+            }
+        })();
+    }
+
     if (args[0] === 'stitch') {
-        // Usage: npx tsx src/index.ts stitch <outputFilename> <file1> <file2> ...
         const outputFilename = args[1];
         const inputFiles = args.slice(2);
         stitchVoicePhases(inputFiles, outputFilename).then(path => console.log(path)).catch(console.error);

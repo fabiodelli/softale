@@ -1,0 +1,54 @@
+{
+  "version": "1.1",
+  "language": "English",
+  "voices": [
+    {
+      "id": "soft_female_en",
+      "description": "Soft, warm female. Perfect for sleep stories.",
+      "language": "English",
+      "file": "soft_female_en.pkl"
+    },
+    {
+      "id": "soft_male_en",
+      "description": "Deep, calm male. Ideal for relaxation.",
+      "language": "English",
+      "file": "soft_male_en.pkl"
+    },
+    {
+      "id": "narrator_en",
+      "description": "Professional narrator. Engaging storytelling.",
+      "language": "English",
+      "file": "narrator_en.pkl"
+    },
+    {
+      "id": "narrator_female_en",
+      "description": "Professional female English narrator.",
+      "language": "English",
+      "file": "narrator_female_en.pkl"
+    },
+    {
+      "id": "narrator_male_en",
+      "description": "Deep, dramatic male narrator.",
+      "language": "English",
+      "file": "narrator_male_en.pkl"
+    },
+    {
+      "id": "meditation_female_en",
+      "description": "Ultra-calm female meditation voice.",
+      "language": "English",
+      "file": "meditation_female_en.pkl"
+    },
+    {
+      "id": "meditation_male_en",
+      "description": "Deep, zen-like male meditation voice.",
+      "language": "English",
+      "file": "meditation_male_en.pkl"
+    },
+    {
+      "id": "whisper_female_en",
+      "description": "Soft whisper female voice.",
+      "language": "English",
+      "file": "whisper_female_en.pkl"
+    }
+  ]
+}
