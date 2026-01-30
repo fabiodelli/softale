@@ -100,13 +100,13 @@ export function AmbienceProvider({ children }: { children: React.ReactNode }) {
 
     // Coordination methods for PlayerContext integration
     const pause = useCallback(() => {
-        // Check audio element directly instead of state (avoids stale closure issues)
-        if (audioRef.current && !audioRef.current.paused) {
+        // Check isPlaying state to capture intent even if audio is buffering/loading
+        if (isPlaying) {
             wasPlayingBeforeInterrupt.current = true;
-            audioRef.current.pause();
+            if (audioRef.current) audioRef.current.pause();
             setIsPlaying(false);
         }
-    }, []); // No dependencies - always uses current refs
+    }, [isPlaying]);
 
     const resumeIfWasPlaying = useCallback(() => {
         // Only resume if:

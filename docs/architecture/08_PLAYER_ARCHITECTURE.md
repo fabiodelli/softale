@@ -1,52 +1,56 @@
 # 🎧 08. Player Architecture
 
 ## Overview
-The audio player is the core feature of Softale. The architecture has evolved from a monolithic Context to a modular Hook-based system (post-refactoring).
+The audio player is the engine of Softale. The architecture has evolved from a hook-based Context to a robust **Singleton Audio Engine** pattern for better performance and separation of concerns.
 
 ## 🧩 Core Components
 
-### 1. PlayerContext (`src/context/PlayerContext.tsx`)
-The simplified Provider that acts as the "glue". It:
-*   Holds **Global State**: `status`, `queue`, `currentStory`.
-*   Composes **Hooks**: Instantiates the logic hooks below and exposes their methods.
-*   Renders the `<audio>` element (Master or Voice channel).
+### 1. Audio Engine (`src/lib/audio/AudioEngine.ts`)
+The new **Singleton Class** that encapsulates all low-level audio logic. It replaces scattered refs and effects.
+*   **Responsibility**: 
+    *   Manages native `HTMLAudioElement` instances (Voice, Music, Ambience A/B).
+    *   Handles playback state (Play, Pause, Seek, Buffering).
+    *   Implements **Crossfading** and **Stem Mixing**.
+    *   Emits events (`timeupdate`, `statechange`, `ended`) for the UI.
+*   **Pattern**: Singleton. Accessible globally via `import { audio }` but primarily consumed by Context/Store.
 
-### 2. Audio Hooks (`src/hooks/audio/`)
+### 2. PlayerContext (`src/context/PlayerContext.tsx`)
+The **ViewModel** layer bridging React and the Audio Engine.
+*   **Responsibility**:
+    *   Initializes the Audio Engine listeners.
+    *   Syncs engine state to React state (`useState` for UI binding).
+    *   Exposes high-level actions (`play(story)`, `playQueue`, `toggle`).
+    *   Coordinates with `AmbienceContext` (pausing global ambience when story plays).
+*   **Benefits**: Components consume this Context and re-render only when necessary state changes, without knowing about `Audio` elements.
 
-#### `useAudioConfig`
-*   **Responsibility**: User preferences & persistence.
-*   **State**: `voiceVolume`, `musicVolume`, `ambientVolume`, `playbackRate`.
-*   **Storage**: Syncs with `localStorage`.
+### 3. Player Store (`src/store/playerStore.ts`)
+A **Zustand** store implemented for future high-frequency state management.
+*   **Current Status**: Implemented but currently `PlayerContext` is the primary consumer. Ready for migration if performance needs require bypassing React Context completely.
 
-#### `useAudioStems`
-*   **Responsibility**: Physical Audio Element management.
-*   **Refs**: `musicRef`, `ambientRefA`, `ambientRefB`.
-*   **Logic**: Handles 3-stem playback (Voice + Music + Ambience) and initialization.
+### 4. AmbienceContext (`src/context/AmbienceContext.tsx`)
+Manages the global "Mood" sounds (Rain, Forest, etc.) independent of stories.
+*   **Logic**:
+    *   **Resume Capability**: Automatically resumes mood sound after a story finishes or pauses, *unless* explicitly toggled off by the user.
+    *   **Priority**: Story audio always takes precedence over mood audio.
 
-#### `useAmbientEngine`
-*   **Responsibility**: The "Smart" DJ.
-*   **Logic**: 
-    *   Determines current audio intent based on story phase.
-    *   Manages **Crossfading** between ambient tracks.
-    *   Handles volume transitions.
+## 🔄 Data Flow (V2)
+1.  **User Action**: Clicks Play -> `PlayerContext.play(story)`.
+2.  **Context Action**: 
+    *   Pauses global Ambience.
+    *   Calls `audio.loadStory(story)`.
+3.  **Engine Execution**: 
+    *   `AudioEngine` loads 3 stems (Voice, Music, Ambience).
+    *   Sets volumes based on config.
+    *   Starts playback.
+4.  **Event Emission**: 
+    *   `AudioEngine` emits `statechange` (isPlaying=true).
+    *   `PlayerContext` updates React state -> UI shows Pause button.
+5.  **Progress**: 
+    *   `AudioEngine` emits `timeupdate` (60fps or throttled).
+    *   `PlayerContext` updates `currentTime` -> Progress bar moves.
 
-#### `useProgressTracker`
-*   **Responsibility**: Analytics & Persistence.
-*   **Logic**: 
-    *   Syncs playback progress to Supabase (`listening_progress`).
-    *   Increments stats (Streak, Minutes Listened).
-    *   Tracks Story Completion.
-
-## 🔄 Data Flow
-1.  **User Action**: Clicks Play -> `PlayerContext.play()`.
-2.  **State Update**: `status` becomes `LOADING` -> `PLAYING`.
-3.  **Effect Trigger**: 
-    *   `useAudioStems` ensures correct `<audio>` sources are loaded.
-    *   `useAmbientEngine` calculates which ambient track to fade in.
-4.  **Playback**: Audio starts. `onTimeUpdate` triggers `useProgressTracker`.
-
-## 🏗️ V6 Audio Stems Architecture
-Stories now support 3 distinct concurrent audio tracks:
-1.  **Voice**: The narration (Primary `<audio>` in Context).
-2.  **Music**: Background music (Looping, handled by `useAudioStems`).
-3.  **Ambience**: Sound effects (Looping/Crossfading, handled by `useAmbientEngine`).
+## 🏗️ Audio Stems Architecture
+Stories support 3 distinct concurrent audio tracks, mixed client-side by `AudioEngine`:
+1.  **Voice**: The narration (Master timing reference).
+2.  **Music**: Background music (Loops seamlessly).
+3.  **Ambience**: Sound effects (Crossfades between scenes/phases).

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "autotag": "tsx tools/audio-factory/src/index.ts autotag",
-    "test": "vitest"
+    "test": "vitest",
+    "update-types": "supabase gen types typescript --project-id \"YOUR_PROJECT_ID\" > src/lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
