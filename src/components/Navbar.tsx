@@ -12,7 +12,11 @@ import { useMood } from '@/context/MoodContext';
 import { useAmbience } from '@/context/AmbienceContext';
 import { useLanding } from '@/context/LandingContext';
 
-export default function Navbar() {
+interface NavbarProps {
+    transparent?: boolean;
+}
+
+export default function Navbar({ transparent = false }: NavbarProps) {
     const { user, profile } = useAuth();
     const { activeMood, setActiveMood } = useMood();
     const { isPlaying } = useAmbience();
@@ -30,8 +34,8 @@ export default function Navbar() {
     // Detect Scroll for Glass Effect
     useEffect(() => {
         const handleScroll = () => {
-            // On non-home pages, always show scrolled style
-            if (pathname !== '/') {
+            // On non-home pages, always show scrolled style unless explicitly transparent
+            if (pathname !== '/' && !transparent) {
                 setIsScrolled(true);
                 return;
             }

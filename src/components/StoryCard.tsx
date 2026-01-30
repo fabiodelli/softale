@@ -61,13 +61,12 @@ export default function StoryCard({ story, onClick, className = '', aspectRatio 
             return;
         }
 
-        if (isLocked) {
-            e.stopPropagation();
-            openPremiumModal();
-            return;
-        }
-
+        // Play directly (Revert to Audition behavior)
         play(story);
+
+        // Optional: Trigger a toast or visual cue here
+        // toast.info("Now playing. Click the player to view details.");
+
     };
 
     const handleOptionsClick = (e: React.MouseEvent) => {

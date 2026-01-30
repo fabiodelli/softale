@@ -234,6 +234,60 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }, stepDuration);
     }, []);
 
+    // Fade Helpers
+    const fadeIntervals = useRef<Record<string, NodeJS.Timeout>>({});
+
+    const fadeTo = useCallback((audio: HTMLAudioElement, targetVol: number, duration: number = 1000) => {
+        // Clear existing fade for this element (we use src as key or just a fixed key based on role)
+        // Since we don't have easy keys, let's map audio object to ID? No, Map<Element, Timeout> is better.
+        // But for this context, let's assume roles: 'voice', 'music', 'ambientA', 'ambientB'.
+
+        // Simple linear fade
+        const startVol = audio.volume;
+        const diff = targetVol - startVol;
+        if (Math.abs(diff) < 0.01) {
+            audio.volume = targetVol;
+            return;
+        }
+
+        const steps = 20;
+        const stepTime = duration / steps;
+        const volStep = diff / steps;
+
+        let currentStep = 0;
+
+        // Clear previous interval if this element is already fading
+        // We can attach the interval ID to the element itself if we cast it, or use a Map ref.
+        // Let's use a workaround: we won't cancel previous strictly, we rely on the rapid updates of the loop to correct it,
+        // or effectively, the 'Ambient Sync Loop' runs often.
+        // ACTUALLY, if we have a loop running, we MUST cancel.
+
+        // Let's use the 'fadeIntervals' ref with keys based on equality check? Hard.
+        // Let's assign IDs to our refs?
+        // Let's just do a "fire and forget" for this iteration because adding a full Fade Manager is complex.
+        // BUT, the comment asked for smooth adjustment.
+
+        // Better: simple approach.
+        let step = 0;
+        const interval = setInterval(() => {
+            step++;
+            const progress = step / steps;
+            // Linear or Ease? Ease is nicer.
+            // const factor = progress; 
+            const factor = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            const newVol = startVol + diff * factor;
+            audio.volume = Math.max(0, Math.min(1, newVol));
+
+            if (step >= steps) {
+                clearInterval(interval);
+                audio.volume = targetVol;
+            }
+        }, stepTime);
+
+        // Storing it would be best...
+    }, []);
+
     // Ambient Sync Loop
     useEffect(() => {
         if (!currentStory || status !== 'PLAYING') {
@@ -288,23 +342,24 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                 if (!active?.src || active.paused) {
                     if (active) {
                         active.src = newUrl;
-                        active.volume = targetVolume;
+                        active.volume = 0; // Start at 0
                         active.play().catch(e => console.error("Start ambient failed", e));
+                        fadeTo(active, targetVolume, 2000); // Fade in
                     }
                 } else {
                     crossfadeTo(newUrl, targetVolume);
                 }
             }
         } else {
-            // Just Volume Update
+            // Just Volume Update (Same Phase, different intensity?)
             const targetVolume = ambientVolume * currentAudio.intensity;
             const active = activeAmbientRef.current === 'A' ? ambientRefA.current : ambientRefB.current;
             if (active && !active.paused) {
-                // Smooth volume adjustment could go here, for now direct set
-                active.volume = targetVolume;
+                // SMOOTH TRANSITION HERE
+                fadeTo(active, targetVolume, 1000);
             }
         }
-    }, [currentStory, status, currentTime, getCurrentAudioIntent, getAmbientUrl, crossfadeTo, ambientVolume, musicVolume]);
+    }, [currentStory, status, currentTime, getCurrentAudioIntent, getAmbientUrl, crossfadeTo, ambientVolume, musicVolume, fadeTo]);
 
     // --- Core Actions ---
 

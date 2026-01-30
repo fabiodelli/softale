@@ -146,6 +146,7 @@ export interface Story {
     voice_url?: string | null;
     ambient_url?: string | null;
     music_url?: string | null;
+    slug?: string; // URL friendly identifier
 }
 
 export interface Collection {
@@ -288,6 +289,21 @@ export async function getStoryById(id: string): Promise<Story | null> {
 
     if (error) {
         console.error('Error fetching story:', error);
+        return null;
+    }
+    return data;
+}
+
+export async function getStoryBySlug(slug: string): Promise<Story | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+        .from('stories')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+    if (error) {
+        console.error('Error fetching story by slug:', error);
         return null;
     }
     return data;
