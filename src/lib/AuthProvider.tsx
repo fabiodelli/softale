@@ -69,13 +69,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Sign out
     const handleSignOut = async () => {
-        if (supabase) {
-            await supabase.auth.signOut();
+        try {
+            if (supabase) {
+                await supabase.auth.signOut();
+            }
+        } catch (error) {
+            console.error("Error signing out:", error);
+        } finally {
+            // Force state clear and reload to ensure no residual session
+            setUser(null);
+            setProfile(null);
+            setSession(null);
+            setLoading(false);
+
+            // Hard reload to clear any memory/singleton state issues
+            window.location.href = '/';
         }
-        setUser(null);
-        setProfile(null);
-        setSession(null);
-        setLoading(false); // Ensure loading is false after signout
     };
 
     // Listen to auth state changes

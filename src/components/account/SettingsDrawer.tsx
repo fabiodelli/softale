@@ -89,7 +89,7 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
 
     const handleLogout = async () => {
         await signOut();
-        window.location.href = '/';
+        // AuthProvider handles redirect
     };
 
     const handleDeleteAccount = async () => {

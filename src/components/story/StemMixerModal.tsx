@@ -9,9 +9,21 @@ import StemMixer from '@/components/player/StemMixer';
 interface StemMixerModalProps {
     isOpen: boolean;
     onClose: () => void;
+    isPremium: boolean;
 }
 
-export default function StemMixerModal({ isOpen, onClose }: StemMixerModalProps) {
+export default function StemMixerModal({ isOpen, onClose, isPremium }: StemMixerModalProps) {
+    const isLocked = !isPremium; // Lock if NOT premium assuming story is premium?
+    // Actually, we should pass "isLocked" directly or "isPremiumUser" + "story.isPremium".
+    // Let's assume passed prop "isPremium" means "User has access" (User is premium OR Story is free).
+    // The caller knows logic.
+    // Wait, caller (ImmersivePlayer) passes `story.is_premium`.
+    // We need `user.is_premium` too.
+    // Let's stick to simple: Caller passes `isLocked`.
+
+    // REVISING: The caller has `story` and `user`. 
+    // Let's change prop to `isLocked`.
+
     return (
         <Transition appear show={isOpen} as={Fragment}>
             <Dialog as="div" className="relative z-[9999]" onClose={onClose}>
@@ -55,8 +67,26 @@ export default function StemMixerModal({ isOpen, onClose }: StemMixerModalProps)
                                     </button>
                                 </div>
 
-                                <StemMixer />
-
+                                <div className="relative">
+                                    {isLocked && (
+                                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-xl text-center p-4">
+                                            <div className="bg-amber-100 p-3 rounded-full mb-3">
+                                                <Settings2 className="w-6 h-6 text-amber-600" />
+                                            </div>
+                                            <h4 className="text-slate-900 font-bold mb-1">Premium Feature</h4>
+                                            <p className="text-slate-600 text-sm mb-4">Unlock audio mixing to customize voice, music, and ambience levels.</p>
+                                            <button
+                                                onClick={() => window.location.href = '/upgrade'}
+                                                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-lg shadow-lg hover:scale-105 transition"
+                                            >
+                                                Unlock Premium
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className={isLocked ? 'opacity-50 pointer-events-none filter blur-sm' : ''}>
+                                        <StemMixer />
+                                    </div>
+                                </div>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>

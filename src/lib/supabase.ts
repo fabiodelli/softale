@@ -60,11 +60,15 @@ export async function signOut() {
 }
 
 export async function signInWithGoogle() {
-    const supabaseBrowser = createSupabaseBrowserClient();
-    const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
             redirectTo: `${window.location.origin}/auth/callback`,
+            queryParams: {
+                prompt: 'select_account', // Force account selection
+                access_type: 'offline'    // Ensure robust token handling
+            }
         },
     });
     if (error) throw error;
@@ -72,8 +76,8 @@ export async function signInWithGoogle() {
 }
 
 export async function signInWithDiscord() {
-    const supabaseBrowser = createSupabaseBrowserClient();
-    const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
             redirectTo: `${window.location.origin}/auth/callback`,
@@ -84,8 +88,8 @@ export async function signInWithDiscord() {
 }
 
 export async function signInWithApple() {
-    const supabaseBrowser = createSupabaseBrowserClient();
-    const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
             redirectTo: `${window.location.origin}/auth/callback`,

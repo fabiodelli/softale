@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ArrowLeft, Settings2, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { usePlayer } from '@/context/PlayerContext';
+import { useAuth } from '@/lib/AuthProvider';
 import Navbar from '@/components/Navbar';
 import SubtitleOverlay from '@/components/story/SubtitleOverlay';
 import StemMixerModal from '@/components/story/StemMixerModal';
@@ -18,6 +19,7 @@ interface ImmersivePlayerProps {
 export default function ImmersivePlayer({ story }: ImmersivePlayerProps) {
     const router = useRouter();
     const { isPlaying, toggle, currentStory, play, next, previous } = usePlayer();
+    const { profile } = useAuth();
     const [isMixerOpen, setIsMixerOpen] = useState(false);
 
     // Ensure we are playing *this* story if we land here?
@@ -70,7 +72,11 @@ export default function ImmersivePlayer({ story }: ImmersivePlayerProps) {
             </div>
 
             {/* Main Content Area - Centered Subtitles */}
-            <SubtitleOverlay text={narrationText} isPremium={story.is_premium} />
+            <SubtitleOverlay
+                text={narrationText}
+                isPremium={story.is_premium}
+                audioPhases={story.audio_phases}
+            />
 
             {/* Bottom Controls Area */}
             <div className="absolute bottom-0 w-full z-50 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent pb-8 pt-24 px-6 md:px-12">
@@ -130,7 +136,24 @@ export default function ImmersivePlayer({ story }: ImmersivePlayerProps) {
             </div>
 
             {/* Modals */}
-            <StemMixerModal isOpen={isMixerOpen} onClose={() => setIsMixerOpen(false)} />
+            <StemMixerModal
+                isOpen={isMixerOpen}
+                onClose={() => setIsMixerOpen(false)}
+                isPremium={!!profile?.is_premium} // Only check user premium for mixer? 
+            // Wait, if story is free, mixer should be free?
+            // User said "These two must be premium functions".
+            // Implies Mixer is ALWAYS a premium feature?
+            // Or Mixer is premium ON premium stories?
+            // "These two must be premium functions" -> "Audio Mixing" is usually a Pro feature.
+            // Let's assume Mixer is locked for Free users universally or just on Premium stories?
+            // "I cannot access ... audio mixing ... modifying audio mixing ... must be premium functions"
+            // Let's lock it if User is NOT Premium, regardless of story type? 
+            // Or maybe follow story.is_premium logic?
+            // Safest / Most common: Mixer is a Premium feature (User-based).
+            // Let's rely on User Profile.
+
+            // We need profile from useAuth() in ImmersivePlayer.
+            />
         </div>
     );
 }
