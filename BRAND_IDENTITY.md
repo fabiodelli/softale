@@ -1,6 +1,6 @@
 # Softale Brand Identity & Design System
 
-> **Version:** 1.0  
+> **Version:** 1.1  
 > **Last Updated:** January 2026  
 > **Project:** Reverie - Audio Stories & Meditation App
 
@@ -25,12 +25,12 @@ Softale uses a **two-tier design system** to balance aesthetics with readability
 ### Tier 1: Immersive Pages
 **Purpose:** Content browsing, exploration, and discovery  
 **Background:** `bg-slate-50/60 backdrop-blur-2xl`  
-**Text Style:** White with text-shadow  
+**Text Style:** Dark (`text-slate-900`) for cleanliness, or White with shadow for image overlays  
 **Use Cases:** Home, Library, Collection Detail, Favorites
 
 ```tsx
 <GlassLayout variant="immersive">
-  <h1 className="text-3xl font-bold text-white [text-shadow:_0_1px_4px_rgb(0_0_0_/_90%)]">
+  <h1 className="text-3xl font-bold text-slate-900">
     Page Title
   </h1>
 </GlassLayout>
@@ -38,14 +38,14 @@ Softale uses a **two-tier design system** to balance aesthetics with readability
 
 **Characteristics:**
 - Semi-transparent glassmorphic background for premium aesthetic
-- White text with subtle black text-shadow for readability
+- Clean dark text for maximum readability on light glass
 - Mood-based background images visible through transparency
 - Optimized for visual immersion and content discovery
 
 ### Tier 2: Functional Pages
 **Purpose:** Account management, transactions, and settings  
 **Background:** `bg-white/95 backdrop-blur-xl`  
-**Text Style:** Dark (`text-slate-900`) without text-shadow  
+**Text Style:** Dark (`text-slate-900`)  
 **Use Cases:** Account, Upgrade, Settings, Auth pages
 
 ```tsx
@@ -59,7 +59,6 @@ Softale uses a **two-tier design system** to balance aesthetics with readability
 **Characteristics:**
 - Nearly opaque white background for maximum readability
 - Dark text (slate-900/700) for optimal contrast
-- No text-shadow needed due to solid background
 - WCAG AA compliant for accessibility
 - Optimized for reading important information and completing actions
 
@@ -69,7 +68,6 @@ Softale uses a **two-tier design system** to balance aesthetics with readability
 - User is browsing or discovering content
 - Visual aesthetics enhance the experience
 - Background imagery adds context (mood-based)
-- Text is primarily titles and short descriptions
 
 **Use Functional (Tier 2) when:**
 - User needs to read detailed information
@@ -120,19 +118,19 @@ bg-sky-100 text-sky-700
 
 ### Neutral Colors
 ```css
-/* White - Primary Text on Glassmorphic Backgrounds */
+/* White - Backgrounds and Image Overlays */
 --white: #FFFFFF
 
-/* Black - Shadows and Outlines */
+/* Black - Shadows */
 --black: #000000
 
-/* Slate - UI Elements (Buttons, Modals) */
+/* Slate - Text and UI Elements */
 --slate-50:  #F8FAFC
 --slate-100: #F1F5F9
 --slate-200: #E2E8F0
 --slate-500: #64748B
 --slate-600: #475569
---slate-900: #0F172A  /* Dark UI elements */
+--slate-900: #0F172A  /* Primary Text */
 ```
 
 ### Premium Accents
@@ -162,42 +160,36 @@ font-family: system-ui, -apple-system, sans-serif;
 #### Headings
 ```tsx
 /* Page Title (H1) */
-className="text-3xl font-bold text-white [text-shadow:_0_1px_4px_rgb(0_0_0_/_90%)]"
+className="text-3xl font-bold text-slate-900"
 
 /* Section Title (H2) */
-className="text-xl font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]"
+className="text-xl font-bold text-slate-900"
 
 /* Subsection Title (H3) */
-className="text-lg font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]"
+className="text-lg font-bold text-slate-900"
 
-/* Card Title */
+/* Card Overlay Title (On Image) */
 className="text-base font-bold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]"
 ```
 
 #### Body Text
 ```tsx
-/* Primary Body - White with Shadow */
-className="text-sm text-white/90 [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]"
+/* Primary Body */
+className="text-sm text-slate-600"
 
 /* Secondary Body - Muted */
-className="text-sm text-white/70 [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]"
+className="text-sm text-slate-500"
 
 /* Metadata (Author, Duration) */
-className="text-xs font-medium text-white/90 [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]"
+className="text-xs font-medium text-slate-500"
 ```
 
-### Text Shadow Standard
-**All white text MUST include a subtle black text-shadow for readability:**
+### Text Shadow Usage
+**Only use text-shadow when text is placed directly over an image or video:**
 
 ```css
-/* Strong Shadow (Titles) */
+/* Strong Shadow (Image Overlays) */
 [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]
-
-/* Medium Shadow (Body) */
-[text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]
-
-/* Light Shadow (Metadata) */
-[text-shadow:_0_1px_2px_rgb(0_0_0_/_70%)]
 ```
 
 ---
@@ -205,7 +197,7 @@ className="text-xs font-medium text-white/90 [text-shadow:_0_1px_2px_rgb(0_0_0_/
 ## 🎴 Glassmorphic Design System
 
 ### Core Principle
-**Glassmorphism** creates depth and premium feel through layered transparency, blur, and subtle borders.
+**Glassmorphism** creates depth and premium feel through layered transparency, blur, and subtle borders. We use a **Light Glass** approach for a clean, modern look.
 
 ### Standard Glass Card
 ```tsx
@@ -225,7 +217,7 @@ className="
 bg-white/40 backdrop-blur-xl
 ```
 
-#### Dark Glass (Overlays)
+#### Dark Glass (Image Overlays & Badges)
 ```tsx
 bg-black/40 backdrop-blur-md
 ```
@@ -261,7 +253,7 @@ bg-white/20 backdrop-blur-2xl border border-white/30
   {/* Title */}
   <h3 className="
     font-bold text-base leading-tight mb-1.5 line-clamp-2
-    text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]
+    text-slate-900
     transition-colors
   ">
     Story Title
@@ -269,8 +261,7 @@ bg-white/20 backdrop-blur-2xl border border-white/30
   
   {/* Author */}
   <span className="
-    text-xs font-medium text-white/90 
-    [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]
+    text-xs font-medium text-slate-600 
   ">
     Author Name
   </span>
@@ -295,7 +286,7 @@ bg-white/20 backdrop-blur-2xl border border-white/30
     X tracks
   </div>
   
-  {/* Title */}
+  {/* Title (On Image) */}
   <h3 className="
     text-lg font-bold text-white 
     [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]
@@ -331,15 +322,13 @@ bg-white/20 backdrop-blur-2xl border border-white/30
 ### Section Headers
 ```tsx
 <h3 className="
-  text-xl font-bold text-white 
-  [text-shadow:_0_1px_3px_rgb(0_0_0_/_90%)]
+  text-xl font-bold text-slate-900
 ">
   Section Title
 </h3>
 
 <p className="
-  text-sm text-white/70 
-  [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]
+  text-sm text-slate-500
 ">
   Subtitle or description
 </p>
@@ -367,7 +356,7 @@ hover:bg-white/40 transition-colors duration-200
 ring-2 ring-indigo-500 ring-offset-2 shadow-lg
 
 /* Active Text */
-text-indigo-300  /* Instead of white */
+text-indigo-600
 ```
 
 ### Loading States
@@ -401,7 +390,7 @@ className="
   px-6 py-3 
   bg-white/30 backdrop-blur-xl 
   border border-white/20 
-  text-white font-semibold 
+  text-slate-900 font-semibold 
   rounded-full 
   hover:bg-white/40 
   transition-all duration-200
@@ -559,7 +548,7 @@ aspect-video
 
 ### Gradient Overlays
 ```tsx
-/* Dark Overlay (for white text) */
+/* Dark Overlay (for white text on images) */
 bg-gradient-to-t from-black/60 via-transparent to-transparent
 
 /* Light Overlay (desktop featured) */
@@ -606,7 +595,7 @@ className="
 
 ### Progress Bar
 ```tsx
-<div className="h-1 bg-white/20">
+<div className="h-1 bg-slate-200">
   <div className="h-full bg-indigo-500 
     shadow-[0_0_10px_rgba(99,102,241,0.5)]
   " />
@@ -640,19 +629,19 @@ xl: 1280px+
 
 ## 🚫 Don'ts - Common Mistakes to Avoid
 
-❌ **Never** use dark text (`text-slate-900`) on glassmorphic backgrounds  
-✅ **Always** use white text with text-shadow
+❌ **Never** use dark text on dark glass backgrounds (illegible)
+✅ **Always** use white text with text-shadow when on top of images
 
-❌ **Never** forget text-shadow on white text  
-✅ **Always** add `[text-shadow:_0_1px_2-4px_rgb(0_0_0_/_80-90%)]`
+❌ **Never** use white text on light glass without a shadow
+✅ **Always** use dark text (slate-900) on light glass for readability
 
-❌ **Never** use solid backgrounds for cards  
+❌ **Never** use solid backgrounds for cards
 ✅ **Always** use glassmorphic `bg-white/30 backdrop-blur-xl`
 
-❌ **Never** use icons in section headers or badges (cluttered)  
+❌ **Never** use icons in section headers or badges (cluttered)
 ✅ **Always** use clean text with emojis when appropriate
 
-❌ **Never** use harsh shadows  
+❌ **Never** use harsh shadows
 ✅ **Always** use subtle shadows (`shadow-md`, `shadow-lg`)
 
 ---
@@ -661,8 +650,8 @@ xl: 1280px+
 
 When creating new components, ensure:
 
-- [ ] White text with appropriate text-shadow
-- [ ] Glassmorphic backgrounds (`bg-white/30 backdrop-blur-xl`)
+- [ ] Dark text for content / White text for overlays
+- [ ] Light glassmorphic backgrounds (`bg-white/30 backdrop-blur-xl`)
 - [ ] Smooth transitions (`transition-all duration-300`)
 - [ ] Hover states defined
 - [ ] Responsive design (mobile-first)
@@ -674,15 +663,15 @@ When creating new components, ensure:
 
 ## 🎨 Design Philosophy Summary
 
-> **"Soft, Luminous, Premium"**
+> **"Tranquil, Luminous, Clear"**
 
 Our design language prioritizes:
-1. **Clarity through contrast**: White text with shadows on rich imagery
+1. **Clarity through contrast**: Dark text on light glass, white on dark overlays
 2. **Depth through layers**: Glassmorphic overlays create visual hierarchy
 3. **Calm through motion**: Smooth, gentle animations
 4. **Premium through polish**: Attention to detail in every interaction
 
 ---
 
-**End of Brand Identity Document**  
+**End of Brand Identity Document**
 *For questions or updates, contact the design team.*

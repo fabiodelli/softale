@@ -3,7 +3,7 @@ import { Story } from '@/lib/supabase';
 import { formatDuration } from '@/lib/formatters';
 import Image from 'next/image';
 import { Play, Pause, Lock, MoreVertical } from 'lucide-react';
-import { usePlayer } from '@/context/PlayerContext';
+import { usePlayerStore } from '@/store/playerStore';
 import { useAuth } from '@/lib/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { usePremiumModal } from '@/lib/usePremiumModal';
@@ -19,15 +19,23 @@ interface StoryCardDefaultProps {
 }
 
 export default function StoryCardDefault({ story, onClick, className = '', aspectRatio = 'square', progress, rank }: StoryCardDefaultProps) {
-    const { play, pause, currentStory, isPlaying } = usePlayer();
+    // Optimized: Use selectors to avoid re-renders on every progress update
+    const play = usePlayerStore(state => state.play);
+    const pause = usePlayerStore(state => state.pause);
+    const currentStory = usePlayerStore(state => state.currentStory);
+    const isPlaying = usePlayerStore(state => state.isPlaying);
+    const status = usePlayerStore(state => state.status);
+
+    // We don't subscribe to currentTime here, so this component won't re-render on ticking!
+
     const { user, profile } = useAuth();
     const router = useRouter();
     const { open: openPremiumModal } = usePremiumModal();
     const [showOptions, setShowOptions] = useState(false);
 
-    // Active state
+    // Active state: Also active while LOADING to prevent flicker
     const isCurrent = currentStory?.id === story.id;
-    const isActive = isCurrent && isPlaying;
+    const isActive = isCurrent && (isPlaying || status === 'LOADING');
 
     const handlePlay = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -39,6 +47,7 @@ export default function StoryCardDefault({ story, onClick, className = '', aspec
 
         if (isActive) {
             e.stopPropagation();
+            if (status === 'LOADING') return; // Prevent pause during load to avoid confusion
             pause();
             return;
         }
@@ -147,7 +156,7 @@ export default function StoryCardDefault({ story, onClick, className = '', aspec
                         </div>
                     )}
 
-                    {/* Progress Bar */}
+                    {/* Progress Bar (Only shows if explicitly passed via props, DOES NOT rely on store timer) */}
                     {progress !== undefined && (
                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
                             <div

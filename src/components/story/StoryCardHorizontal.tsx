@@ -3,7 +3,7 @@ import { Story } from '@/lib/supabase';
 import { formatDuration } from '@/lib/formatters';
 import Image from 'next/image';
 import { Play, Pause, MoreVertical } from 'lucide-react';
-import { usePlayer } from '@/context/PlayerContext';
+import { usePlayerStore } from '@/store/playerStore';
 import { useAuth } from '@/lib/AuthProvider';
 import { useRouter } from 'next/navigation';
 import StoryOptionsModal from '../modals/StoryOptionsModal';
@@ -17,14 +17,20 @@ interface StoryCardHorizontalProps {
 }
 
 export default function StoryCardHorizontal({ story, onClick, className = '' }: StoryCardHorizontalProps) {
-    const { play, pause, currentStory, isPlaying } = usePlayer();
+    // Optimized: Use selectors
+    const play = usePlayerStore(state => state.play);
+    const pause = usePlayerStore(state => state.pause);
+    const currentStory = usePlayerStore(state => state.currentStory);
+    const isPlaying = usePlayerStore(state => state.isPlaying);
+    const status = usePlayerStore(state => state.status);
+
     const { user } = useAuth();
     const router = useRouter();
     const [showOptions, setShowOptions] = useState(false);
 
-    // Active state
+    // Active state: Also active while LOADING to prevent flicker
     const isCurrent = currentStory?.id === story.id;
-    const isActive = isCurrent && isPlaying;
+    const isActive = isCurrent && (isPlaying || status === 'LOADING');
 
     const handlePlay = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -36,6 +42,7 @@ export default function StoryCardHorizontal({ story, onClick, className = '' }: 
 
         if (isActive) {
             e.stopPropagation();
+            if (status === 'LOADING') return; // Prevent pause during load
             pause();
             return;
         }

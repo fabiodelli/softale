@@ -1,6 +1,7 @@
 'use client';
 
 import { usePlayer, LoopDuration } from '@/context/PlayerContext';
+import { usePlayerStore } from '@/store/playerStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
@@ -10,24 +11,26 @@ import MixerControl from './MixerControl';
 export default function MiniPlayer() {
     const router = useRouter();
     const pathname = usePathname();
+    const currentStory = usePlayerStore(state => state.currentStory);
+    const isPlaying = usePlayerStore(state => state.isPlaying);
+    const toggle = usePlayerStore(state => state.toggle);
+    const currentTime = usePlayerStore(state => state.currentTime);
+    const duration = usePlayerStore(state => state.duration);
+    const next = usePlayerStore(state => state.next);
+    const previous = usePlayerStore(state => state.previous);
+    const queue = usePlayerStore(state => state.queue);
+    const queueIndex = usePlayerStore(state => state.queueIndex);
+    const collectionSlug = usePlayerStore(state => state.collectionSlug);
+    const isLoopable = usePlayerStore(state => state.isLoopable);
+
+    // UI State from Context
     const {
-        currentStory,
-        isPlaying,
-        toggle,
-        currentTime,
-        duration,
-        next,
-        previous,
-        queue,
-        queueIndex,
-        collectionSlug,
-        isLoopable,
-        hasStems, // New V6 Check
-        loopDuration,
-        totalLoopTime,
-        setLoopDuration,
         isMobilePlayerOpen,
-        toggleMobilePlayer
+        toggleMobilePlayer,
+        loopDuration,
+        setLoopDuration,
+        hasStems,
+        // totalLoopTime // Not explicitly used but available if needed
     } = usePlayer();
 
     const [showDurationDropdown, setShowDurationDropdown] = useState(false);
