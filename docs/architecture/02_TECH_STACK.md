@@ -40,3 +40,4 @@
 | `fluent-ffmpeg` | Audio processing wrapper. |
 | `openai`, `@anthropic-ai` | AI Clients for Concept & Script generation. |
 | `zod` | Schema validation. |
+| **Vitest** | Unit & Integration Testing framework. |

@@ -2,6 +2,7 @@
 
 ## 🛡️ Overview
 Authentication is managed entirely by **Supabase Auth**. We support:
+*   **Modular Implementation**: Core auth logic is located in `@/lib/supabase/auth.ts`.
 1.  **Email / Password**
 2.  **Magic Links** (Passwordless)
 3.  **Social Login** (Google) - *Configured in Supabase Dashboard*.

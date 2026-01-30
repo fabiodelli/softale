@@ -37,21 +37,39 @@ export default function ImmersivePlayer({ story }: ImmersivePlayerProps) {
         }
     };
 
-    const bgImage = story.cover_landscape_url || story.cover_url;
+    const landscapeImage = story.cover_landscape_url || story.cover_url;
+    const portraitImage = story.cover_portrait_url || story.cover_url; // Fallback to square/landscape if portrait missing
+
     // Fallback text if no script
     const narrationText = story.script_text || story.description;
 
     return (
         <div className="fixed inset-0 bg-slate-900 overflow-hidden text-white">
-            {/* Background Image (Ken Burns Effect) */}
+            {/* Background Image (Ken Burns Effect) - Responsive Switching */}
             <div className="absolute inset-0 z-0">
-                <Image
-                    src={bgImage}
-                    alt={story.title}
-                    fill
-                    className="object-cover opacity-60 scale-105 animate-slow-pan"
-                    priority
-                />
+                {/* Mobile: Portrait (9:16) */}
+                <div className="absolute inset-0 block md:hidden">
+                    <Image
+                        src={portraitImage}
+                        alt={story.title}
+                        fill
+                        className="object-cover opacity-60 scale-105 animate-slow-pan"
+                        priority
+                    />
+                </div>
+
+                {/* Desktop: Landscape (16:9) */}
+                <div className="absolute inset-0 hidden md:block">
+                    <Image
+                        src={landscapeImage}
+                        alt={story.title}
+                        fill
+                        className="object-cover opacity-60 scale-105 animate-slow-pan"
+                        priority
+                    />
+                </div>
+
+                {/* Overlays */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-transparent to-transparent" />
             </div>

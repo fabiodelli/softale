@@ -19,6 +19,8 @@ This directory contains the single source of truth for the application.
 | **[05. Audio Factory](./05_AUDIO_FACTORY_V7.md)** | **V6.1 Architecture**: Qwen TTS, 3-Stem Delivery, Warm-up, & Harvesting. |
 | **[06. Social Studio](./06_SOCIAL_STUDIO.md)** | Social media automation, reel management, and caption generation. |
 | **[07. Deployment](./07_DEPLOYMENT.md)** | Vercel deployment, environment variables, and production checks. |
+| **[08. Player Architecture](./08_PLAYER_ARCHITECTURE.md)** | Frontend Audio Engine & Hooks. |
+| **[09. Data Layer](./09_DATA_LAYER.md)** | Modular Supabase architecture. |
 
 ---
 
