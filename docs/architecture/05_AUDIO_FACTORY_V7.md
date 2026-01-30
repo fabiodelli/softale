@@ -18,6 +18,7 @@ Instead of a single baked MP3, every story generates four assets:
 4.  **Ambience Stem** (`ambient_url`): A loopable texture track (Stable Audio / Harvested).
 
 The Frontend `PlayerContext` loads the stems to enable real-time volume control and dynamic warm-up delays.
+**V6.1 Update**: Includes a **Client-Side Mixer** allowing users to adjust Voice, Music, and Ambience levels independently. This feature is gated for Premium users on supported stories.
 
 ### 2. The Pipelines 🔄
 
