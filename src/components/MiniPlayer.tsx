@@ -111,13 +111,14 @@ export default function MiniPlayer() {
 
                         {/* LEFT: Track Info */}
                         <div className="flex items-center gap-4 min-w-0 justify-start">
-                            <div
-                                className="relative w-12 h-12 md:w-16 md:h-16 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 group cursor-pointer shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300"
+                            <button
+                                className="relative w-12 h-12 md:w-16 md:h-16 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 group cursor-pointer shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 outline-none focus:ring-2 focus:ring-indigo-500"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     const slug = currentStory.slug || currentStory.id;
                                     router.push(`/story/${slug}`);
                                 }}
+                                aria-label={`View details for ${currentStory.title}`}
                             >
                                 {currentStory.cover_url ? (
                                     <img
@@ -134,10 +135,10 @@ export default function MiniPlayer() {
                                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <span className="text-white font-medium text-[10px] md:text-xs tracking-wider uppercase">View</span>
                                 </div>
-                            </div>
+                            </button>
 
-                            <div
-                                className={`flex flex-col min-w-0 pr-2 ${isLoopable ? 'cursor-pointer group' : ''}`}
+                            <button
+                                className={`flex flex-col min-w-0 pr-2 text-left outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg ${isLoopable ? 'cursor-pointer group' : ''}`}
                                 onClick={(e) => {
                                     if (isLoopable) handleTrackClick(e);
                                     else {
@@ -146,6 +147,7 @@ export default function MiniPlayer() {
                                         router.push(`/story/${slug}`);
                                     }
                                 }}
+                                aria-label={isLoopable ? "Toggle loop duration options" : "View story details"}
                             >
                                 <p className="font-bold text-sm md:text-base text-slate-900 truncate group-hover:text-indigo-600 transition-colors max-w-[120px] md:max-w-none">
                                     {currentStory.title}
@@ -162,7 +164,7 @@ export default function MiniPlayer() {
                                         </span>
                                     )}
                                 </p>
-                            </div>
+                            </button>
                         </div>
 
                         {/* CENTER: Playback Controls */}

@@ -7,6 +7,7 @@ import { cleanDescription, formatDuration } from '@/lib/formatters';
 import { Play, Pause, Lock, MoreVertical } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import StoryOptionsModal from './modals/StoryOptionsModal';
 
 interface FeaturedCardProps {
@@ -89,11 +90,14 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
                     `}
                     onClick={handlePlayToggle}
                 >
-                    <img
+                    <Image
                         src={imgSrc}
                         onError={handleImageError}
                         alt={story.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        priority
                     />
                     {/* Gradient for text readability */}
                     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
@@ -126,9 +130,15 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
                         {story.title}
                     </h2>
                     <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
+                        <div className="relative w-5 h-5 rounded-full overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
                             {story.author_image_url ? (
-                                <img src={story.author_image_url} alt={story.author} className="w-full h-full object-cover" />
+                                <Image
+                                    src={story.author_image_url}
+                                    alt={story.author || 'Author'}
+                                    fill
+                                    className="object-cover"
+                                    sizes="20px"
+                                />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-[9px] text-indigo-600 font-bold">S</div>
                             )}
@@ -147,13 +157,16 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
             >
                 {/* Background Image - Full Width */}
                 <div className="absolute inset-0">
-                    <img
+                    <Image
                         src={imgSrc}
                         onError={handleImageError}
                         alt={story.title}
-                        className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-105
+                        fill
+                        className={`object-cover transition-transform duration-700 group-hover:scale-105
                             ${active ? 'scale-105' : ''}
                         `}
+                        sizes="100vw"
+                        priority
                     />
                     {/* Light Transparent Overlay for text readability */}
                     <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/20 to-black/10"></div>
@@ -175,11 +188,13 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
                     <div className={`relative w-40 lg:w-48 h-40 lg:h-48 flex-shrink-0 rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm border-2 shadow-2xl
                          ${active ? 'border-indigo-500/50' : 'border-white/20'}
                     `}>
-                        <img
+                        <Image
                             src={imgSrc}
                             onError={handleImageError}
                             alt={story.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 1024px) 160px, 192px"
                         />
 
                         {/* Premium Badge on Thumbnail */}
@@ -219,9 +234,15 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
 
                         {/* Author Info */}
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
                                 {story.author_image_url ? (
-                                    <img src={story.author_image_url} alt={story.author} className="w-full h-full object-cover" />
+                                    <Image
+                                        src={story.author_image_url}
+                                        alt={story.author || 'Author'}
+                                        fill
+                                        className="object-cover"
+                                        sizes="32px"
+                                    />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-indigo-400 text-xs text-white font-bold">S</div>
                                 )}

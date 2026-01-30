@@ -1,14 +1,15 @@
 # 🛠️ 02. Tech Stack
 
 ## 💻 Frontend Framework
-**Next.js 14 (App Router)**
+**Next.js 16 (App Router)**
 *   **Language**: TypeScript (Strict mode).
+*   **Library**: React 19.
 *   **Deployment**: Vercel (Production & Preview environments).
 *   **Routing**: File-system based routing (`src/app/`).
 *   **Server Components**: We use RSC (React Server Components) by default, adding `'use client'` only when interactivity is required.
 
 ## 🎨 UI & Styling
-*   **Tailwind CSS**: Utility-first styling.
+*   **Tailwind CSS v4**: Utility-first styling with native engine.
 *   **Framer Motion**: Complex animations, layout transitions, and shared element effects.
 *   **Lucide React**: Icon library.
 *   **UI Components**: Custom components in `src/components/`, designed with a "glassmorphism" aesthetic.
