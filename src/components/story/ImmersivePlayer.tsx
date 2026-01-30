@@ -87,50 +87,57 @@ export default function ImmersivePlayer({ story }: ImmersivePlayerProps) {
                         <motion.h1
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-2xl md:text-4xl font-bold font-serif mb-2 drop-shadow-lg"
+                            className="text-2xl md:text-3xl font-bold font-serif mb-2 drop-shadow-lg"
                         >
                             {story.title}
                         </motion.h1>
-                        <p className="text-white/60 text-sm md:text-base font-medium uppercase tracking-wider">
+                        <p className="text-white/60 text-xs md:text-sm font-medium uppercase tracking-wider">
                             {story.author}
                         </p>
                     </div>
 
-                    {/* Controls Row */}
-                    <div className="flex items-center justify-between">
-                        {/* Left: Dummy/Spacer or Loop */}
-                        <div className="w-12" />
+                    {/* Controls Row - Grid for Perfect Centering */}
+                    <div className="grid grid-cols-3 items-center">
+                        {/* Left: Spacer (Balance) */}
+                        <div className="flex justify-start">
+                            {/* Potential future slot */}
+                        </div>
 
-                        {/* Center: Playback */}
-                        <div className="flex items-center gap-6">
-                            <button onClick={previous} className="text-white/60 hover:text-white transition">
-                                <SkipBack className="w-8 h-8" />
+                        {/* Center: Playback Controls */}
+                        <div className="flex items-center justify-center gap-4">
+                            <button onClick={previous} className="text-white/60 hover:text-white transition p-2">
+                                <SkipBack className="w-5 h-5 md:w-6 md:h-6" />
                             </button>
 
                             <button
                                 onClick={handlePlayPause}
-                                className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white text-slate-900 flex items-center justify-center hover:scale-105 transition shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+                                className="w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-full bg-white text-slate-900 flex items-center justify-center hover:scale-105 transition shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                             >
                                 {isActive ? (
-                                    <Pause className="w-8 h-8 md:w-10 md:h-10 fill-current" />
+                                    <Pause className="w-5 h-5 md:w-7 md:h-7 fill-current" />
                                 ) : (
-                                    <Play className="w-8 h-8 md:w-10 md:h-10 fill-current ml-1" />
+                                    <Play className="w-5 h-5 md:w-7 md:h-7 fill-current ml-1" />
                                 )}
                             </button>
 
-                            <button onClick={next} className="text-white/60 hover:text-white transition">
-                                <SkipForward className="w-8 h-8" />
+                            <button onClick={next} className="text-white/60 hover:text-white transition p-2">
+                                <SkipForward className="w-5 h-5 md:w-6 md:h-6" />
                             </button>
                         </div>
 
                         {/* Right: Mixer Toggle */}
-                        <button
-                            onClick={() => setIsMixerOpen(true)}
-                            className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition border border-white/20"
-                            title="Open Mixer"
-                        >
-                            <Settings2 className="w-6 h-6 text-white" />
-                        </button>
+                        <div className="flex justify-end">
+                            {/* Right: Mixer Toggle - Only show if separate stems exist (V6+) */}
+                            {story.voice_url && (
+                                <button
+                                    onClick={() => setIsMixerOpen(true)}
+                                    className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition border border-white/20"
+                                    title="Open Mixer"
+                                >
+                                    <Settings2 className="w-5 h-5 text-white" />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

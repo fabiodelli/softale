@@ -13,20 +13,11 @@ interface StemMixerModalProps {
 }
 
 export default function StemMixerModal({ isOpen, onClose, isPremium }: StemMixerModalProps) {
-    const isLocked = !isPremium; // Lock if NOT premium assuming story is premium?
-    // Actually, we should pass "isLocked" directly or "isPremiumUser" + "story.isPremium".
-    // Let's assume passed prop "isPremium" means "User has access" (User is premium OR Story is free).
-    // The caller knows logic.
-    // Wait, caller (ImmersivePlayer) passes `story.is_premium`.
-    // We need `user.is_premium` too.
-    // Let's stick to simple: Caller passes `isLocked`.
-
-    // REVISING: The caller has `story` and `user`. 
-    // Let's change prop to `isLocked`.
+    const isLocked = !isPremium; // Lock if NOT premium
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-[9999]" onClose={onClose}>
+            <Dialog as="div" className="relative z-[50000]" onClose={onClose}>
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"
@@ -40,7 +31,7 @@ export default function StemMixerModal({ isOpen, onClose, isPremium }: StemMixer
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center p-4 text-center">
+                    <div className="flex min-h-screen items-center justify-center p-4 text-center">
                         <Transition.Child
                             as={Fragment}
                             enter="ease-out duration-300"

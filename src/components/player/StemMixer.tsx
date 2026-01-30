@@ -114,24 +114,7 @@ export default function StemMixer() {
                     />
                 </div>
             </div>
-
-            {/* Premium Lock Overlay */}
-            {isLocked && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-4 -mx-2">
-                    <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-amber-200 max-w-[200px]">
-                        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-2 text-amber-600">
-                            <Lock className="w-5 h-5" />
-                        </div>
-                        <p className="text-xs font-bold text-slate-800 mb-2">Mixer Premium</p>
-                        <button
-                            onClick={() => openPremiumModal()}
-                            className="text-[10px] bg-slate-900 text-white px-3 py-1.5 rounded-full font-bold hover:bg-slate-800 w-full"
-                        >
-                            Sblocca
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Overlay Removed */}
         </div>
     );
 }

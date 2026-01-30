@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayer } from '@/context/PlayerContext';
 import { useAuth } from '@/lib/AuthProvider';
+import { useRouter } from 'next/navigation';
 
 interface AudioPhase {
     id: number;
@@ -32,9 +33,11 @@ const cleanText = (text: string) => {
 export default function SubtitleOverlay({ text, isPremium, audioPhases }: SubtitleOverlayProps) {
     const { currentTime, duration } = usePlayer();
     const { profile } = useAuth();
+    const router = useRouter();
 
-    // Check if locked: Story is Premium AND User is NOT Premium
-    const isLocked = isPremium && !profile?.is_premium;
+    // Check if locked: Force lock if user is non-premium (Global enforcement requested by user)
+    // We ignore story.is_premium status effectively, or treat all text as premium feature.
+    const isLocked = !profile?.is_premium;
 
     // --- PHASE AWARE SYNCHRONIZATION (V1.5) ---
 
@@ -144,49 +147,26 @@ export default function SubtitleOverlay({ text, isPremium, audioPhases }: Subtit
 
     if (!text && !audioPhases) return null;
 
-    // Locked Logic: If Locked, show only first 3 sentences of the ENTIRE text, then blur.
-    // Or, just show the current sentence but blur upcoming?
-    // User said "I continue to see the story text".
-    // If they mean the "Karaoke" text, we should probably BLUR it if they are not premium?
-    // But they need to see *something* to follow along?
-    // Usually "Karaoke" is a premium feature itself?
-    // No, "Subtitle" is basic. "Full Script" is premium.
-    // The user said: "se vado sulla pagina di dettaglio delle storie, sto continuando a vedere il testo della storia".
-    // "Page Detail" -> `StoryDetailPage`.
-    // `ImmersivePlayer` IS the detail page representation.
-    // Maybe they mean the `narrationText` which is used for subtitles.
-    // If I am free user, maybe I should NOT see subtitles at all? Or only previews?
-    // Let's hide subtitles after 30 seconds?
-    // Or simple: If Locked, show a BLURRED text placeholder instead of actual text for everything beyond sentence #3?
-
-    // Let's modify the map:
-    // If Locked, and index > 2, render BLURRED dots?
-
-    // Actually, simpler:
-    // If Locked, we show a permanent "Upgrade to see subtitles" message 
-    // replacing the text, Or we overlay the lock ON TOP of the text (which we do).
-    // The user might be seeing the text *behind* the small lock badge and finding it annoying/readable?
-    // Let's make the lock badge cover the center more aggressively or blur the text behind it.
-
-    // UPDATE: The user said "I continue to see the story text". 
-    // This implies they expect it to be HIDDEN.
-    // Let's hide the visible sentences if locked.
+    // Locked Logic: Force lock if user is non-premium
+    // MODIFIED: Hide text completely, show specific CTA.
+    // UPDATED: moved position higher to bottom-48/56 to clear title
 
     if (isLocked) {
         return (
-            <div className="absolute inset-x-0 bottom-32 md:bottom-40 p-6 z-30 flex flex-col items-center justify-end min-h-[30vh]">
-                <div className="bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-amber-500/30 text-center max-w-sm mx-auto">
-                    <div className="bg-amber-100 p-3 rounded-full mb-3 inline-flex items-center justify-center">
-                        <span className="text-2xl">🔒</span>
+            <div className="absolute inset-x-0 bottom-48 md:bottom-56 z-[60] flex justify-center pointer-events-none">
+                <div
+                    onClick={() => router.push('/upgrade')}
+                    className="bg-black/60 backdrop-blur-md border border-white/20 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 pointer-events-auto cursor-pointer hover:scale-105 active:scale-95 transition group"
+                >
+                    <div className="flex items-center gap-2 text-white/90">
+                        <span className="text-amber-400 group-hover:animate-pulse">🔒</span>
+                        <span className="text-sm font-semibold tracking-wide">Text Locked</span>
                     </div>
-                    <h3 className="text-white font-bold text-lg mb-1">Subtitles Locked</h3>
-                    <p className="text-slate-300 text-sm mb-4">Upgrade to Premium to follow the story with synchronized text.</p>
-                    <button
-                        onClick={() => window.location.href = '/upgrade'}
-                        className="px-6 py-2 bg-amber-500 text-white font-bold rounded-full hover:bg-amber-600 transition"
+                    <span
+                        className="px-3 py-1 bg-white/10 group-hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider rounded-full transition border border-white/20"
                     >
-                        Unlock Now
-                    </button>
+                        Unlock
+                    </span>
                 </div>
             </div>
         );
@@ -198,24 +178,8 @@ export default function SubtitleOverlay({ text, isPremium, audioPhases }: Subtit
                 {visibleSentences.map((sentence, i) => {
                     // Map back relative to activeIndex because logic differs per mode
                     // We only render a slice around activeIndex, so middle one is active (usually index 1)
-                    // Edge case: start of list (index 0 is active)
 
-                    // Simplified visual logic:
-                    // If visibleSentences has 3 items, middle is active?
-                    // Not exactly. We sliced based on activeIndex.
-                    // The easiest way is to compare content or rely on position if we want simple "center is active".
-                    // But activeIndex is global/phase-local.
-
-                    // Let's rely on string matching or index reconstruction? 
-                    // Reconstruction is safer.
-                    // Actually, for the animation, we just want the "current" one highlighted.
-                    // If activeIndex was 0, visible is [0, 1, 2]. 0 is active.
-                    // If activeIndex was 5, visible is [4, 5, 6]. 1 (middle) is active.
-
-                    // Let's pass 'isActive' flag via map? No.
                     // Recalculate:
-                    // globalIndex relative to slice?
-                    // We sliced: Math.max(0, activeIndex - 1)
                     const sliceStart = Math.max(0, activeIndex - 1);
                     const isTheActiveSentence = (sliceStart + i) === activeIndex;
 
@@ -244,8 +208,6 @@ export default function SubtitleOverlay({ text, isPremium, audioPhases }: Subtit
                     );
                 })}
             </AnimatePresence>
-
-
         </div>
     );
 }
