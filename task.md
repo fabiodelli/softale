@@ -26,6 +26,13 @@
     - [x] Fix Build Error (ImmersivePlayer Image Nullable)
     - [x] Fix Build Error (Home Layout Date Nullable)
     - [x] Fix Build Error (Collections Boolean Nullable)
+- [x] UI Refinements
+    - [x] Restore Loop Duration Selector on Mobile
+    - [x] Remove Redundant Mixer Button in MiniPlayer
+    - [x] Compact Desktop Player (64px & Fix Bottom Gap)
+    - [x] Fix Mobile Loop Selector Visibility
+- [x] Debugging
+    - [x] Fix Playback Race Condition (Card vs PlayerStore)
 - [x] Codebase Debt & Optimization
     - [x] Fix Player Re-render Performance (Refactored `usePlayer`)
     - [x] Migrate `SubtitleOverlay` to optimized hook

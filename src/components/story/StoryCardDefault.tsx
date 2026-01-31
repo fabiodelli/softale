@@ -36,28 +36,30 @@ export default function StoryCardDefault({ story, onClick, className = '', aspec
     // Active state: Also active while LOADING to prevent flicker
     const isCurrent = currentStory?.id === story.id;
     const isActive = isCurrent && (isPlaying || status === 'LOADING');
+    const isLocked = story.is_premium && !profile?.is_premium;
 
-    const handlePlay = (e: React.MouseEvent) => {
-        e.preventDefault();
-
-        if (onClick) {
-            onClick();
-            return;
-        }
-
-        if (isActive) {
-            e.stopPropagation();
-            if (status === 'LOADING') return; // Prevent pause during load to avoid confusion
-            pause();
-            return;
-        }
+    const handlePlay = async (e: React.MouseEvent) => {
+        e.stopPropagation();
 
         if (!user) {
             router.push('/login');
             return;
         }
 
-        play(story);
+        if (isLocked) {
+            openPremiumModal();
+            return;
+        }
+
+        if (isActive && isPlaying) {
+            pause();
+        } else if (isActive && !isPlaying) {
+            // Resume
+            await play();
+        } else {
+            // New Play
+            await play(story);
+        }
     };
 
     const handleOptionsClick = (e: React.MouseEvent) => {

@@ -41,7 +41,7 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
 
     const [showOptions, setShowOptions] = useState(false);
 
-    const handlePlayToggle = (e: React.MouseEvent) => {
+    const handlePlayToggle = async (e: React.MouseEvent) => {
         e.stopPropagation();
 
         if (!user) {
@@ -57,7 +57,9 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
         if (active) {
             pause();
         } else {
-            play(story);
+            // Simply call play with the story. 
+            // The store handles queue reset and loading state.
+            await play(story);
         }
     };
 

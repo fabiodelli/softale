@@ -95,12 +95,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
             newIndex = 0;
         }
 
+        // Detect loopable content based on category (Soundscapes, etc.)
+        const loopableCategories = ['soundscape', 'nature', 'binaural', 'instrumental'];
+        const shouldLoop = loopableCategories.includes(story.category?.toLowerCase() || '');
+
         set({
             currentStory: story,
             status: 'LOADING',
             error: null,
             queue: newQueue,
-            queueIndex: newIndex
+            queueIndex: newIndex,
+            isLoopable: shouldLoop // Auto-set loop state
         });
 
         try {
