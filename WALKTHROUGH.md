@@ -1,3 +1,13 @@
+# Walkthrough - Pull Request
+
+## Changes
+### 🏗️ Architecture
+- **Player Optimization**: Refactored `usePlayer` to separate `usePlayerTime` (reactive) from stable state, eliminating global app re-renders on every second.
+- **Type Safety**: Generated real Supabase `database.types.ts` and linked strict types.
+
+### 📝 Documentation
+- **Audit**: Updated `README.md` and `08_PLAYER_ARCHITECTURE.md` to reflect V6.1 state.
+- **Clean**: Removed obsolete references.
 # Walkthrough: Migrazione Architettura Audio & Refactoring
 
 Ho completato le implementazioni necessarie per migliorare le performance e l'architettura dell'applicazione.

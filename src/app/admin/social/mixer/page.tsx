@@ -23,7 +23,11 @@ export default function SocialMixerPage() {
         const load = async () => {
             setLoading(true);
             const data = await getStories(undefined, true);
-            setStories(data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+            setStories(data.sort((a, b) => {
+                const dateA = new Date(a.created_at || 0).getTime();
+                const dateB = new Date(b.created_at || 0).getTime();
+                return dateB - dateA;
+            }));
             setLoading(false);
         };
         load();

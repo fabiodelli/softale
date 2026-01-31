@@ -24,8 +24,8 @@ Softale uses a **two-tier design system** to balance aesthetics with readability
 
 ### Tier 1: Immersive Pages
 **Purpose:** Content browsing, exploration, and discovery  
-**Background:** `bg-slate-50/60 backdrop-blur-2xl`  
-**Text Style:** Dark (`text-slate-900`) for cleanliness, or White with shadow for image overlays  
+**Background:** `bg-slate-50/60 backdrop-blur-2xl` (Light, Clean)  
+**Text Style:** Dark (`text-slate-900`) for maximum legibility on light glass.  
 **Use Cases:** Home, Library, Collection Detail, Favorites
 
 ```tsx
@@ -37,10 +37,10 @@ Softale uses a **two-tier design system** to balance aesthetics with readability
 ```
 
 **Characteristics:**
-- Semi-transparent glassmorphic background for premium aesthetic
-- Clean dark text for maximum readability on light glass
-- Mood-based background images visible through transparency
-- Optimized for visual immersion and content discovery
+- **Light & Airy**: Uses soft white/slate transparency (`bg-slate-50/60`).
+- **Dark Text**: Always use `text-slate-900` for content.
+- **Mood-based**: Background images provide color through the glass.
+- **NO Dark Mode**: The app follows a consistent "Day/Light" aesthetic.
 
 ### Tier 2: Functional Pages
 **Purpose:** Account management, transactions, and settings  

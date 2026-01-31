@@ -153,7 +153,7 @@ export default function UsersManager() {
                                             </AdminBadge>
                                         </td>
                                         <td className="p-4 text-sm text-gray-400">
-                                            {new Date(user.created_at).toLocaleDateString()}
+                                            {new Date(user.created_at || 0).toLocaleDateString()}
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-2">

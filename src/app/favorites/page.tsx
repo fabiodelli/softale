@@ -87,7 +87,7 @@ export default function FavoritesPage() {
                                 <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100">
                                     {story.cover_landscape_url || story.cover_url ? (
                                         <img
-                                            src={story.cover_landscape_url || story.cover_url}
+                                            src={story.cover_landscape_url || story.cover_url || ''}
                                             alt={story.title}
                                             className="w-full h-full object-cover"
                                         />
@@ -99,7 +99,7 @@ export default function FavoritesPage() {
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-slate-900 truncate group-hover:text-indigo-600 transition">{story.title}</h3>
-                                    <p className="text-sm text-slate-500 truncate">{story.author || 'Softale'}</p>
+                                    <p className="text-sm text-slate-500 truncate">Softale</p>
                                 </div>
 
                                 {/* Remove Button */}

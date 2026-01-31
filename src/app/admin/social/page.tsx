@@ -10,8 +10,8 @@ import { generateCaption } from '@/lib/social-caption';
 
 // Extended Story type with social fields
 interface SocialStory extends Story {
-    social_reel_url?: string;
-    social_status?: 'draft' | 'generated' | 'approved' | 'posted';
+    social_reel_url: string | null;
+    social_status: 'draft' | 'generated' | 'approved' | 'posted' | null;
 }
 
 interface CaptionModalData {
@@ -116,10 +116,10 @@ export default function SocialDashboard() {
                                 {/* Video Player */}
                                 <div className="aspect-[9/16] bg-black relative">
                                     <video
-                                        src={story.social_reel_url}
+                                        src={story.social_reel_url || ''}
                                         controls
                                         className="w-full h-full object-cover"
-                                        poster={story.cover_portrait_url}
+                                        poster={story.cover_portrait_url || undefined}
                                         preload="metadata"
                                     />
                                     <div className="absolute top-3 right-3">
@@ -162,7 +162,7 @@ export default function SocialDashboard() {
                                                 const captions = generateCaption({
                                                     id: story.id,
                                                     title: story.title,
-                                                    description: story.description,
+                                                    description: story.description || '',
                                                     category: story.category,
                                                     duration: story.duration
                                                 });
@@ -175,7 +175,7 @@ export default function SocialDashboard() {
                                         </button>
 
                                         <a
-                                            href={story.social_reel_url}
+                                            href={story.social_reel_url || '#'}
                                             download
                                             className="p-2 bg-zinc-800 hover:bg-zinc-700 hover:text-white rounded-lg border border-zinc-700 transition flex items-center justify-center text-zinc-400 w-10 h-10"
                                             title="Download MP4"
@@ -226,8 +226,8 @@ export default function SocialDashboard() {
                                                     setTimeout(() => setCopiedPlatform(null), 2000);
                                                 }}
                                                 className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition ${copiedPlatform === platform.key
-                                                        ? 'bg-green-500/20 text-green-400'
-                                                        : 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30'
+                                                    ? 'bg-green-500/20 text-green-400'
+                                                    : 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30'
                                                     }`}
                                             >
                                                 {copiedPlatform === platform.key ? (

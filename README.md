@@ -11,6 +11,11 @@ Please refer to the documentation above for:
 *   Factory V7 (n8n)
 *   Payments & Deployment
 
+### Audio Engine
+- **Custom Audio Engine**: Native `HTMLAudioElement` implementation (No external libraries)
+- **Features**: 3-Layer Mixing (Voice, Music, Ambience), Crossfading, State Management
+- **State**: Zustand with optimized selectors to prevent re-renders
+
 ## 🎧 Audio Architecture
 15.  **Audio Architecture**: Custom **Zustand Store** (`playerStore.ts`) + Singleton `AudioEngine`.
 16.  **Performance**: `usePlayer` (stable UI) vs `usePlayerTime` (reactive progress) split for zero unnecessary re-renders.
