@@ -18,7 +18,7 @@ export default function ContinueListeningRow() {
             if (user) {
                 const data = await getListeningProgress(user.id);
                 // Filter: has story data, not completed, has progress
-                const valid = data.filter(p => p.stories && !p.completed && p.progress_seconds > 10);
+                const valid = data.filter(p => p.stories && !p.completed && (p.progress_seconds || 0) > 10);
                 setItems(valid);
             }
             setLoading(false);
@@ -36,7 +36,7 @@ export default function ContinueListeningRow() {
             <Carousel>
                 {items.map((item) => {
                     const story = item.stories!;
-                    const progressPercent = Math.min(100, (item.progress_seconds / story.duration) * 100);
+                    const progressPercent = Math.min(100, ((item.progress_seconds || 0) / story.duration) * 100);
 
                     return (
                         <div

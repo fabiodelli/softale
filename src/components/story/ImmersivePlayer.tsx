@@ -37,8 +37,8 @@ export default function ImmersivePlayer({ story }: ImmersivePlayerProps) {
         }
     };
 
-    const landscapeImage = story.cover_landscape_url || story.cover_url;
-    const portraitImage = story.cover_portrait_url || story.cover_url; // Fallback to square/landscape if portrait missing
+    const landscapeImage = story.cover_landscape_url || story.cover_url || '/placeholder-cover.jpg';
+    const portraitImage = story.cover_portrait_url || story.cover_url || '/placeholder-cover.jpg'; // Fallback to square/landscape if portrait missing
 
     // Fallback text if no script
     const narrationText = story.script_text || story.description;
@@ -91,9 +91,9 @@ export default function ImmersivePlayer({ story }: ImmersivePlayerProps) {
 
             {/* Main Content Area - Centered Subtitles */}
             <SubtitleOverlay
-                text={narrationText}
-                isPremium={story.is_premium}
-                audioPhases={story.audio_phases}
+                text={narrationText || ''}
+                isPremium={story.is_premium || false}
+                audioPhases={Array.isArray(story.audio_phases) ? story.audio_phases : []}
             />
 
             {/* Bottom Controls Area */}
@@ -110,7 +110,7 @@ export default function ImmersivePlayer({ story }: ImmersivePlayerProps) {
                             {story.title}
                         </motion.h1>
                         <p className="text-white/60 text-xs md:text-sm font-medium uppercase tracking-wider">
-                            {story.author}
+                            {story.narrator || 'Softale'}
                         </p>
                     </div>
 

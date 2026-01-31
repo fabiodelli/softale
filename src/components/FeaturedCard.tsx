@@ -131,19 +131,11 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
                     </h2>
                     <div className="flex items-center gap-2">
                         <div className="relative w-5 h-5 rounded-full overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
-                            {story.author_image_url ? (
-                                <Image
-                                    src={story.author_image_url}
-                                    alt={story.author || 'Author'}
-                                    fill
-                                    className="object-cover"
-                                    sizes="20px"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-[9px] text-indigo-600 font-bold">S</div>
-                            )}
+                            <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-[9px] text-indigo-600 font-bold">
+                                {(story.narrator?.[0] || 'S').toUpperCase()}
+                            </div>
                         </div>
-                        <span className="text-sm font-semibold text-slate-600">{story.author || 'Softale Production'}</span>
+                        <span className="text-sm font-semibold text-slate-600">{story.narrator || 'Softale Production'}</span>
                     </div>
                 </div>
             </div>
@@ -235,19 +227,11 @@ export default function FeaturedCard({ story }: FeaturedCardProps) {
                         {/* Author Info */}
                         <div className="flex items-center gap-3">
                             <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
-                                {story.author_image_url ? (
-                                    <Image
-                                        src={story.author_image_url}
-                                        alt={story.author || 'Author'}
-                                        fill
-                                        className="object-cover"
-                                        sizes="32px"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-indigo-400 text-xs text-white font-bold">S</div>
-                                )}
+                                <div className="w-full h-full flex items-center justify-center bg-indigo-400 text-xs text-white font-bold">
+                                    {(story.narrator?.[0] || 'S').toUpperCase()}
+                                </div>
                             </div>
-                            <span className="text-base font-semibold text-white/90 drop-shadow-lg">{story.author || 'Softale Production'}</span>
+                            <span className="text-base font-semibold text-white/90 drop-shadow-lg">{story.narrator || 'Softale Production'}</span>
                         </div>
 
                         {/* Premium Label */}

@@ -138,7 +138,8 @@ export async function getRecommendedStories(userId: string): Promise<Story[]> {
         }
 
         // C. Freshness Boost (Newer stories get small boost)
-        const daysOld = (new Date().getTime() - new Date(story.created_at).getTime()) / (1000 * 60 * 60 * 24);
+        const createdAt = story.created_at ? new Date(story.created_at).getTime() : new Date().getTime();
+        const daysOld = (new Date().getTime() - createdAt) / (1000 * 60 * 60 * 24);
         if (daysOld < 7) score += 5; // New Content Boost
 
         return { story, score, matchReasons };
@@ -187,7 +188,8 @@ export function scoreStoryForMood(story: Story, mood: Mood): number {
 
     // 3. Fallback/Base Score
     // Newer stories get a slight boost to keep Featured fresh?
-    const daysOld = (new Date().getTime() - new Date(story.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    const createdAt = story.created_at ? new Date(story.created_at).getTime() : new Date().getTime();
+    const daysOld = (new Date().getTime() - createdAt) / (1000 * 60 * 60 * 24);
     if (daysOld < 14) score += 2; // Freshness boost
 
     return score;

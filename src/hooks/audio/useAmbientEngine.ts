@@ -27,10 +27,19 @@ export function useAmbientEngine(
     }, [getAmbientFile]);
 
     const getCurrentAudioIntent = useCallback((): { intent: string; intensity: number; phase: string } => {
-        if (!currentStory?.audio_phases || currentStory.audio_phases.length === 0) {
+        const rawPhases = Array.isArray(currentStory?.audio_phases) ? currentStory.audio_phases : [];
+        if (rawPhases.length === 0) {
             return { intent: 'SILENCE', intensity: 0.3, phase: 'none' };
         }
-        const phases = currentStory.audio_phases;
+
+        // Define shape and cast
+        interface AudioPhase {
+            intent: string;
+            intensity: number;
+            phase: string;
+        }
+        const phases = rawPhases as unknown as AudioPhase[];
+
         const progress = duration > 0 ? currentTime / duration : 0;
         const phaseMap: Record<string, [number, number]> = {
             arrival: [0, 0.35],

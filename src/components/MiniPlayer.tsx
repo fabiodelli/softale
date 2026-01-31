@@ -156,7 +156,7 @@ export default function MiniPlayer() {
                                     {currentStory.title}
                                 </p>
                                 <p className="text-[10px] md:text-xs text-slate-500 font-medium flex items-center gap-2 mt-0.5">
-                                    {currentStory.author && <span className="hidden md:inline">{currentStory.author}</span>}
+                                    {currentStory.narrator && <span className="hidden md:inline">{currentStory.narrator}</span>}
                                     {isLoopable ? (
                                         <span className="flex items-center gap-1.5 text-indigo-600 px-1.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-100">
                                             <span className="animate-pulse text-[10px]">●</span> Loop

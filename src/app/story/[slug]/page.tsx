@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         title: `${story.title} | Softale`,
         description: story.description,
         openGraph: {
-            images: [story.cover_landscape_url || story.cover_url],
+            images: [story.cover_landscape_url, story.cover_url].filter((url): url is string => !!url),
         },
     };
 }

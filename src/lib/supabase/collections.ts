@@ -249,7 +249,7 @@ function formatCollections(collections: CollectionWithJoin[]): Collection[] {
         const sortedStories = (col.collection_stories || [])
             .sort((a, b) => a.sort_order - b.sort_order)
             .map((item) => item.stories)
-            .filter((s): s is Story => s !== null && s.is_published);
+            .filter((s): s is Story => s !== null && s.is_published === true);
 
         return {
             ...col,

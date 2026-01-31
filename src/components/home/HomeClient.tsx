@@ -207,7 +207,7 @@ export default function HomeClient({ initialStories, initialCollections }: HomeC
     // ... Filter Logic ...
     const displayedStories = allStories.filter(story => {
         if (!searchQuery && !activeMood) return true;
-        if (searchQuery) return story.title.toLowerCase().includes(searchQuery.toLowerCase()) || story.description.toLowerCase().includes(searchQuery.toLowerCase());
+        if (searchQuery) return story.title.toLowerCase().includes(searchQuery.toLowerCase()) || (story.description && story.description.toLowerCase().includes(searchQuery.toLowerCase()));
         if (activeMood) return (moodToCategories[activeMood] || []).includes(story.category);
         return true;
     });

@@ -91,7 +91,7 @@ export default function LibraryTab() {
                                 <Link href={`/playlist/${playlist.id}`} className="flex-shrink-0">
                                     {playlist.cover_url ? (
                                         <div className="w-14 h-14 rounded-xl overflow-hidden shadow-sm group-hover:scale-105 transition">
-                                            <img src={playlist.cover_url} alt={playlist.title} className="w-full h-full object-cover" />
+                                            <img src={playlist.cover_url || ''} alt={playlist.title} className="w-full h-full object-cover" />
                                         </div>
                                     ) : (
                                         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-indigo-400 group-hover:scale-105 group-hover:bg-indigo-100 transition">

@@ -176,23 +176,13 @@ export default function StoryCardDefault({ story, onClick, className = '', aspec
                     <div className="flex items-center gap-2">
                         {/* Author Avatar */}
                         <div className="relative w-5 h-5 rounded-full bg-slate-200 overflow-hidden flex-shrink-0 border border-slate-100">
-                            {story.author_image_url ? (
-                                <Image
-                                    src={story.author_image_url}
-                                    alt={story.author || 'Author'}
-                                    fill
-                                    className="object-cover"
-                                    sizes="20px"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-[8px] text-indigo-600 font-bold">
-                                    {(story.author || 'S').charAt(0)}
-                                </div>
-                            )}
+                            <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-[8px] text-indigo-600 font-bold">
+                                {(story.narrator?.[0] || 'S').toUpperCase()}
+                            </div>
                         </div>
                         {/* Author Name */}
                         <span className="text-xs font-medium text-slate-600 truncate">
-                            {story.author || 'Softale'}
+                            {story.narrator || 'Softale'}
                         </span>
                     </div>
                 </div>

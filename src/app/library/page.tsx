@@ -86,7 +86,7 @@ export default function LibraryPage() {
         if (searchQuery) {
             stories = stories.filter(s =>
                 s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.description.toLowerCase().includes(searchQuery.toLowerCase())
+                (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
             );
         }
 
@@ -125,7 +125,7 @@ export default function LibraryPage() {
             if (searchQuery) {
                 stories = stories.filter(s =>
                     s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    s.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
                 );
             }
             result = { stories: stories, collections: allCollections, playlists: [] };

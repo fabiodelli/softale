@@ -30,7 +30,7 @@ export default function StoryHero({ story }: StoryHeroProps) {
         <div className="relative w-full aspect-square md:aspect-video lg:aspect-[21/9] rounded-[2rem] overflow-hidden shadow-2xl group border border-white/10">
             {/* Background Image - Full Cover */}
             <Image
-                src={story.cover_landscape_url || story.cover_url}
+                src={story.cover_landscape_url || story.cover_url || ''}
                 alt={story.title}
                 fill
                 className="object-cover transition-transform duration-[2s] group-hover:scale-105"
@@ -80,20 +80,12 @@ export default function StoryHero({ story }: StoryHeroProps) {
                                     <Clock className="w-4 h-4 text-indigo-400" />
                                     <span>{Math.floor(story.duration / 60)} min</span>
                                 </div>
-                                {story.author && (
+                                {story.narrator && (
                                     <div className="flex items-center gap-2">
-                                        {story.author_image_url && (
-                                            <div className="w-6 h-6 rounded-full overflow-hidden border border-white/20">
-                                                <Image
-                                                    src={story.author_image_url}
-                                                    alt={story.author}
-                                                    width={24}
-                                                    height={24}
-                                                    className="object-cover"
-                                                />
-                                            </div>
-                                        )}
-                                        <span>Narrato da <span className="text-white">{story.author}</span></span>
+                                        <div className="w-6 h-6 rounded-full overflow-hidden border border-white/20 bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white">
+                                            {(story.narrator[0] || 'N').toUpperCase()}
+                                        </div>
+                                        <span>Narrato da <span className="text-white">{story.narrator}</span></span>
                                     </div>
                                 )}
                             </div>

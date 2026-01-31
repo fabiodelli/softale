@@ -108,7 +108,7 @@ export default function AppHome() {
 
         if (searchQuery) {
             return story.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                story.description.toLowerCase().includes(searchQuery.toLowerCase());
+                (story.description && story.description.toLowerCase().includes(searchQuery.toLowerCase()));
         }
 
         if (activeMood) {

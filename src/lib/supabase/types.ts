@@ -51,6 +51,7 @@ export interface StoryWithProgress extends Story {
 export type Playlist = Tables<'playlists'> & {
     items?: Story[];
     item_count?: number;
+    cover_url?: string | null;
 };
 
 export type PlaylistItem = Tables<'playlist_items'> & {

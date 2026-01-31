@@ -15,6 +15,17 @@
     - [x] Fix Build Error (SocialStory Type Mismatch)
     - [x] Fix Build Error (User created_at Nullable)
     - [x] Fix Build Error (Favorites Image Nullable)
+    - [x] Fix Build Error (Library Description Nullable)
+    - [x] Fix Build Error (Story Page OG Image Nullable)
+    - [x] Fix Build Error (Playlist Cover Nullable)
+    - [x] Fix Build Error (Continue Listening Progress Nullable)
+    - [x] Fix Build Error (Story Author Image Invalid Property)
+    - [x] Fix Build Error (AppHome Description Nullable)
+    - [x] Fix Build Error (HomeClient Description Nullable)
+    - [x] Fix Build Error (Player Author Invalid Property)
+    - [x] Fix Build Error (ImmersivePlayer Image Nullable)
+    - [x] Fix Build Error (Home Layout Date Nullable)
+    - [x] Fix Build Error (Collections Boolean Nullable)
 - [x] Codebase Debt & Optimization
     - [x] Fix Player Re-render Performance (Refactored `usePlayer`)
     - [x] Migrate `SubtitleOverlay` to optimized hook
