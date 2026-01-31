@@ -47,7 +47,8 @@ Manages the global "Mood" sounds (Rain, Forest, etc.) independent of stories.
     *   `PlayerContext` updates React state -> UI shows Pause button.
 5.  **Progress**: 
     *   `AudioEngine` emits `timeupdate` (60fps or throttled).
-    *   `PlayerContext` updates `currentTime` -> Progress bar moves.
+    *   `usePlayerTime` (Zustand Selector) updates ONLY the progress bar and timer components.
+    *   **Optimization**: Main components (`ImmersivePlayer`, `StoryCard`) do **NOT** re-render on time updates.
 
 ## 🏗️ Audio Stems Architecture
 Stories support 3 distinct concurrent audio tracks, mixed client-side by `AudioEngine`:

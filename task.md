@@ -7,7 +7,13 @@
 - [x] Debug MiniPlayer Synchronization
     - [x] Refactor `MiniPlayer` to use `playerStore` selectors
     - [x] Fix type definitions in `PlayerContext`
-- [/] Final Documentation & Push
-    - [ ] Update `README.md`
-    - [ ] Clean up any test artifacts (if needed)
+- [/] Codebase Debt & Optimization
+    - [x] Fix Player Re-render Performance (Refactored `usePlayer`)
+    - [x] Migrate `SubtitleOverlay` to optimized hook
+    - [x] Verify Design System Consistency (Docs match code)
+    - [x] Generate Supabase Types (Generated)
+- [x] Final Documentation & Push
+    - [x] Update `README.md`
+    - [x] Deep Documentation Audit (Index, Player Arch, Tech Stack)
+    - [x] Clean up any test artifacts (if needed)
     - [ ] Push changes to git

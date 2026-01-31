@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { usePlayer } from '@/context/PlayerContext';
+import { usePlayer, usePlayerTime } from '@/context/PlayerContext';
 import { useAuth } from '@/lib/AuthProvider';
 import { useRouter } from 'next/navigation';
 
@@ -31,7 +31,7 @@ const cleanText = (text: string) => {
 };
 
 export default function SubtitleOverlay({ text, isPremium, audioPhases }: SubtitleOverlayProps) {
-    const { currentTime, duration } = usePlayer();
+    const { currentTime, duration } = usePlayerTime();
     const { profile } = useAuth();
     const router = useRouter();
 

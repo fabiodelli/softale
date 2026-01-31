@@ -166,10 +166,28 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
 export type LoopDuration = 0 | 15 | 30 | 60 | 120;
 
-// Hook that combines Store + UI Context
-// This mimics the old API: { ...state, ...actions, ...contextUI }
+import { useShallow } from 'zustand/react/shallow';
+
+// ... (existing imports)
+
+// Optimized hook for high-frequency time updates
+export function usePlayerTime() {
+    return usePlayerStore(useShallow(state => ({
+        currentTime: state.currentTime,
+        duration: state.duration,
+        isBuffering: state.isBuffering
+    })));
+}
+
+// Optimized hook for general player state (stable, doesn't update on every second of playback)
 export function usePlayer() {
-    const store = usePlayerStore();
+    // Select everything EXCEPT high-frequency updates
+    const store = usePlayerStore(useShallow(state => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { currentTime, ...rest } = state;
+        return rest;
+    }));
+
     const uiContext = useContext(PlayerContext);
 
     if (uiContext === undefined) {
@@ -178,13 +196,17 @@ export function usePlayer() {
 
     // Derived State for simplified API consumption
     const hasStems = store.currentStory ? (!!store.currentStory.voice_url && (!!store.currentStory.music_url || !!store.currentStory.ambient_url)) : false;
-    // Total loop time could be duration or custom logic. For now, 0 or duration.
+
+    // Total loop time could be duration or custom logic.
+    // We access duration from store (it is stable enough, changes only on load)
     const totalLoopTime = store.duration;
 
     return {
         ...store,
         ...uiContext,
         hasStems,
-        totalLoopTime
+        totalLoopTime,
+        // Expose currentTime as undefined or a getter to warn? 
+        // Better to omit it so TS errors guide us to use usePlayerTime()
     };
 }

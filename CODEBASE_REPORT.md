@@ -61,6 +61,6 @@ Se lo schema del database cambia (es. aggiunta di una colonna), i tipi manuali n
 
 ## Piano d'Azione Proposto
 
-1.  **Immediato**: Correggere lo script `update-types` e generare i tipi corretti.
-2.  **Architettura**: Refactoring del Player verso Zustand (`playerStore.ts`) per risolvere i problemi di performance.
-3.  **Design**: Decisione sul tema (Light vs Dark Glass) e allineamento del codice/documentazione.
+1.  **Immediato**: Correggere lo script `update-types`. **BLOCKED**: Missing Supabase Access Token in environment.
+2.  **Architettura**: Refactoring del Player verso Zustand. **RESOLVED**: Refactored `usePlayer` and `usePlayerTime` to stop re-renders. (Fixed in `PlayerContext.tsx`)
+3.  **Design**: Decisione sul tema. **RESOLVED**: `BRAND_IDENTITY.md` already allows "Dark text" for Tier 1 pages. Implementation is consistent with docs. No action needed.

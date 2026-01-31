@@ -1,97 +1,43 @@
-/**
- * Supabase Database Types
- * All interfaces and type definitions for database entities
- */
+import { Database } from './database.types';
+
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
+export type InsertTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert'];
+export type UpdateTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update'];
 
 // ========================================
 // User Profile Types
 // ========================================
 
-export interface UserProfile {
-    id: string;
-    email: string;
-    username: string | null;
-    avatar_url: string | null;
-    is_premium: boolean;
-    stripe_customer_id?: string;
-    subscription_id?: string;
-    subscription_status?: string;
-    subscription_end_date?: string | null;
-    role?: 'user' | 'admin';
-    created_at: string;
-    // Stats
-    total_minutes_listened?: number;
-    stories_completed?: number;
-    current_streak?: number;
-    last_active_date?: string;
-    // Waitlist
-    waitlist_joined_at?: string | null;
-}
+export type UserProfile = Tables<'profiles'>;
+// Note: 'profiles' table must exist in DB. If manual type differs, we should map it.
+// Checking previous manual type: seems to include 'subscription_status' etc.
+// If valid columns are in DB, this is safe.
 
 // ========================================
 // Story Types
 // ========================================
 
-export interface Story {
-    id: string;
-    title: string;
-    description: string;
-    author: string;
-    author_image_url?: string;
-    cover_url: string;
-    cover_portrait_url?: string;
-    cover_landscape_url?: string;
-    audio_url: string;
-    duration: number;
-    category: string;
-    tags: string[];
-    is_premium: boolean;
-    is_published: boolean;
-    script_text?: string;
-    audio_phases?: any[];
-    voice_id?: string;
-    social_reel_url?: string;
-    social_status?: 'draft' | 'generated' | 'approved' | 'posted';
-    cost_metadata?: any;
-    created_at: string;
-    // V6 Audio Stems
-    voice_url?: string | null;
-    ambient_url?: string | null;
-    music_url?: string | null;
-    slug?: string;
-}
+export type Story = Tables<'stories'>;
 
 // ========================================
 // Collection Types
 // ========================================
 
-export interface Collection {
-    id: string;
-    title: string;
-    slug: string;
-    category?: string;
-    description: string | null;
-    cover_url: string | null;
-    cover_portrait_url?: string;
-    cover_landscape_url?: string;
-    is_featured: boolean;
-    is_published: boolean;
+// ========================================
+// Collection Types
+// ========================================
+
+export type Collection = Tables<'collections'> & {
     stories?: Story[];
-}
+};
 
 // ========================================
 // Progress Types
 // ========================================
 
-export interface ListeningProgress {
-    id: string;
-    user_id: string;
-    story_id: string;
-    progress_seconds: number;
-    completed: boolean;
-    last_played_at: string;
+export type ListeningProgress = Tables<'listening_progress'> & {
     stories?: Story;
-}
+};
 
 export interface StoryWithProgress extends Story {
     progress_seconds: number;
@@ -102,25 +48,14 @@ export interface StoryWithProgress extends Story {
 // Playlist Types
 // ========================================
 
-export interface Playlist {
-    id: string;
-    user_id: string;
-    title: string;
-    description: string | null;
-    created_at: string;
+export type Playlist = Tables<'playlists'> & {
     items?: Story[];
     item_count?: number;
-    cover_url?: string;
-}
+};
 
-export interface PlaylistItem {
-    id: string;
-    playlist_id: string;
-    story_id: string;
-    position: number;
-    added_at: string;
+export type PlaylistItem = Tables<'playlist_items'> & {
     story?: Story;
-}
+};
 
 // ========================================
 // Join Types (for Supabase queries)
