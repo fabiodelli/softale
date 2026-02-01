@@ -1,5 +1,7 @@
 'use client';
 
+import { Suspense } from 'react';
+
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
@@ -24,7 +26,7 @@ import { Plus, ListMusic } from 'lucide-react';
 
 
 
-export default function LibraryPage() {
+function LibraryContent() {
     const { play } = usePlayer();
     const { user } = useAuth();
     const searchParams = useSearchParams();
@@ -654,6 +656,18 @@ export default function LibraryPage() {
                 }}
             />
         </GlassLayout>
+    );
+}
+
+export default function LibraryPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center pt-16">
+                <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+            </div>
+        }>
+            <LibraryContent />
+        </Suspense>
     );
 }
 
