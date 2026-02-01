@@ -89,14 +89,48 @@ interface VoiceListItem {
     language: string;
 }
 
+import { spawn } from 'child_process';
+import { setTimeout } from 'timers/promises';
+import { fileURLToPath } from 'url';
+
 /**
- * Check if the local Qwen API is available and get loaded voices
+ * Check if the local Qwen API is available, attempting to auto-start if not.
  */
 export async function isQwenAvailable(): Promise<boolean> {
+    // 1. First check
+    if (await checkHealth()) return true;
+
+    // 2. Resolve paths for logging instructions
+    // Assumes we are running from project root (or tools/audio-factory)
+    // Fix for ESM: Use import.meta.url instead of __dirname
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const projectRoot = path.resolve(__dirname, '../../..');
+    const serverPath = path.join(projectRoot, 'tools', 'qwen-api', 'server.py');
+
+    if (!await checkHealth()) {
+        console.error('   ⚠️ [MANUAL START REQUIRED] Qwen API is not running.');
+        console.error('   Please open a new terminal and run:');
+        console.error(`   cd tools/qwen-api && .\\venv\\Scripts\\activate && python server.py`);
+        console.log('   (Waiting 10s to see if it comes online...)');
+
+        // Brief wait in case user is starting it right now
+        for (let i = 0; i < 5; i++) {
+            await setTimeout(2000);
+            if (await checkHealth()) return true;
+            process.stdout.write('.');
+        }
+
+        return false;
+    }
+    return true;
+}
+
+async function checkHealth(): Promise<boolean> {
     try {
         const response = await fetch(`${QWEN_API_URL}/health`, {
             method: 'GET',
-            signal: AbortSignal.timeout(5000)
+            signal: AbortSignal.timeout(2000)
         });
         const data = await response.json();
         return data.status === 'ok' && data.clone_model === 'loaded';
@@ -173,8 +207,14 @@ export async function generateWithVoice(options: GenerateOptions): Promise<Gener
         }
         fs.writeFileSync(outputPath, audioBuffer);
 
+        // Validate file size
+        const stats = fs.statSync(outputPath);
+        if (stats.size < 1024) {
+            console.warn(`   ⚠️ [WARN] Generated audio is suspiciously small (${stats.size} bytes). Possibly silent.`);
+        }
+
         const duration = (Date.now() - startTime) / 1000;
-        console.log(`   [OK] ${outputPath} (${duration.toFixed(1)}s)`);
+        console.log(`   [OK] ${outputPath} (${duration.toFixed(1)}s, ${stats.size} bytes)`);
 
         return {
             success: true,

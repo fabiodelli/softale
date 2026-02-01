@@ -125,6 +125,10 @@ class AudioEngine {
     public play() {
         if (this.state.isPlaying) return;
 
+        // Optimistic update to prevent state flickering during buffering/loading
+        this.state.isPlaying = true;
+        this.emit('statechange', this.state);
+
         const playPromise = Promise.all([
             this.voice?.play(),
             this.music?.src && this.music?.play(),
@@ -137,6 +141,10 @@ class AudioEngine {
             this.emit('statechange', this.state);
         }).catch(e => {
             console.error("Play failed", e);
+            // Revert state on failure
+            this.state.isPlaying = false;
+            this.emit('statechange', this.state);
+            this.emit('error', this.state);
         });
     }
 

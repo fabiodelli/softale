@@ -119,10 +119,19 @@ export default function StoriesManager() {
 
     const togglePremium = async (story: Story) => {
         try {
-            if (!supabase) throw new Error('Supabase client not initialized');
             const newValue = !story.is_premium;
-            const { error } = await supabase.from('stories').update({ is_premium: newValue }).eq('id', story.id);
-            if (error) throw error;
+
+            const res = await fetch('/api/admin/update-story', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ storyId: story.id, updates: { is_premium: newValue } })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to update premium status');
+            }
+
             setStories(stories.map(s => s.id === story.id ? { ...s, is_premium: newValue } : s));
             setStatus(`Updated "${story.title}" to ${newValue ? 'Premium' : 'Free'}`);
         } catch (error: unknown) {
@@ -134,10 +143,19 @@ export default function StoriesManager() {
 
     const togglePublished = async (story: Story) => {
         try {
-            if (!supabase) throw new Error('Supabase client not initialized');
             const newValue = !story.is_published;
-            const { error } = await supabase.from('stories').update({ is_published: newValue }).eq('id', story.id);
-            if (error) throw error;
+
+            const res = await fetch('/api/admin/update-story', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ storyId: story.id, updates: { is_published: newValue } })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to update published status');
+            }
+
             setStories(stories.map(s => s.id === story.id ? { ...s, is_published: newValue } : s));
             setStatus(`"${story.title}" is now ${newValue ? 'Published' : 'Unpublished'}`);
         } catch (error: unknown) {
@@ -212,8 +230,17 @@ export default function StoriesManager() {
                 setStories(prev => prev.filter(s => !selectedStoryIds.has(s.id)));
                 setSelectedStoryIds(new Set());
             } else {
-                const { error } = await supabase.from('stories').update(updates).in('id', ids);
-                if (error) throw error;
+                // Use API update endpoint
+                const updatePromises = ids.map(id =>
+                    fetch('/api/admin/update-story', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ storyId: id, updates })
+                    })
+                );
+
+                await Promise.all(updatePromises); // Wait for all (could use allSettled for robustness)
+
                 // Optimistic Update
                 setStories(prev => prev.map(s => selectedStoryIds.has(s.id) ? { ...s, ...updates } : s));
             }
@@ -393,7 +420,10 @@ export default function StoriesManager() {
                                                 <td className="p-4 text-center">
                                                     <div className="flex flex-col gap-1.5 items-center">
                                                         <button
-                                                            onClick={() => togglePublished(story)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                togglePublished(story);
+                                                            }}
                                                             className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all ${story.is_published
                                                                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
                                                                 : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700'
@@ -402,7 +432,10 @@ export default function StoriesManager() {
                                                             {story.is_published ? 'Published' : 'Draft'}
                                                         </button>
                                                         <button
-                                                            onClick={() => togglePremium(story)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                togglePremium(story);
+                                                            }}
                                                             className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all ${story.is_premium
                                                                 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
                                                                 : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700'

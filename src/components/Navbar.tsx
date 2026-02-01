@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -27,6 +27,7 @@ export default function Navbar({ transparent = false }: NavbarProps) {
 
     const [showSearch, setShowSearch] = useState(false);
     const [searchText, setSearchText] = useState('');
+    const lastPushedRef = useRef('');
     const [isScrolled, setIsScrolled] = useState(false);
 
     const isActive = (path: string) => pathname === path;
@@ -59,36 +60,55 @@ export default function Navbar({ transparent = false }: NavbarProps) {
 
     // ... (Keep existing search useEffects) ...
     // Sync search text with URL when on home page
+
+
+    // Live Search Logic
+    // Live Search Logic
     useEffect(() => {
-        if (pathname === '/') {
-            const q = searchParams?.get('q');
-            if (q) {
+        const timer = setTimeout(() => {
+            const currentQ = searchParams?.get('q') || '';
+            // Only trigger if searchText changed
+            if (searchText !== currentQ) {
+                if (searchText) {
+                    if (pathname === '/library') {
+                        lastPushedRef.current = searchText; // Mark intent
+                        router.replace(`/library?q=${encodeURIComponent(searchText)}`, { scroll: false });
+                    }
+                } else {
+                    if (pathname === '/library') {
+                        lastPushedRef.current = ''; // Mark intent
+                        router.replace('/library', { scroll: false });
+                    }
+                }
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchText, pathname, router, searchParams]);
+
+    // Cleanup input when navigating away from library or Sync from URL
+    useEffect(() => {
+        if (pathname !== '/library') {
+            setSearchText('');
+        } else {
+            // Restore from URL if on library
+            const q = searchParams?.get('q') || '';
+
+            // Safety check against our own push
+            if (q !== lastPushedRef.current) {
                 setSearchText(q);
+                lastPushedRef.current = q;
+            }
+
+            if (q) {
                 setShowSearch(true);
             }
         }
     }, [pathname, searchParams]);
 
-    // Live Search Logic
-    useEffect(() => {
-        if (pathname === '/') {
-            const timer = setTimeout(() => {
-                const currentQ = searchParams?.get('q') || '';
-                if (searchText !== currentQ) {
-                    if (searchText) {
-                        router.replace(`/?q=${encodeURIComponent(searchText)}`, { scroll: false });
-                    } else {
-                        router.replace('/', { scroll: false });
-                    }
-                }
-            }, 300);
-            return () => clearTimeout(timer);
-        }
-    }, [searchText, pathname, router, searchParams]);
-
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.push(`/?q=${encodeURIComponent(searchText)}`);
+        // Always go to library with search
+        router.push(`/library?q=${encodeURIComponent(searchText)}`);
     };
 
     // Derived Styles based on Scroll State

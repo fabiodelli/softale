@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getStories, getFavorites, getInProgressStories, getCollections, getUserPlaylists, type Story, type StoryWithProgress, type Collection, type Playlist } from '@/lib/supabase';
 import { getRecommendedStories } from '@/lib/recommendations';
@@ -26,6 +27,8 @@ import { Plus, ListMusic } from 'lucide-react';
 export default function LibraryPage() {
     const { play } = usePlayer();
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const router = useRouter();
 
     const [allStories, setAllStories] = useState<Story[]>([]);
     const [allCollections, setAllCollections] = useState<Collection[]>([]);
@@ -35,7 +38,8 @@ export default function LibraryPage() {
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '');
+    const lastPushedQuery = useRef(searchParams?.get('q') || '');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [showCreatePlaylistModal, setShowCreatePlaylistModal] = useState(false);
 
@@ -78,19 +82,66 @@ export default function LibraryPage() {
         fetchUserData();
     }, [user]);
 
+    // Sync search query from URL (Read Only - preventing race condition)
+    useEffect(() => {
+        const q = searchParams?.get('q') || '';
+        // If the incoming query matches what we just pushed, ignore it.
+        // If it's different, it's an external change (Nav, Back button, etc.), so sync.
+        if (q !== lastPushedQuery.current) {
+            setSearchQuery(q);
+            lastPushedQuery.current = q; // Update ref to match new external truth
+        }
+
+        if (q && activeFilter !== 'all') {
+            setActiveFilter('all');
+        }
+    }, [searchParams]);
+
+    // Update URL when internal search input changes (Mobile) - Debounced
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const currentQ = searchParams?.get('q') || '';
+            if (searchQuery !== currentQ) {
+                const params = new URLSearchParams(searchParams?.toString());
+                if (searchQuery) {
+                    params.set('q', searchQuery);
+                } else {
+                    params.delete('q');
+                }
+
+                // Mark this as our intended change
+                lastPushedQuery.current = searchQuery;
+
+                router.replace(`/library?${params.toString()}`, { scroll: false });
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery, router, searchParams]);
+
+    // Helper to filter and sort by search relevancy
+    const filterAndSortStories = (stories: Story[]) => {
+        if (!searchQuery) return stories;
+        const lowerQ = searchQuery.toLowerCase();
+
+        return stories.filter(s =>
+            s.title.toLowerCase().includes(lowerQ) ||
+            (s.description && s.description.toLowerCase().includes(lowerQ))
+        ).sort((a, b) => {
+            const aTitle = a.title.toLowerCase();
+            const bTitle = b.title.toLowerCase();
+            const aStarts = aTitle.startsWith(lowerQ);
+            const bStarts = bTitle.startsWith(lowerQ);
+
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+            return 0;
+        });
+    }
+
     // Get stories by category with Search
     const getStoriesByCategory = (category: string) => {
         let stories = allStories.filter(s => s.category === category);
-
-        // Search
-        if (searchQuery) {
-            stories = stories.filter(s =>
-                s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
-            );
-        }
-
-        return stories;
+        return filterAndSortStories(stories);
     };
 
     // Get collections by category
@@ -99,12 +150,13 @@ export default function LibraryPage() {
     };
 
     // Filter logic for specific filter selection
-    const isShowAll = activeFilter === 'all';
+    const isSearching = !!searchQuery;
+    const isShowAll = activeFilter === 'all' && !isSearching;
     const isShowFavorites = activeFilter === 'favorites';
     const isShowContinue = activeFilter === 'continue';
     const isShowCollections = activeFilter === 'collections';
     const isShowPlaylists = activeFilter === 'playlists';
-    const showCategoryFilter = !isShowAll && !isShowFavorites && !isShowContinue && !isShowCollections && !isShowPlaylists;
+    const showCategoryFilter = activeFilter !== 'all' && !isShowFavorites && !isShowContinue && !isShowCollections && !isShowPlaylists;
 
     const getFilteredData = () => {
         let result = { stories: [] as Story[], collections: [] as Collection[], playlists: [] as Playlist[] };
@@ -123,10 +175,7 @@ export default function LibraryPage() {
             // Fallback or All
             let stories = allStories;
             if (searchQuery) {
-                stories = stories.filter(s =>
-                    s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
-                );
+                stories = filterAndSortStories(stories);
             }
             result = { stories: stories, collections: allCollections, playlists: [] };
         }
@@ -510,7 +559,8 @@ export default function LibraryPage() {
                                     : isShowContinue ? 'Continue Listening'
                                         : isShowCollections ? 'All Collections'
                                             : isShowPlaylists ? 'Your Playlists'
-                                                : CATEGORIES.find(c => c.id === activeFilter)?.label || 'Stories'}
+                                                : isSearching ? `Search Results: "${searchQuery}"`
+                                                    : CATEGORIES.find(c => c.id === activeFilter)?.label || 'Stories'}
                             </h2>
 
                             {/* Show Collections Grid when isShowCollections */}

@@ -43,3 +43,10 @@
     - [x] Deep Documentation Audit (Index, Player Arch, Tech Stack)
     - [x] Clean up any test artifacts (if needed)
     - [x] Push changes to git
+- [x] Factory Pipeline Optimization
+    - [x] Audit Pipeline Configuration (Claude/DALL-E verified)
+    - [x] Implement Auto-Start for Qwen Microservice (LocalTTSService)
+    - [x] Fix Audio File Size Validation & Logging
+- [ ] Home Screen Redesign
+    - [ ] Implement Visual Hero (3D Parallax) in `FeaturedCard`
+    - [ ] Update `AppHome` Layout (Remove Text Hero)

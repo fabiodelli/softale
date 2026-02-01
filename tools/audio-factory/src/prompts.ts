@@ -240,6 +240,14 @@ export const PHASE_TEMPLATES: Record<string, PhaseTemplate[]> = {
         { type: 'narration', durationPercent: 10, description: 'Closing' },
         { type: 'ambience_only', durationPercent: 10, description: 'Final integration' },
     ],
+    // Whimsical Journey for Kids
+    kids: [
+        { type: 'narration', durationPercent: 15, description: 'Welcome and meet the character' },
+        { type: 'narration', durationPercent: 35, description: 'The magical adventure begins' },
+        { type: 'narration', durationPercent: 25, description: 'A gentle lesson or discovery' },
+        { type: 'narration', durationPercent: 15, description: 'Winding down and feeling safe' },
+        { type: 'narration', durationPercent: 10, description: 'Goodnight and sweet dreams' },
+    ],
 };
 
 // =====================================================

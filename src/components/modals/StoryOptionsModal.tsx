@@ -96,45 +96,62 @@ export default function StoryOptionsModal({ isOpen, onClose, storyId, storyTitle
     const modalContent = (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 min-h-screen" onClick={onClose}>
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4 min-h-screen" onClick={onClose}>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[85vh] relative"
+                        className="bg-white/90 backdrop-blur-xl border border-white/40 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[85vh] relative"
                     >
                         {/* Close Button Absolute */}
                         <button
                             onClick={onClose}
-                            className="absolute top-3 right-3 p-2 bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200 transition z-10"
+                            className="absolute top-3 right-3 p-2 bg-slate-100/80 text-slate-500 rounded-full hover:bg-slate-200 hover:text-slate-800 transition z-10"
                         >
-                            <X className="w-4 h-4" />
+                            <X className="w-5 h-5" />
                         </button>
 
                         <div className="p-6 pb-2">
-                            <h3 className="text-xl font-bold text-slate-900 pr-8 line-clamp-2">
+                            <h3 className="text-xl font-bold text-slate-900 pr-8 line-clamp-2 leading-tight">
                                 {storyTitle || 'Story Options'}
                             </h3>
                             <p className="text-sm text-slate-500 font-medium mt-1">Select an action</p>
                         </div>
 
-                        <div className="p-4 space-y-3 overflow-y-auto scrollbar-thin">
+                        <div className="p-4 space-y-3 overflow-y-auto scrollbar-hide">
+
+                            {/* Go to Details */}
+                            <button
+                                onClick={() => {
+                                    router.push(`/story/${storyId}`);
+                                    onClose();
+                                }}
+                                className="w-full p-4 rounded-2xl flex items-center justify-between transition-all bg-indigo-50/50 border border-indigo-100/50 hover:bg-indigo-50 text-slate-900 group"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-indigo-100 text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                        <ChevronRight className="w-5 h-5" />
+                                    </div>
+                                    <span className="font-bold text-base">Go to Story Page</span>
+                                </div>
+                            </button>
+
                             {/* Favorite Button */}
                             <button
                                 onClick={handleToggleFavorite}
                                 disabled={favLoading}
-                                className={`w-full p-4 rounded-xl flex items-center justify-between transition-all border
+                                className={`w-full p-4 rounded-2xl flex items-center justify-between transition-all border
                                     ${isFavorite
-                                        ? 'bg-red-50 border-red-100 text-red-600'
-                                        : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100'}
+                                        ? 'bg-red-50 border-red-100 text-red-500 hover:bg-red-100'
+                                        : 'bg-slate-50/50 border-slate-100 text-slate-700 hover:bg-slate-100'}
                                 `}
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isFavorite ? 'bg-red-100' : 'bg-white shadow-sm'}`}>
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isFavorite ? 'bg-red-100 text-red-500' : 'bg-white shadow-sm'}`}>
                                         <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
                                     </div>
-                                    <span className="font-bold text-lg">
+                                    <span className="font-bold text-base">
                                         {isFavorite ? 'Favorited' : 'Add to Favorites'}
                                     </span>
                                 </div>
@@ -142,7 +159,7 @@ export default function StoryOptionsModal({ isOpen, onClose, storyId, storyTitle
                             </button>
 
                             {/* Playlist Accordion */}
-                            <div className={`overflow-hidden rounded-xl border transition-all ${showPlaylists ? 'bg-indigo-50/50 border-indigo-100' : 'bg-slate-50 border-slate-100'}`}>
+                            <div className={`overflow-hidden rounded-2xl border transition-all ${showPlaylists ? 'bg-indigo-50/50 border-indigo-100' : 'bg-slate-50/50 border-slate-100'}`}>
                                 <button
                                     onClick={handleShowPlaylists}
                                     className="w-full p-4 flex items-center justify-between text-slate-700 hover:bg-slate-100/50 transition-colors"
@@ -152,10 +169,10 @@ export default function StoryOptionsModal({ isOpen, onClose, storyId, storyTitle
                                             <ListMusic className="w-5 h-5" />
                                         </div>
                                         <div className="text-left">
-                                            <span className="font-bold text-lg block">Add to Playlist</span>
+                                            <span className="font-bold text-base block">Add to Playlist</span>
                                         </div>
                                     </div>
-                                    <ChevronRight className={`w-5 h-5 transition-transform ${showPlaylists ? 'rotate-90' : ''}`} />
+                                    <ChevronRight className={`w-5 h-5 transition-transform text-slate-400 ${showPlaylists ? 'rotate-90 text-indigo-500' : ''}`} />
                                 </button>
 
                                 {/* Playlist Content */}
@@ -175,30 +192,30 @@ export default function StoryOptionsModal({ isOpen, onClose, storyId, storyTitle
                                                 <div className="space-y-2 mt-2">
                                                     <button
                                                         onClick={() => setShowCreateModal(true)}
-                                                        className="w-full p-3 bg-white border border-dashed border-indigo-200 rounded-xl flex items-center gap-3 text-indigo-600 font-semibold hover:bg-indigo-50 transition"
+                                                        className="w-full p-3 bg-white/50 border border-dashed border-indigo-200 rounded-xl flex items-center gap-3 text-indigo-500 font-semibold hover:bg-white transition text-sm"
                                                     >
-                                                        <Plus className="w-5 h-5" />
+                                                        <Plus className="w-4 h-4" />
                                                         Create New Playlist
                                                     </button>
 
                                                     {playlists.length === 0 && !playlistLoading && (
-                                                        <p className="text-center text-slate-400 text-sm py-2">No playlists found.</p>
+                                                        <p className="text-center text-slate-400 text-xs py-2">No playlists found.</p>
                                                     )}
 
                                                     {playlists.map(playlist => (
                                                         <button
                                                             key={playlist.id}
                                                             onClick={() => handleAddToPlaylist(playlist.id)}
-                                                            className="w-full p-2 flex items-center gap-3 hover:bg-white rounded-lg transition group"
+                                                            className="w-full p-2 flex items-center gap-3 hover:bg-white rounded-xl transition group"
                                                         >
-                                                            <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0 overflow-hidden">
+                                                            <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 overflow-hidden">
                                                                 {playlist.cover_url ? (
                                                                     <img src={playlist.cover_url} className="w-full h-full object-cover" />
                                                                 ) : (
                                                                     <ListMusic className="w-5 h-5 text-indigo-400" />
                                                                 )}
                                                             </div>
-                                                            <span className="font-medium text-slate-700 truncate flex-1 text-left">{playlist.title}</span>
+                                                            <span className="font-medium text-slate-700 truncate flex-1 text-left text-sm">{playlist.title}</span>
                                                             {addingToId === playlist.id && <Check className="w-5 h-5 text-green-500" />}
                                                         </button>
                                                     ))}

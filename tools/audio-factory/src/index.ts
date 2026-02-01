@@ -13,6 +13,7 @@
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import ffmpegPath from 'ffmpeg-static';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -40,11 +41,17 @@ import {
 // 1. First load root project .env.local (contains API keys)
 // 2. Then load local .env (contains overrides like USE_LOCAL_TTS)
 
+// Fix path resolution to be relative to this file, not CWD
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '../../..'); // Root
+const packageRoot = path.resolve(__dirname, '..');       // tools/audio-factory
+
 const envFilesToLoad = [
-    path.resolve(process.cwd(), '../../.env.local'),  // Root .env.local (API keys)
-    path.resolve(process.cwd(), '../../.env'),        // Root .env fallback
-    path.resolve(process.cwd(), '.env.local'),        // Local .env.local
-    path.resolve(process.cwd(), '.env')               // Local .env (overrides)
+    path.join(projectRoot, '.env.local'),
+    path.join(projectRoot, '.env'),
+    path.join(packageRoot, '.env.local'),
+    path.join(packageRoot, '.env')
 ];
 
 let envLoadedCount = 0;
@@ -301,14 +308,28 @@ ${brief.title ? `Title: ${brief.title}` : ''}
 **CRITICAL**: Write EXACTLY ${targetWords} words.
 Maintain flow from previous phases.`;
 
-        const userPrompt = `Write Phase ${phase.id}. Return JSON: { "content": "text with [pause] markers", "wordCount": number }`;
+        const userPrompt = `Write Phase ${phase.id}. 
+RETURN ONLY VALID JSON. Do not write any introduction or explanation.
+Format:
+{
+  "content": "The actual narration text...",
+  "wordCount": 150
+}`;
 
         try {
             const res = await callClaude(systemPrompt, userPrompt, 2000);
-            const json = JSON.parse(res.text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+            // Robust JSON extraction
+            const jsonMatch = res.text.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                console.error(`      ❌ RAW RESPONSE (Parse Fail): ${res.text.substring(0, 100)}...`);
+                throw new Error("No JSON found in response");
+            }
+            const json = JSON.parse(jsonMatch[0]);
+
             phase.content = json.content;
-            totalWordCount += (json.wordCount || 0);
-            console.log(`      ✅ Phase ${phase.id}: ${json.wordCount} words`);
+            const words = json.wordCount || phase.content?.split(' ').length || 0;
+            totalWordCount += words;
+            console.log(`      ✅ Phase ${phase.id}: ${words} words`);
         } catch (e: any) {
             console.error(`      ❌ Phase ${phase.id} failed: ${e.message}`);
             phase.content = "Relax and breathe... [pause]"; // Emergency fallback
@@ -376,7 +397,7 @@ Keep it SHORT (2-5 words), poetic, and memorable.`;
         generationMode: 'phased',
         phases: phases,
         voiceStyle: brief.voiceStyle,
-        mixSettings: brief.mixSettings || { voice: 5.0, music: 0.08, ambience: 0.08 },
+        mixSettings: brief.mixSettings || { voice: 1.0, music: 0.05, ambience: 0.05 },
         tags: brief.tags || []
     } as any;
 }
@@ -398,12 +419,14 @@ Phases: ${phases.map(p => p.transitionNote).join(' -> ')}
 
 Return JSON:
 {
-    "coverPrompt": "DALL-E prompt",
+    "coverPrompt": "DALL-E prompt for MAIN STORY",
     "musicPrompt": "ID: [uuid]" or "NEW: [Stable Audio prompt]",
     "ambiencePrompt": "Stable Audio prompt for background texture",
     "backingCategory": "soundscape" (if generating new music),
-    "backingTitle": "Title for backing track"
-}`;
+    "backingTitle": "Creative Title for the backing track (e.g. 'Ethereal Drift', 'Forest Hum')",
+    "backingCoverPrompt": "DALL-E prompt for the BACKING TRACK (different from main cover)"
+}
+CRITICAL: If you generate 'musicPrompt' or 'ambiencePrompt' that is NEW, you MUST provide 'backingTitle' and 'backingCoverPrompt'.`;
 
     const res = await callClaude(systemPrompt, userPrompt);
     return JSON.parse(res.text.match(/\{[\s\S]*\}/)?.[0] || '{}');
@@ -648,7 +671,10 @@ export async function mixUnifiedAudio(
         inputs.push(`-i "${o.path}"`);
         const delay = o.start * 1000;
         const currentIdx = voiceIdxStart + i;
-        filterComplex += `[${currentIdx}:a]adelay=${delay}|${delay},volume=${script.mixSettings?.voice || 3.0}[v${i}];`;
+        // Use Loudness Normalization (EBU R128 target) instead of simple gain
+        // This fixes "quiet voice" issues with raw TTS output
+        // Target: -14 LUFS (standard for mono/stereo podcasts/voiceovers)
+        filterComplex += `[${currentIdx}:a]adelay=${delay}|${delay},loudnorm=I=-14:TP=-1.5:LRA=11[v${i}];`;
     });
 
     // Iteratively mix voices onto backing
@@ -658,7 +684,7 @@ export async function mixUnifiedAudio(
     let lastMix = 'backing';
     overlays.forEach((o, i) => {
         const nextMix = i === overlays.length - 1 ? 'out' : `mix${i}`;
-        filterComplex += `[${lastMix}][v${i}]amix=inputs=2:duration=first:weights=1 1:dropout_transition=0[${nextMix}];`;
+        filterComplex += `[${lastMix}][v${i}]amix=inputs=2:duration=first:weights=1 1:dropout_transition=0:normalize=0[${nextMix}];`;
         lastMix = nextMix;
     });
 
@@ -747,17 +773,28 @@ export async function uploadStoryPackage(script: GeneratedScript, mixPath: strin
     } else {
         console.log(`   ✅ Story Uploaded: ${slug}`);
 
-        // --- HARVESTING ENGINE ---
-        // Automatically save generated assets as reusable loops
+        // --- HARVESTING ENGINE (Optimized V2) ---
+        // Harvests the single backing track as a draft loop with its own assets
 
         const harvestLoop = async (type: 'music' | 'ambience', url: string | null, prompt: string | undefined) => {
             if (!url || !prompt || prompt.startsWith('ID:')) return;
 
-            const loopTitle = `${script.title} (${type === 'music' ? 'Music' : 'Ambience'})`;
+            // Use creative title if available, otherwise fallback
+            const baseTitle = script.backingTitle || script.title;
+            // Clean title slightly if it duplicates type
+            const cleanBase = baseTitle.replace(/music|ambience|soundscape/gi, '').trim();
+            const loopTitle = `${cleanBase} (${type === 'music' ? 'Music' : 'Ambience'})`;
+
             const loopSlug = `${slug}-${type}-loop`;
             const loopCategory = type === 'music' ? 'music_instrumental' : 'soundscape';
 
-            console.log(`   🌾 Harvesting ${type} loop: ${loopTitle}`);
+            console.log(`   🌾 Harvesting ${type} loop: "${loopTitle}"`);
+            console.log(`      Draft Mode: unpublished`);
+
+            // Use dedicated backing assets if available, otherwise fallback (should exist)
+            const loopCover = assets.backing_cover_url || assets.cover_url;
+            const loopCoverWide = assets.backing_cover_landscape_url || assets.cover_landscape_url;
+            const loopCoverTall = assets.backing_cover_portrait_url || assets.cover_portrait_url;
 
             await supabase.from('stories').upsert({
                 title: loopTitle,
@@ -766,13 +803,16 @@ export async function uploadStoryPackage(script: GeneratedScript, mixPath: strin
                 description: `Harvested ${type} from "${script.title}". Prompt: ${prompt}`,
                 duration: script.duration * 60,
                 audio_url: url,
-                cover_url: coverUrl, // Use main story cover for now
+                cover_url: loopCover,
+                cover_landscape_url: loopCoverWide,
+                cover_portrait_url: loopCoverTall,
                 is_loop: true,
-                is_published: true, // Auto-publish loops for reuse? Yes.
-                tags: [...(script.tags || []), type, 'harvested']
+                is_published: false, // DRAFT MODE - Requires Manual Approval
+                tags: [...(script.tags || []), type, 'harvested', 'draft']
             }, { onConflict: 'slug' });
         };
 
+        // Only harvest what was generated
         if (stems.music) await harvestLoop('music', musicUrl, script.musicPrompt);
         if (stems.ambience) await harvestLoop('ambience', ambienceUrl, script.ambiencePrompt);
     }
@@ -807,43 +847,50 @@ export async function generateAssetPack(script: GeneratedScript): Promise<AssetP
         const safeTitle = script.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
         const outputPath = path.join(OUTPUT_DIR, `${safeTitle}_${suffix}.png`);
 
-        if (fs.existsSync(outputPath)) {
-            console.log(`      ⏩ Exists: ${outputPath}`);
-            return outputPath;
-        }
+        if (fs.existsSync(outputPath)) return outputPath;
 
         console.log(`   🎨 Generating ${suffix} (${aspect})...`);
-        try {
-            const response = await fetch('https://api.openai.com/v1/images/generations', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${openaiKey}`,
-                },
-                body: JSON.stringify({
-                    model: 'dall-e-3',
-                    prompt: prompt + ` --ar ${aspect}`,
-                    n: 1,
-                    size: size as "1024x1024" | "1024x1792" | "1792x1024",
-                    quality: 'hd',
-                }),
-            });
 
-            if (!response.ok) throw new Error(await response.text());
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                const response = await fetch('https://api.openai.com/v1/images/generations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${openaiKey}`,
+                    },
+                    body: JSON.stringify({
+                        model: 'dall-e-3',
+                        prompt: prompt + ` --ar ${aspect}`,
+                        n: 1,
+                        size: size as "1024x1024" | "1024x1792" | "1792x1024",
+                        quality: 'hd',
+                    }),
+                });
 
-            const data = await response.json();
-            const imageUrl = data.data[0]?.url;
-            if (!imageUrl) throw new Error("No image URL returned");
+                if (!response.ok) {
+                    const err = await response.text();
+                    console.warn(`      ⚠️ Attempt ${attempt} failed: ${err}`);
+                    if (attempt === 3) throw new Error(err);
+                    await new Promise(r => setTimeout(r, 2000)); // Backoff
+                    continue;
+                }
 
-            const imageResponse = await fetch(imageUrl);
-            const buffer = Buffer.from(await imageResponse.arrayBuffer());
-            fs.writeFileSync(outputPath, buffer);
-            console.log(`      ✅ Saved: ${outputPath}`);
-            return outputPath;
-        } catch (error: any) {
-            console.log(`      ⚠️ Failed ${suffix}: ${error.message || error}`);
-            return '';
+                const data = await response.json();
+                const imageUrl = data.data[0]?.url;
+                if (!imageUrl) throw new Error("No image URL returned");
+
+                const imageResponse = await fetch(imageUrl);
+                const buffer = Buffer.from(await imageResponse.arrayBuffer());
+                fs.writeFileSync(outputPath, buffer);
+                console.log(`      ✅ Saved: ${outputPath}`);
+                return outputPath;
+            } catch (error: any) {
+                console.error(`      ❌ Failed ${suffix}: ${error.message}`);
+                // Proceed to next attempt or return empty string
+            }
         }
+        return '';
     };
 
     // 1. Main Story Assets
@@ -899,24 +946,16 @@ export async function generateStory(brief: StoryBrief) {
         voiceRes = { paths: new Map(), chars: 0 };
     }
 
-    // 3. Audio Backgrounds (conditional based on backing type)
+    // 3. Audio Backgrounds (Single Track Logic)
     let musicPath = '';
     let ambiencePath = '';
 
+    // Enforce SINGLE backing track to save costs and reduce clutter
     if (recipe.backing === 'soundscape') {
-        // Soundscape: ambience primary, music optional
-        [ambiencePath, musicPath] = await Promise.all([
-            generateStableAudio(script.ambiencePrompt || "", `${script.title}_ambience.mp3`),
-            script.musicPrompt ? generateStableAudio(script.musicPrompt, `${script.title}_music.mp3`) : Promise.resolve('')
-        ]);
-    } else if (recipe.backing === 'music') {
-        // Music-based: both music and optional ambience
-        [musicPath, ambiencePath] = await Promise.all([
-            generateStableAudio(script.musicPrompt, `${script.title}_music.mp3`),
-            script.ambiencePrompt ? generateStableAudio(script.ambiencePrompt, `${script.title}_ambience.mp3`) : Promise.resolve('')
-        ]);
-    } else if (recipe.backing === 'frequency') {
-        // Binaural/frequency: only music (the frequency track)
+        // Ambience ONLY
+        ambiencePath = await generateStableAudio(script.ambiencePrompt || "", `${script.title}_ambience.mp3`);
+    } else if (recipe.backing === 'music' || recipe.backing === 'frequency') {
+        // Music ONLY (even if recipe implies both, defaults to music for single file)
         musicPath = await generateStableAudio(script.musicPrompt, `${script.title}_music.mp3`);
     }
 
