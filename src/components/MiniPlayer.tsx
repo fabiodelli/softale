@@ -99,12 +99,11 @@ export default function MiniPlayer() {
     return (
         <AnimatePresence>
             <motion.div
-                initial={{ y: 100 }}
                 animate={{ y: 0 }}
                 exit={{ y: 100 }}
                 className={`fixed left-0 right-0 z-[59] transition-all duration-300 
                     md:!bottom-0 md:!translate-y-0 md:!opacity-100 md:!pointer-events-auto
-                    ${isMobilePlayerOpen ? 'bottom-[calc(75px+env(safe-area-inset-bottom))] opacity-100 translate-y-0' : 'bottom-[calc(75px+env(safe-area-inset-bottom))] opacity-0 translate-y-10 pointer-events-none'}
+                    ${isMobilePlayerOpen ? 'bottom-[calc(70px+env(safe-area-inset-bottom))] opacity-100 translate-y-0' : 'bottom-[calc(70px+env(safe-area-inset-bottom))] opacity-0 translate-y-10 pointer-events-none'}
                 `}
             >
 
