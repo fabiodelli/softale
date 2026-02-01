@@ -125,23 +125,20 @@ async function runStep() {
             const voiceMap = new Map<number, string>();
             Object.entries(state.paths.voice).forEach(([k, v]) => voiceMap.set(Number(k), v as string));
 
-            const mixPath = await mixUnifiedAudio(state.script, voiceMap, state.paths.music, state.paths.ambience);
+            const mixResult = await mixUnifiedAudio(state.script, voiceMap, state.paths.music, state.paths.ambience);
 
             console.log('☁️ Uploading...');
             // We need asset data. If step assets was skipped, we pass empty.
             const assets = state.assets || { cover_url: '', imageCount: 0 };
 
-            // Generate Voice Stem (Silence + Voice)
-            const voiceStemPath = await mixUnifiedAudio(state.script, voiceMap, '', '');
-
             await uploadStoryPackage(
                 state.script,
-                mixPath,
+                mixResult.mixedPath,
                 {
                     music: state.paths.music,
                     ambience: state.paths.ambience,
                     voiceMap: voiceMap,
-                    voiceStem: voiceStemPath
+                    voiceStem: mixResult.voiceStemPath
                 },
                 assets
             );

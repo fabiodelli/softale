@@ -35,7 +35,7 @@ const TEST_CASES: StoryBrief[] = [
         duration: TEST_DURATION,
         description: "High energy morning motivation. Voice should be loud, music very faint, no ambience.",
         voiceStyle: "soft_male",
-        pacingMode: "standard",
+        pacingMode: "continuous",
         warmupDuration: 0,
         mixSettings: {
             voice: 3.6,  // 90%

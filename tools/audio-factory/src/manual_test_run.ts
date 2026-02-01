@@ -11,8 +11,8 @@ import {
     mixUnifiedAudio,
     uploadStoryPackage,
     generateAssetPack
-} from './index';
-import { ConceptEngine } from './ConceptEngine';
+} from './index.js';
+import { ConceptEngine } from './ConceptEngine.js';
 
 async function run() {
     console.log("🚀 Starting Manual Test Run (Bypassing Claude)...");
@@ -74,10 +74,11 @@ async function run() {
 
         // 5. Mixing (Crucial Step for Warmup)
         console.log("🎛️ Mixing...");
-        const mixPath = await mixUnifiedAudio(script as any, voiceRes.paths, musicPath, ambiencePath);
+        const mixResult = await mixUnifiedAudio(script as any, voiceRes.paths, musicPath, ambiencePath);
 
-        // 6. Voice Stem Mix
-        const voiceStemPath = await mixUnifiedAudio(script as any, voiceRes.paths, '', '');
+        // 6. Voice Stem (Extracted from result)
+        const voiceStemPath = mixResult.voiceStemPath;
+        const mixPath = mixResult.mixedPath;
 
         // 7. Upload & Harvest
         console.log("☁️ Uploading & Harvesting...");
