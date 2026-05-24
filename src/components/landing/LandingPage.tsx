@@ -268,14 +268,31 @@ export default function LandingPage({ onEnterApp, showNav = true, minimalHeader 
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, delay: 0.4 }}
-                            className="text-lg md:text-xl lg:text-2xl text-slate-600 font-light max-w-2xl mx-auto leading-relaxed mb-10"
+                            className="text-lg md:text-xl lg:text-2xl text-slate-600 font-light max-w-2xl mx-auto leading-relaxed mb-8"
                         >
                             A bubble of digital wellness. Stories, sounds, and frequencies designed to make you feel, finally, okay.
                         </motion.p>
+
+                        {/* ===== CTA BUTTON ===== */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.7, delay: 0.55 }}
+                            className="mb-10"
+                        >
+                            <button
+                                onClick={handleEnterWithPreferences}
+                                className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white font-semibold text-base shadow-lg shadow-indigo-200/60 hover:shadow-indigo-300/70 transition-all duration-200 active:scale-95"
+                            >
+                                <Headphones className="w-5 h-5" />
+                                Open the App
+                            </button>
+                        </motion.div>
+
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ duration: 0.8, delay: 0.6 }}
+                            transition={{ duration: 0.8, delay: 0.75 }}
                             className="animate-bounce text-slate-400 text-sm tracking-widest uppercase"
                         >
                             Scroll to explore
