@@ -1,18 +1,61 @@
-
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { exec } from 'child_process';
 import path from 'path';
 import util from 'util';
 
 const execPromise = util.promisify(exec);
 
-export const maxDuration = 300; // Allow 5 minutes for generation
+export const maxDuration = 300; // 5 minutes for generation
+
+// Service Role Client
+const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    }
+);
 
 export async function POST(req: NextRequest) {
     try {
+        // 1. Verify caller identity
+        const cookieStore = await cookies();
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() { return cookieStore.getAll(); },
+                    setAll() { }
+                }
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 2. Verify admin role
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+        }
+
+        // 3. Run generation
         const body = await req.json();
 
-        // Basic validation
         if (!body.title || !body.description || !body.category) {
             return NextResponse.json(
                 { error: 'Missing required fields' },
@@ -20,7 +63,6 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Construct Brief object matching CLI expectation
         const brief = {
             title: body.title,
             description: body.description,
@@ -35,35 +77,20 @@ export async function POST(req: NextRequest) {
             voiceSettings: body.voiceSettings,
             systemPrompt: body.systemPrompt,
             voiceId: body.voiceId,
-            voiceStyle: body.voiceStyle, // Pass voice style to Factory
+            voiceStyle: body.voiceStyle,
             musicFile: body.musicFile,
             pacingStyle: body.pacingStyle || 'slow',
             wordsPerMinute: body.wordsPerMinute,
             pauseCount: body.pauseCount
         };
 
-        // Encode as Base64 JSON
-        const jsonStr = JSON.stringify(brief);
-        const base64Str = Buffer.from(jsonStr).toString('base64');
-
-        // Path to CLI
-        // Note: In dev mode, we point to the source. In prod, this might differ.
+        const base64Str = Buffer.from(JSON.stringify(brief)).toString('base64');
         const toolsDir = path.resolve(process.cwd(), 'tools/audio-factory');
 
         console.log('🏭 Triggering Audio Factory...', { title: brief.title });
-        console.log('🔑 Debug Environment:', {
-            hasAnthropic: !!process.env.ANTHROPIC_API_KEY,
-            anthropicPrefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 7) + '...' : 'MISSING',
-            hasEleven: !!process.env.ELEVENLABS_API_KEY,
-            hasSupabase: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-        });
 
-        // Execute CLI command
-        // We use 'npx tsx src/index.ts custom ...' explicitly
         const command = `npx tsx src/index.ts custom "${base64Str}"`;
 
-        // Note: This waits for completion. For long tasks, we might want to fire-and-forget 
-        // or use a queue, but for this prototype, we'll wait (hence maxDuration).
         const { stdout, stderr } = await execPromise(command, {
             cwd: toolsDir,
             env: {
@@ -79,31 +106,27 @@ export async function POST(req: NextRequest) {
         console.log('✅ Factory Output:', stdout);
         if (stderr) console.error('⚠️ Factory Stderr:', stderr);
 
-        // Parse Prompts from Stdout
         const systemPromptMatch = stdout.match(/\[DEBUG-PROMPT-SYSTEM-START\]([\s\S]*?)\[DEBUG-PROMPT-SYSTEM-END\]/);
         const userPromptMatch = stdout.match(/\[DEBUG-PROMPT-USER-START\]([\s\S]*?)\[DEBUG-PROMPT-USER-END\]/);
 
-        // Parse Usage from Stdout
         const usageMatch = stdout.match(/\[DEBUG-USAGE-START\]([\s\S]*?)\[DEBUG-USAGE-END\]/);
         let usageData = null;
         if (usageMatch) {
             try {
                 usageData = JSON.parse(usageMatch[1]);
-            } catch (e) {
+            } catch {
                 console.warn('Failed to parse usage JSON');
             }
         }
-
-        const parsedPrompts = {
-            system: systemPromptMatch ? systemPromptMatch[1].trim() : 'Prompt not captured',
-            user: userPromptMatch ? userPromptMatch[1].trim() : 'Prompt not captured'
-        };
 
         return NextResponse.json({
             success: true,
             message: 'Story generated and uploaded successfully',
             output: stdout,
-            prompts: parsedPrompts,
+            prompts: {
+                system: systemPromptMatch ? systemPromptMatch[1].trim() : 'Prompt not captured',
+                user: userPromptMatch ? userPromptMatch[1].trim() : 'Prompt not captured'
+            },
             usage: usageData
         });
 
@@ -112,16 +135,7 @@ export async function POST(req: NextRequest) {
         const message = error instanceof Error ? error.message : 'Internal Server Error';
         const stderr = (error as { stderr?: string })?.stderr;
         return NextResponse.json(
-            {
-                error: message,
-                details: stderr,
-                debugEnv: {
-                    hasAnthropic: !!process.env.ANTHROPIC_API_KEY,
-                    anthropicPrefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 7) + '...' : 'MISSING',
-                    hasEleven: !!process.env.ELEVENLABS_API_KEY,
-                    hasSupabase: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-                }
-            },
+            { error: message, details: stderr },
             { status: 500 }
         );
     }

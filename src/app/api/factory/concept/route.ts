@@ -1,5 +1,7 @@
-
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { exec } from 'child_process';
 import path from 'path';
 import util from 'util';
@@ -9,8 +11,50 @@ const execPromise = util.promisify(exec);
 
 export const maxDuration = 120; // 2 minutes for concept generation
 
+// Service Role Client
+const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    }
+);
+
 export async function POST(req: NextRequest) {
     try {
+        // 1. Verify caller identity
+        const cookieStore = await cookies();
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() { return cookieStore.getAll(); },
+                    setAll() { }
+                }
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 2. Verify admin role
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+        }
+
+        // 3. Run concept generation
         const body = await req.json();
 
         if (!body.idea || !body.category) {
@@ -22,11 +66,9 @@ export async function POST(req: NextRequest) {
 
         const toolsDir = path.resolve(process.cwd(), 'tools/audio-factory');
 
-        // Sanitize Clean Category (for safe ARG, though redundant if we use options, kept for CLI usage clarity)
         const cleanCategory = body.category.replace(/[^a-zA-Z0-9_]/g, '');
-        const cleanIdea = body.idea.replace(/"/g, '\\"'); // Escape quotes for shell arg
+        const cleanIdea = body.idea.replace(/"/g, '\\"');
 
-        // Bundle V5/V6 Options
         const options = {
             duration: body.duration || 10,
             mixLevel: body.mixLevel || 0.25,
@@ -36,41 +78,34 @@ export async function POST(req: NextRequest) {
             ambiencePrompt: body.ambiencePrompt,
             mixSettings: body.mixSettings,
             layers: body.layers,
-            generationMode: body.generationMode // V6
+            generationMode: body.generationMode
         };
 
-        // Base64 Encode Options safely for CLI
         const optionsBase64 = Buffer.from(JSON.stringify(options)).toString('base64');
 
-        console.log(`🧠 Generating Concept: "${body.idea}" [${cleanCategory}, V5 Options Encoded]`);
+        console.log(`🧠 Generating Concept: "${body.idea}" [${cleanCategory}]`);
 
-        // Execute CLI: npx tsx src/index.ts concept <category> <idea> <base64Options>
         const command = `npx tsx src/index.ts concept ${cleanCategory} "${cleanIdea}" ${optionsBase64}`;
 
-        const { stdout, stderr } = await execPromise(command, {
+        const { stdout } = await execPromise(command, {
             cwd: toolsDir,
             env: { ...process.env }
         });
 
         console.log('✅ CLI Output:', stdout);
 
-        // Parse logic: Find the "Concept Saved: path/to/file.json" line
-        // We look for the "Concept Saved:" prefix and capture everything after it until end of line
         const match = stdout.match(/Concept Saved:\s*(.*\.json)/);
 
         if (!match || !match[1]) {
             throw new Error('Failed to find output file path in CLI output');
         }
 
-        // Clean the path: remove ANSI color codes (if any) and whitespace
-        // \u001b\[[0-9;]*m regex removes standard ANSI escape codes
-        let filePath = match[1].replace(/\u001b\[[0-9;]*m/g, '').trim();
+        let filePath = match[1].replace(/\[[0-9;]*m/g, '').trim();
 
         if (!fs.existsSync(filePath)) {
             throw new Error(`Generated file not found at: ${filePath}`);
         }
 
-        // Read the generated JSON to return to frontend
         const conceptData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
         return NextResponse.json({
